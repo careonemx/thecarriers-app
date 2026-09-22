@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Correcciones · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=0d936824">
+<script src="../assets/vigia.js?v=0d936824" defer></script>
+</head>
+<body data-seccion="correcciones">
+<main class="contenido contenido--ancho">
+
+  <div class="encabezado" style="margin-bottom:20px">
+    <div>
+      <h1>Correcciones</h1>
+      <p>Direcciones que el sistema no pudo resolver solo. Se corrige y la guía sale
+         de aquí mismo, sin pasar por Pedidos. Lo que el código postal decide no
+         llega a esta cola: se aplica y queda en el historial.</p>
+    </div>
+  </div>
+
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
+  <div class="pestanas" role="tablist">
+    <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="cola">
+      Por revisar <span class="pestana__n" id="n-cola"></span>
+    </button>
+    <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="historial">
+      Historial
+    </button>
+  </div>
+
+  <section class="tarjeta" id="cola">
+    <div class="filtros">
+      <div class="buscador">
+        <label class="sr-only" for="q-cola">Buscar en la cola</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q-cola" autocomplete="off"
+               placeholder="Filtrar por pedido, destinatario o código postal">
+      </div>
+      <span class="filtros__div" aria-hidden="true"></span>
+
+      <!-- Con una sola colonia posible no hay nada que elegir, y son las que se
+           pueden resolver de golpe sin mirarlas una por una. Por eso el filtro
+           existe: separa lo que se despacha de lo que hay que decidir. -->
+      <label class="sr-only" for="f-opciones">Filtrar por cuántas opciones hay</label>
+      <select id="f-opciones">
+        <option value="">Todas</option>
+        <option value="una">Una sola colonia posible</option>
+        <option value="varias">Hay que elegir</option>
+      </select>
+      <label class="sr-only" for="f-guia">Filtrar por estado de la guía</label>
+      <select id="f-guia">
+        <option value="">Con guía y sin guía</option>
+        <option value="sin">La guía todavía no sale</option>
+        <option value="con">La guía ya salió</option>
+      </select>
+    </div>
+
+    <div class="barra-seleccion" id="seleccion" hidden>
+      <span class="barra-seleccion__cuenta"><b data-n>0</b> seleccionadas</span>
+      <span class="barra-seleccion__sep"></span>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar">Cancelar selección</button>
+      <button class="boton boton--fantasma boton--chico" type="button" data-lote="dejar">Dejar como llegaron</button>
+      <button class="boton boton--primario boton--chico" type="button" data-lote="confirmar">Corregir y generar guías</button>
+    </div>
+
+    <div class="tabla-caja scroll-fino">
+      <table id="tabla-cola">
+        <caption class="sr-only">Direcciones que esperan una decisión.</caption>
+        <thead><tr>
+          <th scope="col" style="width:38px">
+            <input type="checkbox" id="todas-check" aria-label="Seleccionar todas las de esta página"></th>
+          <th scope="col">Pedido</th>
+          <th scope="col">Qué llegó y por qué no se pudo resolver</th>
+          <th scope="col">Colonia correcta</th>
+          <th scope="col">Guía</th>
+          <th scope="col"><span class="sr-only">Acción</span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="pie-cola"></div>
+  </section>
+  <div id="historial" hidden></div>
+
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=0d936824";
+import { correcciones, correccionesPendientes, correccionesHechas,
+         QUIEN_CORRIGIO, quienCorrigio, CAMPO_DIRECCION,
+         fechaLarga } from "../assets/datos.js?v=0d936824";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  const aviso = document.getElementById("guardado");
+  let quitando;
+  function avisar(texto) {
+    clearTimeout(quitando);
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 3500);
+  }
+
+  /* Lo resuelto en esta sesión. El prototipo no escribe en ningún lado, pero
+     una cola que no se vacía al trabajarla no se entiende: si al confirmar el
+     caso sigue ahí, nadie sabe si sirvió. */
+  const resueltos = new Set();
+
+  /* ---------- Por revisar ----------
+     Tabla y no tarjetas. Una tarjeta por caso se lee muy bien con tres casos
+     y es inservible con doscientos: no se puede ordenar, no se puede comparar
+     y no se puede actuar sobre muchos a la vez. Un cliente de 5,000 envíos al
+     mes no va a bajar por doscientas tarjetas.
+
+     Lo que había en la tarjeta no se pierde, cambia de sitio: la evidencia va
+     bajo "Qué llegó", y la decisión es un desplegable EN la fila, porque la
+     decisión es una sola —qué colonia— y no merece abrir nada.
+
+     La confianza se expresa como la FORMA DE LA EVIDENCIA, no como un
+     porcentaje: "el CP 06600 solo tiene una colonia" se comprueba, un 87 %
+     solo se cree. */
+  let pagina = 1;
+  let porPagina = 25;
+  const elegido = new Map();   // id → colonia que quedaría
+  const marcadas = new Set();  // id → seleccionada para el lote
+
+  const sinAcento = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  function enCola() {
+    const q = (document.getElementById("q-cola").value || "").trim();
+    const ops = document.getElementById("f-opciones").value;
+    const guia = document.getElementById("f-guia").value;
+
+    return correccionesPendientes().filter((c) => {
+      if (resueltos.has(c.id)) return false;
+      if (q && !sinAcento(`${c.folio} ${c.cliente} ${c.cp} ${c.llego}`).includes(sinAcento(q))) return false;
+      if (ops === "una" && c.opciones.length !== 1) return false;
+      if (ops === "varias" && c.opciones.length === 1) return false;
+      if (guia === "sin" && c.guia) return false;
+      if (guia === "con" && !c.guia) return false;
+      return true;
+    /* Manda lo más viejo: es lo que el cliente lleva más tiempo esperando. */
+    }).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }
+
+  const valorDe = (c) => elegido.get(c.id) ?? c.opciones[0];
+
+  function fila(c) {
+    const unica = c.opciones.length === 1;
+    return `
+    <tr data-id="${esc(c.id)}">
+      <td><input type="checkbox" data-marcar${marcadas.has(c.id) ? " checked" : ""}
+        aria-label="Seleccionar ${esc(c.folio)}"></td>
+
+      <th scope="row">${esc(c.folio)}
+        <span class="nota-bajo">${esc(c.cliente)}</span></th>
+
+      <td><b class="caso__malo">${esc(c.llego)}</b>
+        <span class="nota-bajo">${unica
+          ? `El CP ${esc(c.cp)} solo tiene ${esc(c.opciones[0])}, y “${esc(c.llego)}” no es una colonia.`
+          : `“${esc(c.llego)}” no coincide con ninguna de las ${c.opciones.length} colonias del CP ${esc(c.cp)}.`}</span>
+        <span class="nota-bajo">${esc(c.calle)} · ${esc(c.ciudad)}</span></td>
+
+      <td>
+        <label class="sr-only" for="op-${esc(c.id)}">Colonia correcta de ${esc(c.folio)}</label>
+        <select id="op-${esc(c.id)}" data-elegir>
+          ${c.opciones.map((o) =>
+            `<option${o === valorDe(c) ? " selected" : ""}>${esc(o)}</option>`).join("")}
+        </select>
+      </td>
+
+      <td>${c.guia
+        ? `<span class="pastilla pastilla--aviso ficha__nowrap">Ya salió</span>
+           <span class="nota-bajo">Corregir no cambia la etiqueta</span>`
+        : '<span class="pastilla ficha__nowrap">Sin guía</span>'}</td>
+
+      <td class="acciones-fila">
+        <button class="boton boton--sutil boton--chico ficha__nowrap" type="button" data-confirmar>${
+          c.guia ? "Corregir pedido" : "Corregir y generar guía"}</button>
+        <button class="boton boton--sutil boton--chico" type="button" data-dejar>Dejar</button>
+      </td>
+    </tr>`;
+  }
+
+  function pintarCola() {
+    const lista = enCola();
+    const todas = correccionesPendientes().filter((c) => !resueltos.has(c.id));
+    document.getElementById("n-cola").textContent = todas.length || "";
+
+    const paginas = Math.max(1, Math.ceil(lista.length / porPagina));
+    pagina = Math.min(pagina, paginas);
+    const ini = (pagina - 1) * porPagina;
+    const enPagina = lista.slice(ini, ini + porPagina);
+
+    document.querySelector("#tabla-cola tbody").innerHTML = enPagina.length
+      ? enPagina.map(fila).join("")
+      : `<tr><td colspan="6"><p class="vacio">${todas.length
+          ? "Con esos filtros no queda ninguna."
+          : "Nada que revisar. Todas las direcciones se resolvieron con el código postal."}</p></td></tr>`;
+
+    document.getElementById("pie-cola").innerHTML = lista.length ? `
+      <div class="tarjeta__pie">
+        <span>Mostrando <b>${ini + 1}–${ini + enPagina.length}</b> de <b>${lista.length}</b></span>
+        <label class="filtros__etiqueta" for="por-pagina-cola">
+          <select id="por-pagina-cola" style="width:auto;margin-left:8px">
+            ${[25, 50, 100].map((n) =>
+              `<option value="${n}"${n === porPagina ? " selected" : ""}>${n} por página</option>`).join("")}
+          </select>
+        </label>
+        <span class="filtros__sep"></span>
+        <div class="paginacion"${paginas === 1 ? " hidden" : ""}>
+          <button type="button" data-ir="${pagina - 1}"${pagina === 1 ? " disabled" : ""}>‹</button>
+          ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+            `<button type="button" data-ir="${n}"${n === pagina ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
+          <button type="button" data-ir="${pagina + 1}"${pagina === paginas ? " disabled" : ""}>›</button>
+        </div>
+      </div>` : "";
+
+    pintarSeleccion();
+  }
+
+  /* La barra de lote solo existe cuando hay algo seleccionado: una barra vacía
+     ocupa sitio y no dice nada. */
+  function pintarSeleccion() {
+    const barra = document.getElementById("seleccion");
+    barra.hidden = marcadas.size === 0;
+    barra.querySelector("[data-n]").textContent = marcadas.size;
+
+    const enPagina = [...document.querySelectorAll("#tabla-cola tbody [data-id]")]
+      .map((tr) => tr.dataset.id);
+    const check = document.getElementById("todas-check");
+    const marcadasAqui = enPagina.filter((id) => marcadas.has(id)).length;
+    check.checked = enPagina.length > 0 && marcadasAqui === enPagina.length;
+    check.indeterminate = marcadasAqui > 0 && marcadasAqui < enPagina.length;
+  }
+
+  function resolver(c, dejar) {
+    resueltos.add(c.id);
+    marcadas.delete(c.id);
+    return dejar ? c.llego : valorDe(c);
+  }
+
+  const cola = document.getElementById("cola");
+
+  cola.addEventListener("click", (e) => {
+    const ir = e.target.closest("[data-ir]");
+    if (ir && !ir.disabled) { pagina = +ir.dataset.ir; pintarCola(); return; }
+
+    if (e.target.id === "limpiar") { marcadas.clear(); pintarCola(); return; }
+
+    const lote = e.target.closest("[data-lote]");
+    if (lote) {
+      const dejar = lote.dataset.lote === "dejar";
+      const cuantas = marcadas.size;
+      const conGuia = [...marcadas].filter((id) =>
+        correcciones.find((c) => c.id === id)?.guia).length;
+      [...marcadas].forEach((id) => resolver(correcciones.find((c) => c.id === id), dejar));
+      pintarCola();
+      pintarHistorial();
+      const nuevas = cuantas - conGuia;
+      avisar(dejar
+        ? `${cuantas} ${cuantas === 1 ? "dirección se queda" : "direcciones se quedan"} como llegaron.`
+        : `Listo. ${nuevas} ${nuevas === 1 ? "guía generada" : "guías generadas"}.` +
+          (conGuia ? ` ${conGuia} ${conGuia === 1
+            ? "ya tenía guía: esa solo se corrigió."
+            : "ya tenían guía: esas solo se corrigieron."}` : ""));
+      return;
+    }
+
+    const tr = e.target.closest("[data-id]");
+    if (!tr) return;
+    const c = correcciones.find((x) => x.id === tr.dataset.id);
+
+    if (e.target.closest("[data-confirmar]")) {
+      const valor = resolver(c, false);
+      pintarCola();
+      pintarHistorial();
+      avisar(c.guia
+        ? `${c.folio} queda con ${valor}. La guía ${c.guia} ya salió con la anterior.`
+        : `Listo. ${c.folio} queda con ${valor} y su guía ya se generó.`);
+    } else if (e.target.closest("[data-dejar]")) {
+      resolver(c, true);
+      pintarCola();
+      pintarHistorial();
+      avisar(`${c.folio} se queda con “${c.llego}”. La paquetería puede rechazarla.`);
+    }
+  });
+
+  cola.addEventListener("change", (e) => {
+    if (e.target.id === "todas-check") {
+      const enPagina = [...document.querySelectorAll("#tabla-cola tbody [data-id]")]
+        .map((tr) => tr.dataset.id);
+      enPagina.forEach((id) => e.target.checked ? marcadas.add(id) : marcadas.delete(id));
+      document.querySelectorAll("#tabla-cola [data-marcar]").forEach((x) => { x.checked = e.target.checked; });
+      pintarSeleccion();
+      return;
+    }
+    if (e.target.matches("[data-marcar]")) {
+      const id = e.target.closest("[data-id]").dataset.id;
+      e.target.checked ? marcadas.add(id) : marcadas.delete(id);
+      pintarSeleccion();
+      return;
+    }
+    if (e.target.matches("[data-elegir]")) {
+      /* Se guarda al cambiarlo, no al confirmar: si no, cambiar de página o de
+         filtro borraría en silencio lo que alguien acaba de elegir. */
+      elegido.set(e.target.closest("[data-id]").dataset.id, e.target.value);
+      return;
+    }
+    if (e.target.matches("#f-opciones, #f-guia")) { pagina = 1; pintarCola(); }
+    else if (e.target.matches("#por-pagina-cola")) { porPagina = +e.target.value; pagina = 1; pintarCola(); }
+  });
+
+  cola.addEventListener("input", (e) => {
+    if (e.target.id === "q-cola") { pagina = 1; pintarCola(); }
+  });
+
+  /* ---------- Historial ----------
+     Agrupado por pedido y no por intento. En el MVP un mismo pedido aparecía
+     dos y tres veces con tres segundos de diferencia, porque se registraba
+     cada reintento: la mitad de las filas eran ruido. */
+  let paginaHist = 1;
+  let porPaginaHist = 10;
+
+  function filtradas() {
+    const q = (document.getElementById("q-corr")?.value ?? "").trim().toLowerCase();
+    const quien = document.getElementById("f-quien")?.value ?? "";
+    const desde = document.getElementById("f-desde")?.value ?? "";
+    const hasta = document.getElementById("f-hasta")?.value ?? "";
+    const sinAcento = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+    return correccionesHechas().filter((c) => {
+      if (q && !sinAcento(`${c.folio} ${c.cliente} ${c.llego} ${c.propone} ${c.cp}`).includes(sinAcento(q))) return false;
+      if (quien && quienCorrigio(c) !== quien) return false;
+      if (desde && c.fecha < desde) return false;
+      if (hasta && c.fecha > hasta) return false;
+      return true;
+    });
+  }
+
+  function pintarHistorial() {
+    const lista = filtradas();
+    const paginas = Math.max(1, Math.ceil(lista.length / porPaginaHist));
+    paginaHist = Math.min(paginaHist, paginas);
+    const ini = (paginaHist - 1) * porPaginaHist;
+    const enPagina = lista.slice(ini, ini + porPaginaHist);
+
+    document.getElementById("historial").innerHTML = `
+      <section class="tarjeta">
+        <div class="filtros">
+          <div class="buscador">
+            <label class="sr-only" for="q-corr">Buscar en el historial</label>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="q-corr" autocomplete="off"
+                   placeholder="Filtrar por pedido, destinatario o código postal">
+          </div>
+          <span class="filtros__div" aria-hidden="true"></span>
+          <label class="sr-only" for="f-quien">Filtrar por quién corrigió</label>
+          <select id="f-quien">
+            <option value="">Todos los orígenes</option>
+            ${Object.entries(QUIEN_CORRIGIO).map(([k, v]) =>
+              `<option value="${k}">${v}</option>`).join("")}
+          </select>
+          <span class="filtros__sep"></span>
+          <label class="campo-fecha"><span class="sr-only">Desde</span>
+            <input type="date" id="f-desde"></label>
+          <label class="campo-fecha"><span class="sr-only">Hasta</span>
+            <input type="date" id="f-hasta"></label>
+        </div>
+
+        <div class="tabla-caja scroll-fino">
+          <table>
+            <caption class="sr-only">Correcciones ya aplicadas, de la más reciente a la más antigua.</caption>
+            <thead><tr>
+              <th scope="col">Pedido</th>
+              <th scope="col">Qué se cambió</th>
+              <th scope="col">Quién lo decidió</th>
+              <th scope="col">Cuándo</th>
+            </tr></thead>
+            <tbody>${enPagina.map((c) => {
+              const quien = quienCorrigio(c);
+              return `
+              <tr>
+                <th scope="row">${esc(c.folio)}
+                  <span class="nota-bajo">${esc(c.cliente)}</span></th>
+                <td>${esc(CAMPO_DIRECCION[c.campo] ?? c.campo)}:
+                  <s class="caso__malo">${esc(c.llego)}</s> →
+                  <b>${esc(c.propone)}</b>
+                  <span class="nota-bajo">${c.apoyo
+                    ? esc(c.apoyo)
+                    : "Sin nada en qué apoyarse: lo decidió una persona."}</span></td>
+                <td><span class="pastilla${quien === "catalogo" ? " pastilla--ok" : ""}">${
+                  esc(QUIEN_CORRIGIO[quien])}</span></td>
+                <td class="tabular">${esc(fechaLarga(c.fecha))}</td>
+              </tr>`;
+            }).join("")}</tbody>
+          </table>
+        </div>
+
+        ${lista.length ? `
+        <div class="tarjeta__pie">
+          <span>Mostrando <b>${ini + 1}–${ini + enPagina.length}</b> de <b>${lista.length}</b></span>
+          <label class="filtros__etiqueta" for="por-paginaHist-corr">
+            <select id="por-paginaHist-corr" style="width:auto;margin-left:8px">
+              ${[10, 25, 50].map((n) =>
+                `<option value="${n}"${n === porPaginaHist ? " selected" : ""}>${n} por página</option>`).join("")}
+            </select>
+          </label>
+          <span class="filtros__sep"></span>
+          <div class="paginacion"${paginas === 1 ? " hidden" : ""}>
+            <button type="button" data-ir="${paginaHist - 1}"${paginaHist === 1 ? " disabled" : ""}>‹</button>
+            ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+              `<button type="button" data-ir="${n}"${n === paginaHist ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
+            <button type="button" data-ir="${paginaHist + 1}"${paginaHist === paginas ? " disabled" : ""}>›</button>
+          </div>
+        </div>` : `
+        <p class="vacio">Con esos filtros no hay ninguna corrección.</p>`}
+      </section>`;
+  }
+
+  /* Los controles se repintan con la tabla, así que los eventos van delegados
+     al contenedor, que no se va nunca. */
+  const hist = document.getElementById("historial");
+  hist.addEventListener("input", (e) => {
+    if (e.target.matches("#q-corr, #f-desde, #f-hasta")) { paginaHist = 1; pintarHistorial(); }
+  });
+  hist.addEventListener("change", (e) => {
+    if (e.target.matches("#f-quien")) { paginaHist = 1; pintarHistorial(); }
+    else if (e.target.matches("#por-paginaHist-corr")) { porPaginaHist = +e.target.value; paginaHist = 1; pintarHistorial(); }
+  });
+  hist.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ir]");
+    if (b && !b.disabled) { paginaHist = +b.dataset.ir; pintarHistorial(); }
+  });
+
+  const pestanas = [...document.querySelectorAll("[data-vista]")];
+  pestanas.forEach((b) => b.addEventListener("click", () => {
+    pestanas.forEach((o) => o.setAttribute("aria-selected", String(o === b)));
+    document.getElementById("cola").hidden = b.dataset.vista !== "cola";
+    document.getElementById("historial").hidden = b.dataset.vista !== "historial";
+  }));
+
+  pintarCola();
+  pintarHistorial();
+}
+</script>
+</body>
+</html>

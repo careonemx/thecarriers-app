@@ -11,7 +11,8 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=12cc2402";
+         correccionesPendientes,
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=0d936824";
 
 const CLAVE = "tc_sesion";
 
@@ -97,7 +98,8 @@ const GRUPOS = [
       { id: "paqueterias", texto: "Paqueterías", href: "paqueterias.html" },
       { id: "origenes", texto: "Direcciones de Origen", href: "origenes.html" },
       { id: "plantillas", texto: "Plantillas", href: "plantillas.html" },
-      { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },
+      { id: "correcciones", texto: "Correcciones", href: "correcciones.html",
+        cuenta: correccionesPendientes().length },
       { id: "ajustes", texto: "Configuración", href: "configuracion.html" },
     ],
   },

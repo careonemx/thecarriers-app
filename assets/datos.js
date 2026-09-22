@@ -11,6 +11,97 @@ export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
 /* =================================================================
+ * Correcciones de dirección.
+ *
+ * Lo que separa una corrección de una conjetura NO es quién la hizo, es en
+ * qué se apoya.
+ *
+ *   El código postal manda. Si el CP dice que la colonia es Juárez y en el
+ *   pedido viene "Cuauhtémoc", el catálogo tiene razón y no hace falta que
+ *   nadie lo mire: se aplica y queda en el historial.
+ *
+ *   Si en el campo colonia viene "casa", ningún catálogo puede decidir. Poner
+ *   ahí la única colonia del CP es una apuesta, y una apuesta la firma una
+ *   persona. Esas son las que esperan.
+ *
+ * `apoyo` es esa diferencia, y por eso es un dato y no una etiqueta de
+ * confianza: "el CP 06600 solo tiene una colonia" se puede comprobar; un
+ * 87 % no.
+ *
+ * `guia` dice si el envío ya salió. No siempre se llega a tiempo, y fingir
+ * que una corrección arregla una etiqueta ya impresa sería mentir: ahí lo que
+ * queda es corregir para la próxima y tener con qué reclamar.
+ * ================================================================= */
+
+export const correcciones = [
+  { id: "c-1006", folio: "#1006", fecha: "2026-09-21", cliente: "Mariana Ruiz",
+    cp: "72495", ciudad: "Puebla, PUE", calle: "Port Agrere 9",
+    campo: "colonia", llego: "casa", propone: "Geovillas del Sur",
+    apoyo: null, opciones: ["Geovillas del Sur", "Villa Frontera", "San Baltazar Campeche"],
+    guia: null, estado: "espera" },
+
+  { id: "c-1013", folio: "#1013", fecha: "2026-09-20", cliente: "Laura Méndez",
+    cp: "06600", ciudad: "Ciudad de México, CDMX", calle: "Río Lerma 232",
+    campo: "colonia", llego: "1", propone: "Juárez",
+    apoyo: null, opciones: ["Juárez"],
+    guia: null, estado: "espera" },
+
+  { id: "c-1018", folio: "#1018", fecha: "2026-09-18", cliente: "Comercializadora Vega",
+    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Moliere 450",
+    campo: "colonia", llego: "trabajo", propone: "Ampliación Granada",
+    apoyo: null, opciones: ["Ampliación Granada", "Granada"],
+    guia: "794611552340", estado: "espera" },
+
+  { id: "c-1015", folio: "#1015", fecha: "2026-09-17", cliente: "Iván Salas",
+    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Lago Zurich 96",
+    campo: "municipio", llego: "Ciudad de México", propone: "Miguel Hidalgo",
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.", opciones: null,
+    guia: "794611552118", estado: "aplicada" },
+
+  { id: "c-1017", folio: "#1017", fecha: "2026-09-16", cliente: "Rocío Ibarra",
+    cp: "06600", ciudad: "Ciudad de México, CDMX", calle: "Havre 30",
+    campo: "municipio", llego: "Ciudad de México", propone: "Cuauhtémoc",
+    apoyo: "El CP 06600 pertenece a Cuauhtémoc.", opciones: null,
+    guia: "794611551907", estado: "aplicada" },
+
+  { id: "c-1011", folio: "#1011", fecha: "2026-09-15", cliente: "Diego Fuentes",
+    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Emerson 148",
+    campo: "municipio", llego: "Ciudad de México", propone: "Miguel Hidalgo",
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.", opciones: null,
+    guia: "794611551644", estado: "aplicada" },
+
+  { id: "c-1009", folio: "#1009", fecha: "2026-09-14", cliente: "Paulina Cortés",
+    cp: "44600", ciudad: "Guadalajara, JAL", calle: "Av. Vallarta 1300",
+    campo: "estado", llego: "Guadalajara", propone: "Jalisco",
+    apoyo: "Guadalajara es un municipio de Jalisco, no un estado.", opciones: null,
+    guia: "794611551302", estado: "aplicada" },
+
+  { id: "c-1008", folio: "#1008", fecha: "2026-09-12", cliente: "Héctor Nava",
+    cp: "64000", ciudad: "Monterrey, NL", calle: "Padre Mier 350",
+    campo: "colonia", llego: "Centro MTY", propone: "Centro",
+    apoyo: "El CP 64000 solo tiene la colonia Centro.", opciones: null,
+    guia: "794611551088", estado: "aplicada" },
+];
+
+/** Las que esperan a una persona: la IA propuso algo sin nada en qué apoyarse. */
+export const correccionesPendientes = () =>
+  correcciones.filter((c) => c.estado === "espera");
+
+/** El historial, del cambio más reciente al más viejo. */
+export const correccionesHechas = () =>
+  correcciones.filter((c) => c.estado !== "espera")
+    .slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+/** Quién decidió el cambio, en palabras y no en jerga de la API. */
+export const QUIEN_CORRIGIO = {
+  catalogo: "Catálogo postal",
+  persona: "Una persona",
+};
+export const quienCorrigio = (c) => c.apoyo ? "catalogo" : "persona";
+
+export const CAMPO_DIRECCION = { colonia: "Colonia", municipio: "Municipio", estado: "Estado" };
+
+/* =================================================================
  * Novedades.
  *
  * Son avisos NUESTROS —lo que cambió en el producto, lo que va a estar
@@ -837,6 +928,14 @@ export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
 const necesitaRecoleccion = (p) =>
   !!p.envio && !p.recoleccion && ["Creada", "Generada", "Recolección pendiente"].includes(p.envio.estado);
 
+/**
+ * Los pendientes que se trabajan DESDE la lista de pedidos.
+ *
+ * "Direcciones por corregir" ya no está aquí: se trabaja en Correcciones, que
+ * es la única pantalla donde se puede elegir la colonia. Como filtro de esta
+ * tabla era la misma cola sin la decisión, así que se podía llegar a ella y
+ * no poder hacer nada.
+ */
 export const PENDIENTES = {
   "pagados-sin-guia": {
     grupo: "hacer", etiqueta: "Pagados sin guía",
@@ -853,10 +952,6 @@ export const PENDIENTES = {
   "error-guia": {
     grupo: "problema", etiqueta: "Guías que no se pudieron generar",
     pasa: (p) => !!p.error,
-  },
-  "por-corregir": {
-    grupo: "problema", etiqueta: "Direcciones por corregir",
-    pasa: (p) => !!p.requiereCorreccion,
   },
 };
 
@@ -970,8 +1065,14 @@ const FECHA_ANTIGUEDAD = {
 };
 
 export function antiguedadDe(clave) {
+  /* Una clave que ya no está en PENDIENTES —porque su pendiente se mudó a su
+     propia pantalla— no tiene antigüedad que medir. Devolver null es lo que
+     esperan los que llaman; reventar aquí se llevaba por delante Inicio
+     entero, que es la pantalla que más se abre. */
+  const pendiente = PENDIENTES[clave];
+  if (!pendiente) return null;
   const sacarFecha = FECHA_ANTIGUEDAD[clave] ?? ((p) => p.fecha);
-  const fechas = pedidos.filter(PENDIENTES[clave].pasa).map(sacarFecha).filter(Boolean);
+  const fechas = pedidos.filter(pendiente.pasa).map(sacarFecha).filter(Boolean);
   if (!fechas.length) return null;
   const vieja = fechas.sort()[0];
   return { fecha: vieja, dias: diasDesde(vieja) };

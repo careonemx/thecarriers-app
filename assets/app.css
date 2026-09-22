@@ -433,7 +433,12 @@ select option { background: var(--navy-900); }
 /* -----------------------------------------------------------------
  * Tabla
  * --------------------------------------------------------------- */
-.tabla-caja { overflow-x: auto; }
+/* `position: relative` no es decorativo: sin él, los hijos con
+   `position: absolute` —los rótulos `.sr-only` de las últimas columnas— se
+   miden contra un antepasado que está FUERA de la caja, así que el
+   `overflow-x` no los recorta y empujan el ancho de la página entera. Una
+   tabla ancha hacía que se desplazara toda la pantalla y no solo la tabla. */
+.tabla-caja { position: relative; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 /* top:0, no la altura de la barra superior. `.tabla-caja` lleva overflow-x:auto,
    y eso convierte la caja en contenedor de scroll: el sticky se mide contra ella,
@@ -967,6 +972,14 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 
 .nota-celda { white-space: nowrap; }
 
+/* Una nota que va DEBAJO del contenido de su celda, no al lado. `.nota-celda`
+   no sirve para esto: su `nowrap` es para notas de tres palabras, y una frase
+   entera ensancharía la tabla hasta sacarla de la pantalla. */
+.nota-bajo {
+  display: block; margin-top: 3px;
+  color: var(--muted); font-size: 11.5px; line-height: 1.45; font-weight: 400;
+}
+
 /* ---------- Hallazgos del buscador global ----------
    Cuelga del buscador de la barra superior. Los resultados van agrupados por
    tipo porque una lista plana obliga a adivinar qué es cada fila: un número
@@ -1310,6 +1323,21 @@ tr.fila--principal td:first-child::before {
     left: 16px; right: 16px; width: auto; max-width: none;
   }
 }
+
+/* Lo que no cuadra se marca en su sitio, dentro de la fila: sacarlo a una
+   columna aparte obliga a buscarlo de vuelta en el texto. */
+.caso__malo { color: #fbbf24; }
+
+/* El desplegable de la colonia lleva nombres largos: sin un mínimo se queda
+   con lo que sobra y corta "Ampliación Granada" a la mitad. */
+#tabla-cola select { min-width: 190px; }
+
+.pestana__n {
+  margin-left: 6px; padding: 0 6px; border-radius: 999px;
+  background: rgba(251, 191, 36, .16); color: #fde68a;
+  font-size: 11px; font-variant-numeric: tabular-nums;
+}
+.pestana__n:empty { display: none; }
 
 /* ---------- Consumo del plan ----------
    La pregunta es "¿me alcanza?". Lo que se lee primero es lo que QUEDA; el
@@ -1848,6 +1876,10 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
      Sin un ancho mínimo, "15 piezas sin recoger" salía en cuatro renglones de
      una palabra cada uno. */
   .tabla-caja table { min-width: 560px; }
+  /* Siete columnas, una de ellas un desplegable de 190px: con el mínimo
+     general las notas se rompen en dos palabras por renglón. Mejor
+     desplazarse a lo ancho que leer una escalera. */
+  #tabla-cola { min-width: 1020px; }
   .periodo__cabeza { gap: 12px; }
   .periodo__mando { margin-left: 0; width: 100%; }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=12cc2402">
-<script src="../assets/vigia.js?v=12cc2402" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=0d936824">
+<script src="../assets/vigia.js?v=0d936824" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
@@ -38,12 +38,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=12cc2402";
+import { montar, exigirSesion } from "../assets/app.js?v=0d936824";
 import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
          resumenPeriodo, comparativaPeriodo,
          conexionesCaidas, reconectar, romperConexion,
          planApurado, planQuedan, planActual, suscripcion,
-         dineroMXN } from "../assets/datos.js?v=12cc2402";
+         correccionesPendientes,
+         dineroMXN } from "../assets/datos.js?v=0d936824";
 if (exigirSesion()) {
   montar();
 
@@ -76,7 +77,7 @@ if (exigirSesion()) {
       { clave: "detenidos", et: () => "Detenidos en paquetería",
         accion: "Ver detenidos", antiguedad: true },
       { clave: "por-corregir", et: () => "Direcciones por corregir",
-        accion: "Corregir direcciones" },
+        accion: "Corregir direcciones" },  /* vive en Correcciones, no en Pedidos */
     ],
     hacer: [
       { clave: "pagados-sin-guia", et: () => "Pagados sin guía",
@@ -91,6 +92,17 @@ if (exigirSesion()) {
   function tarjeta(def, tono) {
     /* Recolecciones de hoy no es un pendiente de la lista de pedidos: es una
        agenda, y su nota es la ventana más próxima, no una antigüedad. */
+    /* Corregir una dirección necesita elegir la colonia, y eso solo se puede
+       en Correcciones. Su cifra sale de la misma lista que esa pantalla, no
+       de un segundo predicado que un día diría otra cosa. */
+    if (def.clave === "por-corregir") {
+      const n = correccionesPendientes().length;
+      return pintar({
+        n, et: def.et(n), accion: def.accion, nota: "",
+        href: n ? "correcciones.html" : null, tono,
+      });
+    }
+
     if (def.clave === "recolecciones-hoy") {
       const n = recoleccionesHoy.length;
       const r = recoleccionesHoy[0];
