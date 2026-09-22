@@ -890,6 +890,60 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 .tarifa__cumple[data-bajo="true"] { color: #fde68a; }
 
 /* =================================================================
+ * REQ-01 · Lote
+ *
+ * El diálogo no cambia de ventana entre resumen, progreso y resultado:
+ * es el mismo, y el contenido se reemplaza. Cambiar de ventana a mitad
+ * de una operación hace perder de vista qué se estaba haciendo.
+ * ================================================================= */
+dialog.lote { width: min(620px, calc(100vw - 32px)); }
+.lote__lista {
+  max-height: min(46vh, 380px); overflow-y: auto;
+  border: 1px solid var(--hairline); border-radius: var(--r);
+}
+/* El detalle del error va DEBAJO del motivo, no en otra columna: es prosa
+   y competía por el ancho, partiendo "Sin cobertura para el código postal"
+   en cuatro líneas. La cuarta columna queda solo para el importe. */
+.lote__fila {
+  display: grid; grid-template-columns: 22px 84px minmax(0, 1fr) auto;
+  gap: 12px; align-items: baseline; padding: 11px 13px;
+}
+.lote__fila > :nth-child(4) { white-space: nowrap; }
+.lote__detalle { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+.lote__fila + .lote__fila { border-top: 1px solid rgba(255, 255, 255, .055); }
+.lote__fila b { font-family: ui-monospace, Menlo, monospace; font-weight: 500; }
+.lote__fila span { color: var(--muted); font-size: 13px; }
+.lote__estado { display: grid; place-items: center; width: 22px; height: 22px; }
+.lote__estado svg { width: 15px; height: 15px; }
+.lote__estado--generado { color: var(--accent-claro); }
+.lote__estado--fallido { color: #fca5a5; }
+.lote__estado--omitido { color: var(--muted); }
+.lote__estado--cola { color: var(--muted); opacity: .5; }
+.lote__estado--procesando i {
+  display: block; width: 13px; height: 13px; border-radius: 999px;
+  border: 2px solid var(--accent); border-top-color: transparent;
+  animation: girar .7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .lote__estado--procesando i { animation: none; } }
+
+.lote__conteo { display: flex; gap: 18px; flex-wrap: wrap; }
+.lote__conteo div b { display: block; font-size: 21px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lote__conteo div span { color: var(--muted); font-size: 12px; }
+
+.lote__barra {
+  height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .08); overflow: hidden;
+}
+.lote__barra i { display: block; height: 100%; background: var(--accent); transition: width .25s var(--curva); }
+
+/* Fila de la tabla que falló en el lote. */
+tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
+
+@media (max-width: 520px) {
+  .lote__fila { grid-template-columns: 22px minmax(0, 1fr); }
+  .lote__fila > :nth-child(4) { grid-column: 2; }
+}
+
+/* =================================================================
  * Formularios: rejilla y campos compuestos.
  *
  * Estas piezas existen porque se estaban improvisando con estilos en

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=50e8b130">
-<script src="../assets/vigia.js?v=50e8b130" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=1c6dd10b">
+<script src="../assets/vigia.js?v=1c6dd10b" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -71,8 +71,10 @@
     <div class="barra-seleccion" id="seleccion" hidden>
       <span class="barra-seleccion__cuenta"><b data-n>0</b> seleccionados</span>
       <span class="barra-seleccion__sep"></span>
-      <button class="boton boton--sutil boton--chico" type="button" id="limpiar">Quitar selección</button>
-      <button class="boton boton--primario boton--chico" type="button" id="generar-lote">Generar guías</button>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar">Cancelar selección</button>
+      <button class="boton boton--fantasma boton--chico" type="button" data-lote="recoleccion">Programar recolección</button>
+      <button class="boton boton--fantasma boton--chico" type="button" data-lote="etiquetas">Imprimir etiquetas</button>
+      <button class="boton boton--primario boton--chico" type="button" data-lote="guias">Generar guías</button>
     </div>
 
     <div class="tabla-caja scroll-fino" id="vista-tabla">
@@ -109,13 +111,15 @@
     </div>
   </section>
   <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
+  <dialog class="dialogo lote" id="lote" aria-labelledby="lote-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=50e8b130";
+import { montar, exigirSesion } from "../assets/app.js?v=1c6dd10b";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
-         detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar } from "../assets/datos.js?v=50e8b130";
+         detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
+         motivoOmision, simularGeneracion } from "../assets/datos.js?v=1c6dd10b";
 if (exigirSesion()) {
   montar();
 
@@ -182,7 +186,9 @@ if (exigirSesion()) {
   }
 
   const cuerpo = document.querySelector("#tabla tbody");
-  cuerpo.innerHTML = pedidos.map((p) => `
+
+  /** Una fila. Es función para poder repintar UNA sola tras el lote. */
+  const filaHTML = (p) => `
     <tr data-vista="${vistaDe(p)}" data-folio="${p.folio}">
       <td>${p.envio ? "" : `<input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"${
         p.pago === "Pagado" ? "" : " disabled"}>`}</td>
@@ -198,7 +204,9 @@ if (exigirSesion()) {
       <td><span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span></td>
       <td>${celdaEnvio(p)}</td>
       <td>${celdaAccion(p)}</td>
-    </tr>`).join("");
+    </tr>`;
+
+  cuerpo.innerHTML = pedidos.map(filaHTML).join("");
 
   document.getElementById("vista-mosaico").innerHTML = pedidos.map((p) => `
     <article class="tarjeta-pedido" data-vista="${vistaDe(p)}">
@@ -870,13 +878,264 @@ if (exigirSesion()) {
   });
   addEventListener("popstate", () => { if (panel.open) panel.close(); });
 
+  /* ================================================================
+     REQ-01 · Acciones en lote
+     ================================================================
+     El lote se ejecuta pedido por pedido y nunca se detiene por uno que
+     falla: cada resultado es independiente. La clave de idempotencia es
+     folio + intento, así que un doble clic no genera dos guías.
+
+     Un pedido que no aplica se OMITE con su motivo y no bloquea al resto;
+     mezclar "no aplica" con "falló" obliga a revisar cosas que nunca
+     estuvieron mal. */
+  const TOPE_LOTE = 100;
+  const dlg = document.getElementById("lote");
+  /* Clave de idempotencia: folio + intento. Con un intento fijo, la clave
+     bloqueaba también los REINTENTOS, que es justo lo que hay que permitir.
+     El doble clic ya lo frena `corriendo` y que el botón desaparezca. */
+  const hechas = new Set();
+  const intentos = new Map();
+  let corriendo = false;
+  let ultimoFallidos = [];
+
+  const ACCIONES = {
+    guias: {
+      titulo: "Generar guías",
+      verbo: "Generar",
+      aplica: (p) => motivoOmision(p),
+      resumen: "Se usará la regla de envío configurada para elegir paquetería y servicio.",
+    },
+    etiquetas: {
+      titulo: "Imprimir etiquetas",
+      verbo: "Descargar",
+      aplica: (p) => (p.envio ? null : "Todavía no tiene guía"),
+      resumen: "Se descarga un solo PDF con todas las etiquetas, en el orden de la tabla.",
+    },
+    recoleccion: {
+      titulo: "Programar recolección",
+      verbo: "Continuar con",
+      aplica: (p) => (!p.envio ? "Todavía no tiene guía"
+                      : p.recoleccion ? "Ya tiene recolección" : null),
+      resumen: "Se agrupan por paquetería y origen, y se abre el flujo de recolección precargado.",
+    },
+  };
+
+  const icoEstado = {
+    cola: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/></svg>',
+    generado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>',
+    fallido: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>',
+    omitido: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+    procesando: "<i></i>",
+  };
+
+  const seleccionados = () => filas
+    .filter((f) => !f.hidden && f.querySelector(".sel:checked"))
+    .map((f) => porFolio.get(f.dataset.folio).p);
+
+  function filaLote(p, estado, texto = "", extra = "") {
+    return `<div class="lote__fila" data-folio="${esc(p.folio)}">
+      <span class="lote__estado lote__estado--${estado}">${icoEstado[estado]}</span>
+      <b>${esc(p.folio)}</b>
+      <span>${esc(texto)}</span>
+      <span style="text-align:right">${extra}</span>
+    </div>`;
+  }
+
+  /* ---- Paso 1: qué va a pasar, antes de que pase ---- */
+  function abrirLote(accion) {
+    if (corriendo) return;
+    const cfg = ACCIONES[accion];
+    const todos = seleccionados();
+    const entran = [];
+    const fuera = [];
+    for (const p of todos) {
+      const motivo = cfg.aplica(p);
+      (motivo ? fuera : entran).push(motivo ? { p, motivo } : p);
+    }
+    const cortados = Math.max(0, entran.length - TOPE_LOTE);
+    const aprocesar = entran.slice(0, TOPE_LOTE);
+
+    const porMotivo = {};
+    for (const x of fuera) (porMotivo[x.motivo] ||= []).push(x.p.folio);
+
+    dlg.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="lote-titulo">${cfg.titulo}</h2></div>
+      <div class="dialogo__cuerpo" style="display:grid;gap:16px">
+        <div class="lote__conteo">
+          <div><b style="color:var(--accent-claro)">${aprocesar.length}</b><span>se procesan</span></div>
+          ${fuera.length ? `<div><b>${fuera.length}</b><span>se omiten</span></div>` : ""}
+          <div><b>${todos.length}</b><span>seleccionados</span></div>
+        </div>
+
+        ${fuera.length ? `<div>
+          <p style="color:var(--ink);font-size:13px;margin-bottom:8px">Se omiten porque:</p>
+          ${Object.entries(porMotivo).map(([m, folios]) => `
+            <div class="dato"><span>${esc(m)}</span>
+              <span class="mono" style="font-size:12px">${folios.slice(0, 6).map(esc).join(" ")}${
+                folios.length > 6 ? ` +${folios.length - 6}` : ""}</span></div>`).join("")}
+        </div>` : ""}
+
+        ${cortados ? `<p class="aviso aviso--mal">En esta versión el lote admite ${TOPE_LOTE} pedidos.
+          Quedan ${cortados} fuera; ejecútalos en una segunda pasada.</p>` : ""}
+
+        <p style="color:var(--muted);font-size:13px">${cfg.resumen}</p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-lote>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-ejecutar
+          ${aprocesar.length ? "" : "disabled"}>
+          ${cfg.verbo} ${aprocesar.length} ${aprocesar.length === 1 ? "pedido" : "pedidos"}
+        </button>
+      </div>`;
+
+    dlg.querySelector("[data-ejecutar]")?.addEventListener("click", () => {
+      if (accion === "guias") ejecutarGuias(aprocesar, fuera);
+      else cerrarConAviso(cfg, aprocesar);
+    });
+    dlg.showModal();
+  }
+
+  /* Etiquetas y recolección dependen de endpoints que el prototipo no tiene.
+     Se dice, en vez de fingir una descarga que no ocurre. */
+  function cerrarConAviso(cfg, lista) {
+    dlg.querySelector(".dialogo__cuerpo").innerHTML = `
+      <p class="aviso aviso--info">
+        ${esc(cfg.titulo)} de ${lista.length} ${lista.length === 1 ? "pedido" : "pedidos"}.
+        En el prototipo la acción llega hasta aquí: falta el endpoint de la paquetería.
+      </p>`;
+    dlg.querySelector(".dialogo__pie").innerHTML =
+      '<button class="boton boton--primario" type="button" data-cerrar-lote>Entendido</button>';
+  }
+
+  /* ---- Paso 2 y 3: progreso en vivo y resultado por pedido ---- */
+  async function ejecutarGuias(lista, fuera) {
+    corriendo = true;
+    ultimoFallidos = [];
+    const cuerpo = dlg.querySelector(".dialogo__cuerpo");
+    const pie = dlg.querySelector(".dialogo__pie");
+
+    cuerpo.innerHTML = `
+      <div style="display:grid;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <b id="lote-avance">Generando guías…</b>
+          <span class="apagado" style="font-size:13px"><b id="lote-n">0</b> de ${lista.length}</span>
+        </div>
+        <span class="lote__barra"><i id="lote-progreso" style="width:0%"></i></span>
+      </div>
+      <div class="lote__lista scroll-fino" id="lote-lista">
+        ${lista.map((p) => filaLote(p, "cola", "En cola")).join("")}
+      </div>`;
+    pie.innerHTML = '<button class="boton boton--sutil" type="button" disabled>Procesando…</button>';
+
+    const contador = { generado: 0, fallido: 0 };
+    for (let i = 0; i < lista.length; i++) {
+      const p = lista[i];
+      const intento = (intentos.get(p.folio) ?? 0) + 1;
+      const clave = `${p.folio}:${intento}`;
+      const fila = cuerpo.querySelector(`.lote__fila[data-folio="${CSS.escape(p.folio)}"]`);
+
+      if (hechas.has(clave)) {
+        pintarFilaLote(fila, p, { estado: "omitido", motivo: "Ya procesado en este lote" });
+        continue;
+      }
+
+      fila.querySelector(".lote__estado").className = "lote__estado lote__estado--procesando";
+      fila.querySelector(".lote__estado").innerHTML = icoEstado.procesando;
+      fila.children[2].textContent = "Procesando…";
+      await new Promise((r) => setTimeout(r, 380));
+
+      const peso = detalleDe(p.folio)?.pesoEstimado ?? 1.5;
+      const res = simularGeneracion(p, peso, intento);
+      hechas.add(clave);
+      intentos.set(p.folio, intento);
+
+      if (res.estado === "generado") {
+        contador.generado++;
+        delete porFolio.get(p.folio).fila.dataset.fallido;
+        p.envio = { guia: res.guia, paqueteria: res.paqueteria, estado: "Creada",
+                    costo: res.costo, peso, original: "label_created" };
+        repintarFila(p.folio);
+      } else if (res.estado === "fallido") {
+        contador.fallido++;
+        if (res.reintentable !== false) ultimoFallidos.push({ folio: p.folio });
+        porFolio.get(p.folio).fila.dataset.fallido = "true";
+      } else {
+        delete porFolio.get(p.folio).fila.dataset.fallido;
+      }
+      pintarFilaLote(fila, p, res);
+
+      cuerpo.querySelector("#lote-n").textContent = i + 1;
+      cuerpo.querySelector("#lote-progreso").style.width = `${((i + 1) / lista.length) * 100}%`;
+    }
+
+    corriendo = false;
+    cuerpo.querySelector("#lote-avance").textContent = "Lote terminado";
+
+    const omitidos = fuera.length;
+    cuerpo.insertAdjacentHTML("afterbegin", `
+      <div class="lote__conteo">
+        <div><b style="color:var(--accent-claro)">${contador.generado}</b><span>${contador.generado === 1 ? "generada" : "generadas"}</span></div>
+        <div><b style="color:${contador.fallido ? "#fca5a5" : "var(--ink)"}">${contador.fallido}</b><span>${contador.fallido === 1 ? "fallida" : "fallidas"}</span></div>
+        <div><b>${omitidos}</b><span>${omitidos === 1 ? "omitido" : "omitidos"}</span></div>
+      </div>`);
+
+    pie.innerHTML =
+      (ultimoFallidos.length
+        ? `<button class="boton boton--fantasma" type="button" data-seleccionar-fallidos>
+             Reintentar ${ultimoFallidos.length} ${ultimoFallidos.length === 1 ? "fallido" : "fallidos"}
+           </button>` : "") +
+      '<button class="boton boton--primario" type="button" data-cerrar-lote>Cerrar</button>';
+
+    aplicar(false);
+  }
+
+  function pintarFilaLote(fila, p, res) {
+    const est = fila.querySelector(".lote__estado");
+    est.className = `lote__estado lote__estado--${res.estado}`;
+    est.innerHTML = icoEstado[res.estado];
+    if (res.estado === "generado") {
+      fila.children[2].innerHTML = `<span class="mono">${esc(res.guia)}</span> · ${esc(res.paqueteria)} ${esc(res.servicio)}`;
+      fila.children[3].innerHTML = `<span class="tabular">${dinero(res.costo)}</span>`;
+    } else {
+      fila.children[2].innerHTML = esc(res.motivo) +
+        (res.detalle ? `<span class="lote__detalle">${esc(res.detalle)}</span>` : "");
+      fila.children[3].innerHTML = "";
+    }
+  }
+
+  /** Repinta UNA fila de la tabla sin rehacer las demás. */
+  function repintarFila(folio) {
+    const item = porFolio.get(folio);
+    if (!item) return;
+    const nueva = document.createElement("tbody");
+    nueva.innerHTML = filaHTML(item.p);
+    const f = nueva.firstElementChild;
+    f.hidden = item.fila.hidden;
+    item.fila.replaceWith(f);
+    item.fila = f;
+    filas[item.i] = f; // si no, `filas` conserva el nodo viejo y la selección se pierde
+  }
+
+  dlg.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-lote]")) return dlg.close();
+    if (e.target.closest("[data-seleccionar-fallidos]")) {
+      filas.forEach((f) => { const c = f.querySelector(".sel"); if (c) c.checked = false; });
+      for (const x of ultimoFallidos) {
+        const c = porFolio.get(x.folio)?.fila.querySelector(".sel");
+        if (c) c.checked = true;
+      }
+      dlg.close();
+      revisarSeleccion();
+    }
+  });
+
   /* ---------- Vistas, filtros y selección ----------
      Un solo predicado decide qué se ve, y lo aplican por igual la tabla y
      el mosaico. Si cada vista tuviera su propio filtrado, tarde o temprano
      una mostraría algo que la otra esconde. */
   const filas = [...cuerpo.rows];
   const tarjetas = [...document.querySelectorAll(".tarjeta-pedido")];
-  const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, fila: filas[i], tarjeta: tarjetas[i] }]));
+  const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, i, fila: filas[i], tarjeta: tarjetas[i] }]));
 
   const busqueda = document.getElementById("q");
   const pestanas = [...document.querySelectorAll(".pestana")];
@@ -965,8 +1224,14 @@ if (exigirSesion()) {
     const marcadas = filas.filter((f) => !f.hidden && f.querySelector(".sel:checked"));
     barra.hidden = marcadas.length === 0;
     barra.querySelector("[data-n]").textContent = marcadas.length;
-    document.getElementById("generar-lote").textContent =
-      `Generar ${marcadas.length} ${marcadas.length === 1 ? "guía" : "guías"}`;
+    // Cada acción dice sobre cuántos va a operar, no sobre "los seleccionados":
+    // de siete marcados puede que solo cinco apliquen.
+    for (const b of barra.querySelectorAll("[data-lote]")) {
+      const cfg = ACCIONES[b.dataset.lote];
+      const n = marcadas.filter((f) => !cfg.aplica(porFolio.get(f.dataset.folio).p)).length;
+      b.textContent = `${cfg.titulo} (${n})`;
+      b.disabled = n === 0;
+    }
     const posibles = filas.filter((f) => !f.hidden && f.querySelector(".sel:not([disabled])"));
     todosCheck.checked = posibles.length > 0 && marcadas.length === posibles.length;
     todosCheck.indeterminate = marcadas.length > 0 && marcadas.length < posibles.length;
@@ -1031,8 +1296,11 @@ if (exigirSesion()) {
     revisarSeleccion();
   });
 
-  // Prototipo: las acciones muestran su estado de carga y se detienen ahí.
-  for (const id of ["sincronizar", "generar-lote"]) {
+  document.querySelectorAll("[data-lote]").forEach((b) =>
+    b.addEventListener("click", () => abrirLote(b.dataset.lote)));
+
+  // Sincronizar sí se queda en el estado de carga: no hay con qué sincronizar.
+  for (const id of ["sincronizar"]) {
     const b = document.getElementById(id);
     b.addEventListener("click", () => {
       const texto = b.innerHTML;

@@ -173,6 +173,21 @@ const pedidosBase = [
     pago: "Pagado", envio: null,
     error: "La paquetería rechazó el código postal: no corresponde a la colonia." },
 
+  { folio: "#1000", fecha: "2026-09-18", total: 780, canal: "Shopify",
+    cliente: { nombre: "Rocío Lara", correo: "rocio@lara.mx", iniciales: "RL" },
+    destino: "Circuito Balcones 44", ciudad: "Querétaro, QRO 76140",
+    pago: "Pagado", envio: null },
+
+  { folio: "#0999", fecha: "2026-09-18", total: 1960, canal: "Mercado Libre",
+    cliente: { nombre: "Hugo Serna", correo: "hserna@correo.mx", iniciales: "HS" },
+    destino: "Av. Constitución 900", ciudad: "Monterrey, NL 64000",
+    pago: "Pagado", envio: null },
+
+  { folio: "#0997", fecha: "2026-09-17", total: 430, canal: "Tiendanube",
+    cliente: { nombre: "Abarrotes La Sierra", correo: "sierra@correo.mx", iniciales: "AS" },
+    destino: "Camino Real s/n", ciudad: "San Juan Chamula, CHIS 29320",
+    pago: "Pagado", envio: null },
+
   /* Historial. Sin pedidos viejos, los atajos de fecha no se distinguen:
      todo cabía en los últimos siete días y "30 días" mostraba lo mismo. */
   { folio: "#0998", fecha: "2026-09-02", total: 1240, canal: "Tiendanube",
@@ -475,6 +490,13 @@ const TARIFAS = {
   "FedEx":      { base: 88, servicio: "Prioritario",   dias: "1 día" },
 };
 
+/** El precio de UNA paquetería. `cotizar` recorta a las cuatro más baratas,
+ *  así que buscar ahí dentro devolvía el precio de otra. */
+export const precioDe = (paqueteria, peso) => {
+  const t = TARIFAS[paqueteria];
+  return t ? Math.round((t.base + peso * 31) * 100) / 100 : null;
+};
+
 export const cotizar = (peso) =>
   Object.entries(TARIFAS)
     .map(([paqueteria, t]) => ({
@@ -486,3 +508,91 @@ export const cotizar = (peso) =>
     }))
     .sort((a, b) => a.precio - b.precio)
     .slice(0, 4);
+
+/* =================================================================
+ * REQ-02 (mínimo) · Reglas de envío
+ *
+ * El lote no puede preguntar paquetería pedido por pedido, así que hace
+ * falta una regla por defecto. Se evalúan EN ORDEN y gana la primera que
+ * cumple todas sus condiciones. Si ninguna gana, el pedido se omite con
+ * "Sin regla de paquetería" en vez de elegir algo a ciegas.
+ *
+ * La pantalla para administrarlas es REQ-02; aquí vive el modelo.
+ * ================================================================= */
+export const reglasEnvio = [
+  { id: "r1", nombre: "Puebla ligero", prioridad: 1, activa: true,
+    condiciones: { estado: ["PUE", "Puebla"], pesoMax: 5 },
+    paqueteria: "Estafeta", servicio: "Terrestre" },
+  { id: "r2", nombre: "Norte urgente", prioridad: 2, activa: true,
+    condiciones: { estado: ["NL", "Nuevo León", "COAH"], },
+    paqueteria: "FedEx", servicio: "Prioritario" },
+  { id: "r3", nombre: "Pedidos grandes", prioridad: 3, activa: true,
+    condiciones: { totalMin: 1500 },
+    paqueteria: "DHL", servicio: "Express" },
+  { id: "rd", nombre: "Por defecto", prioridad: 99, activa: true,
+    condiciones: {}, paqueteria: "Estafeta", servicio: "Terrestre" },
+];
+
+const estadoDe = (ciudad) => (ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, "");
+
+/** La primera regla que cumple. `null` si ninguna, incluida la de por defecto. */
+export const reglaPara = (pedido, peso) => {
+  for (const r of reglasEnvio.filter((x) => x.activa).sort((a, b) => a.prioridad - b.prioridad)) {
+    const c = r.condiciones;
+    if (c.estado && !c.estado.includes(estadoDe(pedido.ciudad))) continue;
+    if (c.pesoMax != null && peso > c.pesoMax) continue;
+    if (c.totalMin != null && pedido.total < c.totalMin) continue;
+    return r;
+  }
+  return null;
+};
+
+/* =================================================================
+ * REQ-01 · Simulación del lote
+ *
+ * Los desenlaces son FIJOS por folio, no aleatorios: un prototipo donde
+ * el mismo pedido falla unas veces y otras no es imposible de discutir
+ * en una reunión.
+ * ================================================================= */
+const DESENLACES = {
+  // Un tiempo de espera agotado es pasajero: al segundo intento pasa. Así el
+  // reintento demuestra que sirve, en vez de repetir el mismo fallo.
+  "#1000": (intento) => intento >= 2 ? null : {
+    estado: "fallido", motivo: "Sin respuesta de la paquetería",
+    detalle: "La petición excedió el tiempo de espera.", reintentable: true },
+
+  // La falta de cobertura no se arregla reintentando: hay que cambiar de
+  // paquetería. Reintentarlo mil veces da el mismo resultado, y decirlo es
+  // más útil que dejar que alguien lo descubra.
+  "#0997": () => ({
+    estado: "fallido", motivo: "Sin cobertura para el código postal",
+    detalle: "Estafeta no entrega en 29320. Reintentar no cambia nada: hay que cotizar con otra.",
+    reintentable: false }),
+};
+
+/** Motivo por el que un pedido NO entra al lote, o null si sí entra. */
+export const motivoOmision = (p) => {
+  if (p.envio) return "Ya tiene guía";
+  if (p.pago !== "Pagado") return "No está pagado";
+  // REQ-03: la validación local va antes de gastar una llamada al carrier.
+  if (p.error || p.requiereCorreccion) return "Requiere corrección de dirección";
+  return null;
+};
+
+/** Qué pasa al generar la guía de un pedido. Determinista. */
+export const simularGeneracion = (p, peso, intento = 1) => {
+  const fijo = DESENLACES[p.folio]?.(intento);
+  if (fijo) return fijo;
+
+  const regla = reglaPara(p, peso);
+  if (!regla) return { estado: "omitido", motivo: "Sin regla de paquetería" };
+
+  return {
+    estado: "generado",
+    paqueteria: regla.paqueteria,
+    servicio: regla.servicio,
+    costo: precioDe(regla.paqueteria, peso),
+    regla: regla.nombre,
+    guia: "TC" + String(70000 + Number(p.folio.replace(/\D/g, ""))),
+  };
+};

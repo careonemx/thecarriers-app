@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=50e8b130">
+<link rel="stylesheet" href="assets/app.css?v=1c6dd10b">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=50e8b130" defer></script>
+<script src="assets/vigia.js?v=1c6dd10b" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -66,6 +66,7 @@
     <a href="#mensajes">Avisos y vacíos</a>
     <a href="#datos">Historial y barras</a>
     <a href="#navegacion">Pestañas y diálogos</a>
+    <a href="#lote">Acciones en lote</a>
     <a href="#reglas">Reglas que no se negocian</a>
   </nav>
 
@@ -522,6 +523,66 @@
       </dialog>
     </section>
 
+    <!-- ============================ LOTE ============================= -->
+    <section id="lote">
+      <h2>Acciones en lote</h2>
+      <p class="intro">
+        Una acción sobre muchos registros no es la misma acción repetida: falla en partes.
+        El patrón tiene tres momentos y ninguno se puede saltar.
+      </p>
+
+      <div class="muestra">
+        <div class="barra-seleccion">
+          <span class="barra-seleccion__cuenta">6 seleccionados</span>
+          <span class="barra-seleccion__sep"></span>
+          <button class="boton boton--chico" type="button" disabled>Programar recolección (0)</button>
+          <button class="boton boton--chico" type="button" disabled>Imprimir etiquetas (0)</button>
+          <button class="boton boton--primario boton--chico" type="button">Generar guías (5)</button>
+        </div>
+        <span class="cls">.barra-seleccion — cada acción lleva SU propio aplicable, no el total</span>
+      </div>
+
+      <div class="muestra" style="margin-top:20px">
+        <div class="lote__conteo">
+          <div><b>3</b><span>generadas</span></div>
+          <div><b>2</b><span>fallidas</span></div>
+          <div><b>1</b><span>omitido</span></div>
+        </div>
+        <div class="lote__barra" style="margin-top:14px"><i style="width:100%"></i></div>
+        <div class="lote__lista" style="margin-top:16px">
+          <div class="lote__fila">
+            <span class="lote__estado lote__estado--generado" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <b>#1004</b>
+            <span>TC71004 · Estafeta Terrestre</span>
+            <span>$92.50</span>
+          </div>
+          <div class="lote__fila">
+            <span class="lote__estado lote__estado--fallido" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+            <b>#0997</b>
+            <span>Sin cobertura para el código postal
+              <span class="lote__detalle">Estafeta no entrega en 29320. Reintentar no cambia nada: hay que cotizar con otra.</span></span>
+            <span></span>
+          </div>
+          <div class="lote__fila">
+            <span class="lote__estado lote__estado--omitido" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></span>
+            <b>#1002</b>
+            <span>No está pagado</span>
+            <span></span>
+          </div>
+        </div>
+        <span class="cls">.lote__conteo .lote__barra .lote__lista .lote__fila .lote__estado--(generado|fallido|omitido|cola|procesando)</span>
+      </div>
+
+      <div class="muestra" style="margin-top:20px">
+        <div class="regla"><b>1 · Antes</b><span>Se dice cuántos se procesan, cuántos se omiten y <b>por qué</b>, agrupado por motivo y con los folios a la vista. Nadie lanza una acción masiva a ciegas.</span></div>
+        <div class="regla"><b>2 · Durante</b><span>Avance real y estado por registro. Un fallo no detiene a los demás: cada uno termina su camino.</span></div>
+        <div class="regla"><b>3 · Después</b><span>Resultado por registro, y la lista de atrás se actualiza sin recargar. El siguiente paso —reintentar— sale del resultado, no de volver a empezar.</span></div>
+      </div>
+    </section>
+
     <!-- =========================== REGLAS ============================ -->
     <section id="reglas">
       <h2>Reglas que no se negocian</h2>
@@ -554,6 +615,10 @@
         <div class="regla"><b>Avatares</b><span>Identifican a una persona recurrente —tu cuenta, tu empresa—, no una fila de datos. En una lista donde el nombre está al lado, las iniciales son ruido que cuesta ancho.</span></div>
         <div class="regla"><b>En angosto se compacta</b><span>No se oculta. Esconder el arte del acceso dejaba un formulario pelón sobre un fondo plano.</span></div>
         <div class="regla"><b>Foco visible</b><span>Anillo del acento a 2px en todo lo interactivo. No se quita nunca.</span></div>
+        <div class="regla"><b>Contar lo aplicable</b><span>Cada acción en lote muestra a cuántos de los seleccionados aplica, no cuántos hay seleccionados, y se desactiva en cero. "Imprimir etiquetas (0)" explica solo por qué no se puede.</span></div>
+        <div class="regla"><b>Fallar por partes</b><span>Un lote no es atómico. Si uno falla, los demás terminan; lo que no se pudo queda listo para reintentar, con su motivo.</span></div>
+        <div class="regla"><b>Distinguir el reintento</b><span>No todo fallo se reintenta. Un tiempo de espera agotado sí; una falta de cobertura no, y ofrecer el botón ahí es mentir. El desenlace trae <code>reintentable</code> y el pie solo cuenta esos.</span></div>
+        <div class="regla"><b>Clave de idempotencia</b><span>Es <code>folio:intento</code>, no <code>folio</code>. Con el folio solo, la protección contra el doble clic bloquea también el reintento, que es justo lo que hay que permitir.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>
