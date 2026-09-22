@@ -26,40 +26,53 @@ export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.m
  * dato y no una etiqueta de confianza: "el CP 06600 solo tiene una colonia"
  * se puede comprobar, un 87 % solo se puede creer. Sin apoyo, lo decidió una
  * persona.
+ *
+ * `aTiempo` es lo primero que se pregunta en una reclamación: si la guía se
+ * generó ANTES de corregir, la etiqueta salió con la dirección vieja y el
+ * paquete va camino de un sitio equivocado por mucho que el pedido ya esté
+ * bien. En null no hay guía todavía, y entonces no hay nada que preguntar.
  * ================================================================= */
 
 export const correcciones = [
   { id: "c-1006", folio: "#1006", fecha: "2026-09-21", cliente: "Mariana Ruiz",
     cp: "72495", campo: "colonia", llego: "casa", quedo: "Geovillas del Sur",
-    apoyo: null },
+    apoyo: null,
+    guia: "794611553077", aTiempo: true },
 
   { id: "c-1013", folio: "#1013", fecha: "2026-09-20", cliente: "Laura Méndez",
     cp: "06600", campo: "colonia", llego: "1", quedo: "Juárez",
-    apoyo: null },
+    apoyo: null,
+    guia: "794611552916", aTiempo: true },
 
   { id: "c-1018", folio: "#1018", fecha: "2026-09-18", cliente: "Comercializadora Vega",
     cp: "11529", campo: "colonia", llego: "trabajo", quedo: "Ampliación Granada",
-    apoyo: null },
+    apoyo: null,
+    guia: "794611552340", aTiempo: false },
 
   { id: "c-1015", folio: "#1015", fecha: "2026-09-17", cliente: "Iván Salas",
     cp: "11529", campo: "municipio", llego: "Ciudad de México", quedo: "Miguel Hidalgo",
-    apoyo: "El CP 11529 pertenece a Miguel Hidalgo." },
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.",
+    guia: "794611552118", aTiempo: true },
 
   { id: "c-1017", folio: "#1017", fecha: "2026-09-16", cliente: "Rocío Ibarra",
     cp: "06600", campo: "municipio", llego: "Ciudad de México", quedo: "Cuauhtémoc",
-    apoyo: "El CP 06600 pertenece a Cuauhtémoc." },
+    apoyo: "El CP 06600 pertenece a Cuauhtémoc.",
+    guia: "794611551907", aTiempo: true },
 
   { id: "c-1011", folio: "#1011", fecha: "2026-09-15", cliente: "Diego Fuentes",
     cp: "11529", campo: "municipio", llego: "Ciudad de México", quedo: "Miguel Hidalgo",
-    apoyo: "El CP 11529 pertenece a Miguel Hidalgo." },
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.",
+    guia: "794611551644", aTiempo: true },
 
   { id: "c-1009", folio: "#1009", fecha: "2026-09-14", cliente: "Paulina Cortés",
     cp: "44600", campo: "estado", llego: "Guadalajara", quedo: "Jalisco",
-    apoyo: "Guadalajara es un municipio de Jalisco, no un estado." },
+    apoyo: "Guadalajara es un municipio de Jalisco, no un estado.",
+    guia: null, aTiempo: null },
 
   { id: "c-1008", folio: "#1008", fecha: "2026-09-12", cliente: "Héctor Nava",
     cp: "64000", campo: "colonia", llego: "Centro MTY", quedo: "Centro",
-    apoyo: "El CP 64000 solo tiene la colonia Centro." },
+    apoyo: "El CP 64000 solo tiene la colonia Centro.",
+    guia: "794611551088", aTiempo: true },
 ];
 
 /** De lo más reciente a lo más viejo: al historial se entra por lo último. */

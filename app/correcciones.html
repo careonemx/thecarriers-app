@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Correcciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=c3c10d21">
-<script src="../assets/vigia.js?v=c3c10d21" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=5700c911">
+<script src="../assets/vigia.js?v=5700c911" defer></script>
 </head>
 <body data-seccion="correcciones">
 <main class="contenido contenido--ancho">
@@ -33,16 +33,24 @@
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
+      <button class="ficha-filtro" type="button" aria-pressed="false" id="f-tarde">
+        Solo las que salieron con la anterior</button>
+      <span class="filtros__sep"></span>
       <label class="sr-only" for="f-quien">Filtrar por quién lo decidió</label>
       <select id="f-quien"><option value="">Todos los orígenes</option></select>
       <label class="sr-only" for="f-campo">Filtrar por campo</label>
       <select id="f-campo"><option value="">Todos los campos</option></select>
 
       <span class="filtros__sep"></span>
-      <label class="campo-fecha"><span class="sr-only">Desde</span>
-        <input type="date" id="f-desde"></label>
-      <label class="campo-fecha"><span class="sr-only">Hasta</span>
-        <input type="date" id="f-hasta"></label>
+      <!-- Las dos fechas son un rango, no dos filtros: si la barra se parte,
+           se parten juntas o queda un "desde" sin su "hasta". -->
+      <div class="rango-fechas">
+        <label class="campo-fecha"><span class="sr-only">Desde</span>
+          <input type="date" id="f-desde"></label>
+        <span class="apagado" style="font-size:12px">al</span>
+        <label class="campo-fecha"><span class="sr-only">Hasta</span>
+          <input type="date" id="f-hasta"></label>
+      </div>
     </div>
 
     <div class="tabla-caja scroll-fino">
@@ -52,6 +60,7 @@
           <th scope="col">Pedido</th>
           <th scope="col">Qué se cambió</th>
           <th scope="col">Quién lo decidió</th>
+          <th scope="col">La guía</th>
           <th scope="col">Cuándo</th>
         </tr></thead>
         <tbody></tbody>
@@ -63,9 +72,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=c3c10d21";
+import { montar, exigirSesion } from "../assets/app.js?v=5700c911";
 import { correccionesHechas, QUIEN_CORRIGIO, quienCorrigio,
-         CAMPO_DIRECCION, fechaLarga } from "../assets/datos.js?v=c3c10d21";
+         CAMPO_DIRECCION, fechaLarga } from "../assets/datos.js?v=5700c911";
 if (exigirSesion()) {
   montar();
 
@@ -107,6 +116,7 @@ if (exigirSesion()) {
     const campo = document.getElementById("f-campo").value;
     const desde = document.getElementById("f-desde").value;
     const hasta = document.getElementById("f-hasta").value;
+    const soloTarde = document.getElementById("f-tarde").getAttribute("aria-pressed") === "true";
 
     return correccionesHechas().filter((c) => {
       if (q && !sinAcento(`${c.folio} ${c.cliente} ${c.llego} ${c.quedo} ${c.cp}`).includes(sinAcento(q))) return false;
@@ -114,8 +124,25 @@ if (exigirSesion()) {
       if (campo && c.campo !== campo) return false;
       if (desde && c.fecha < desde) return false;
       if (hasta && c.fecha > hasta) return false;
+      if (soloTarde && c.aTiempo !== false) return false;
       return true;
     });
+  }
+
+  /* Lo primero que se pregunta en una reclamación: ¿la etiqueta salió con la
+     dirección buena? Si la guía se generó antes de corregir, el pedido está
+     bien pero el paquete va camino de otro sitio, y eso no se ve en la
+     columna de lo que se cambió. */
+  function guiaHTML(c) {
+    if (!c.guia) {
+      return '<span class="pastilla">Sin guía todavía</span>';
+    }
+    const enlace = `<a class="mono" href="envio.html?guia=${esc(c.guia)}">${esc(c.guia)}</a>`;
+    return c.aTiempo
+      ? `<span class="pastilla pastilla--ok">Salió corregida</span>
+         <span class="nota-bajo">${enlace}</span>`
+      : `<span class="pastilla pastilla--mal">Salió con la anterior</span>
+         <span class="nota-bajo">${enlace} · hay con qué reclamar</span>`;
   }
 
   function pintar() {
@@ -143,10 +170,12 @@ if (exigirSesion()) {
             <td><span class="pastilla${quien === "catalogo" ? " pastilla--ok" : " pastilla--aviso"}">${
               esc(QUIEN_CORRIGIO[quien])}</span></td>
 
+            <td>${guiaHTML(c)}</td>
+
             <td class="tabular">${esc(fechaLarga(c.fecha))}</td>
           </tr>`;
         }).join("")
-      : `<tr><td colspan="4"><p class="vacio">Con esos filtros no hay ninguna corrección.</p></td></tr>`;
+      : `<tr><td colspan="5"><p class="vacio">Con esos filtros no hay ninguna corrección.</p></td></tr>`;
 
     document.getElementById("pie").innerHTML = lista.length ? `
       <div class="tarjeta__pie">
@@ -187,7 +216,13 @@ if (exigirSesion()) {
   });
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-ir]");
-    if (b && !b.disabled) { pagina = +b.dataset.ir; pintar(); }
+    if (b && !b.disabled) { pagina = +b.dataset.ir; pintar(); return; }
+    const f = e.target.closest("#f-tarde");
+    if (f) {
+      f.setAttribute("aria-pressed", String(f.getAttribute("aria-pressed") !== "true"));
+      pagina = 1;
+      pintar();
+    }
   });
 
   pintarMetricas();

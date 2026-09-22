@@ -11,7 +11,7 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=c3c10d21";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=5700c911";
 
 const CLAVE = "tc_sesion";
 
@@ -31,7 +31,8 @@ const icono = {
   paqueterias: '<path d="M3 8.5 12 4l9 4.5V16l-9 4.5L3 16z"/><path d="m3 8.5 9 4.5 9-4.5M12 13v7.5"/>',
   ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
   envios: '<path d="M3 5h18v14H3z"/><path d="M3 10h18M9 10v9"/>',
-  excepciones: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
+  excepciones: '<path d="M3 7h10v9H3z"/><path d="M13 10h4l3 3v3h-7"/>' +
+               '<circle cx="7.5" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>',
   recolecciones: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>',
   calendario: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   desempeno: '<path d="M4 20V4M4 20h16"/><path d="M8.5 20v-6M13 20V9M17.5 20v-10"/>',

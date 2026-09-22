@@ -281,6 +281,9 @@ input[type="time"]:focus-within::-webkit-calendar-picker-indicator { background:
 
 /* ---------- Campo de fecha con su botón ---------- */
 .campo-fecha { position: relative; display: inline-flex; flex: 0 0 auto; max-width: 100%; }
+
+/* Un rango es una sola cosa: se parte entero o no se parte. */
+.rango-fechas { display: flex; align-items: center; gap: 8px; }
 /* Dentro de un formulario sí ocupa la celda entera, como cualquier campo. */
 .campo .campo-fecha { width: 100%; }
 .campo .campo-fecha input { width: 100%; }
