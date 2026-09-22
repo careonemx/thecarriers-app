@@ -31,8 +31,8 @@ app/origenes.html          direcciones de origen: de dónde sale y dónde recoge
 app/plantillas.html        plantillas de paquete y el peso que de verdad se cobra
 app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
 app/canales.html           canales de venta conectados y por conectar
-app/paqueterias.html       cuenta de envío y orden de preferencia de paqueterías
-app/configuracion.html     qué ocurre solo al entrar un pedido pagado
+app/paqueterias.html       cuentas por las que se compran las guías
+app/configuracion.html     qué ocurre solo al entrar un pedido y qué paquetería se elige
 app/pendiente.html         nota para las pantallas del MVP sin vestir
 
 app/envios.html            la tabla principal, con filtros y métricas
