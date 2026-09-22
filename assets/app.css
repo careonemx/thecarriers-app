@@ -535,3 +535,131 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
   .encabezado h1 { font-size: 20px; }
 }
+
+/* =================================================================
+ * Piezas que la plataforma va a necesitar.
+ * Documentadas y renderizadas en sistema.html.
+ * ================================================================= */
+
+/* ---------- Botones: variantes que faltaban ---------- */
+
+/* Destructivo. NO va en rojo sólido: el rojo que se necesita para que el
+   texto blanco cumpla AA ya no se lee como advertencia, y un botón rojo
+   macizo invita a pulsarlo. Delineado y teñido: 8.5:1 y menos accidentes. */
+.boton--peligro {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+.boton--peligro:hover { border-color: rgba(248, 113, 113, 0.75); background: rgba(248, 113, 113, 0.2); }
+
+.boton--chico { padding: 5px 11px; font-size: 13px; border-radius: var(--r-sm); }
+.boton--chico svg { width: 14px; height: 14px; }
+
+/* Cargando: el ancho no cambia, para que el botón no salte bajo el cursor. */
+.boton[aria-busy="true"] { pointer-events: none; opacity: .75; }
+.boton[aria-busy="true"] .girador {
+  width: 14px; height: 14px; border-radius: 999px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: girar .7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .girador { animation: none; } }
+
+.grupo-botones { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Casillas, radios e interruptor ---------- */
+.marca-campo {
+  display: inline-flex; align-items: flex-start; gap: 9px;
+  cursor: pointer; line-height: 1.45;
+}
+.marca-campo input[type="checkbox"], .marca-campo input[type="radio"] {
+  appearance: none; flex: none; width: 17px; height: 17px; margin: 1px 0 0;
+  border: 1px solid var(--field); background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px; cursor: pointer; display: grid; place-content: center;
+  transition: background-color .15s var(--curva), border-color .15s var(--curva);
+}
+.marca-campo input[type="radio"] { border-radius: 999px; }
+.marca-campo input:checked { background: var(--accent); border-color: var(--accent); }
+/* El símbolo va en abyss: sobre el verde, blanco da 3.46:1 y reprueba. */
+.marca-campo input[type="checkbox"]:checked::before {
+  content: ""; width: 9px; height: 5px; border: 2px solid var(--abyss);
+  border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px);
+}
+.marca-campo input[type="radio"]:checked::before {
+  content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--abyss);
+}
+.marca-campo input:disabled { opacity: .45; cursor: not-allowed; }
+
+.interruptor { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.interruptor input {
+  appearance: none; position: relative; flex: none; width: 38px; height: 22px; margin: 0;
+  border-radius: 999px; border: 1px solid var(--field);
+  background: rgba(255, 255, 255, 0.06); cursor: pointer;
+  transition: background-color .2s var(--curva), border-color .2s var(--curva);
+}
+.interruptor input::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 999px; background: var(--muted);
+  transition: transform .2s var(--curva), background-color .2s var(--curva);
+}
+.interruptor input:checked { background: var(--accent); border-color: var(--accent); }
+.interruptor input:checked::after { transform: translateX(16px); background: var(--abyss); }
+
+/* ---------- Campo con error ---------- */
+.campo--error input, .campo--error select, .campo--error textarea { border-color: #f87171; }
+.campo__error { color: #fca5a5; font-size: 12px; }
+input:disabled, select:disabled, textarea:disabled {
+  opacity: .55; cursor: not-allowed; background: rgba(255, 255, 255, 0.02);
+}
+
+/* ---------- Pestañas ---------- */
+.pestanas {
+  display: flex; gap: 2px; border-bottom: 1px solid var(--hairline);
+  overflow-x: auto; scrollbar-width: none;
+}
+.pestanas::-webkit-scrollbar { display: none; }
+.pestana {
+  padding: 10px 14px; border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .2s var(--curva), border-color .2s var(--curva);
+}
+.pestana:hover { color: var(--ink); }
+.pestana[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* ---------- Diálogo ---------- */
+dialog.dialogo {
+  width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--hairline);
+  border-radius: var(--r-lg); background: var(--navy-900); color: var(--ink);
+  box-shadow: var(--sombra);
+}
+dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(2px); }
+.dialogo__cabeza { padding: 18px 20px 0; }
+.dialogo__cabeza h2 { font-size: 17px; }
+.dialogo__cuerpo { padding: 10px 20px 18px; color: var(--muted); }
+.dialogo__pie {
+  display: flex; justify-content: flex-end; gap: 9px; flex-wrap: wrap;
+  padding: 14px 20px; border-top: 1px solid var(--hairline);
+}
+
+/* ---------- Paginación ---------- */
+.paginacion { display: flex; align-items: center; gap: 6px; }
+.paginacion button {
+  min-width: 32px; height: 32px; padding: 0 9px; border-radius: var(--r-sm);
+  border: 1px solid transparent; background: transparent; color: var(--muted);
+  font: inherit; cursor: pointer; transition: all .15s var(--curva);
+}
+.paginacion button:hover:not([disabled]) { background: var(--hover); color: var(--ink); }
+.paginacion button[aria-current="page"] {
+  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, 0.08); color: var(--ink);
+}
+.paginacion button[disabled] { opacity: .4; cursor: not-allowed; }
+
+/* ---------- Carga ---------- */
+.esqueleto {
+  border-radius: var(--r-sm); background: rgba(255, 255, 255, 0.07);
+  animation: latir 1.4s ease-in-out infinite;
+}
+@keyframes latir { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }

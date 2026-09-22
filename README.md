@@ -5,6 +5,7 @@ autenticación y no hay datos reales.** Sirve para ver y discutir cómo se opera
 producto antes de construirlo.
 
 **Vista previa:** https://careonemx.github.io/thecarriers-app/
+**Sistema de diseño:** https://careonemx.github.io/thecarriers-app/sistema.html
 
 ## Correr en local
 
@@ -20,6 +21,7 @@ Abre http://localhost:4400. Cualquier correo y contraseña entran.
 
 ```
 index.html                 redirige al acceso
+sistema.html               el sistema de diseño, renderizado
 login.html                 entrar
 recuperar.html             recuperar contraseña
 
@@ -31,6 +33,19 @@ app/desempeno.html         cumplimiento y volumen por paquetería
 app/cobros.html            cotizado contra facturado
 app/bienvenida.html        primer ingreso, todavía sin datos
 ```
+
+## Sistema de diseño
+
+`sistema.html` es la referencia: colores con su contraste **medido sobre el render**,
+tipografía, medidas, botones, campos, pastillas, tablas, tarjetas, avisos, estados
+vacíos, historial, barras, pestañas, diálogos y paginación.
+
+No es una lista de hexadecimales en un documento aparte: se renderiza con el mismo
+`assets/app.css` que usa la plataforma. Si algo se ve ahí, existe; si cambias un token,
+la guía cambia sola y los contrastes se recalculan al abrirla. De ahí se toma todo.
+
+La última sección, **Reglas que no se negocian**, recoge los defectos que ya costaron
+una corrección. Conviene leerla antes de agregar una pantalla.
 
 ## Cómo está armado
 

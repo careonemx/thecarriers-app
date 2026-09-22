@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Sistema de diseño · The Carriers</title>
+<link rel="icon" href="assets/brand/mark-white.svg">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
+     usa las clases reales de app.css, sin una sola regla inventada aquí. */
+  .guia { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 40px;
+          max-width: 1180px; margin: 0 auto; padding: 40px 24px 96px; }
+  .guia__indice { position: sticky; top: 40px; align-self: start; display: grid; gap: 2px; }
+  .guia__indice a { display: block; padding: 6px 10px; border-radius: var(--r);
+                    color: var(--muted); text-decoration: none; font-size: 13px; }
+  .guia__indice a:hover { background: var(--hover); color: var(--ink); }
+  .guia section { padding-top: 48px; scroll-margin-top: 24px; }
+  .guia h2 { font-size: 21px; }
+  .guia h3 { font-size: 14px; color: var(--muted); font-weight: 600;
+             text-transform: uppercase; letter-spacing: .1em; margin: 32px 0 14px; }
+  .guia p.intro { margin-top: 8px; color: var(--muted); max-width: 66ch; }
+  .muestra { padding: 22px; border: 1px solid var(--hairline); border-radius: var(--r-lg);
+             background: var(--navy-900); }
+  code, .cls { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+               font-size: 12px; color: var(--accent-claro); }
+  .cls { display: inline-block; margin-top: 10px; color: var(--muted); }
+  .paleta { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
+  .ficha-color { border: 1px solid var(--hairline); border-radius: var(--r); overflow: hidden; }
+  .ficha-color__tapa { height: 62px; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .ficha-color__pie { padding: 9px 11px; font-size: 12px; }
+  .ficha-color__pie b { display: block; }
+  .ficha-color__pie span { color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  .razon { margin-top: 5px; font-size: 11px; }
+  .razon--ok { color: var(--accent-claro); }
+  .razon--no { color: #fca5a5; }
+  .tipos > div { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
+  .tipos > div:last-child { border-bottom: 0; }
+  .tipos small { display: block; color: var(--muted); font-size: 11px;
+                 font-family: ui-monospace, Menlo, monospace; margin-bottom: 4px; }
+  .regla { display: grid; grid-template-columns: 148px 1fr; gap: 16px; padding: 11px 0;
+           border-bottom: 1px solid var(--hairline); align-items: baseline; }
+  .regla:last-child { border-bottom: 0; }
+  .regla b { font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 500; color: var(--accent-claro); }
+  @media (max-width: 899px) {
+    .guia { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 24px 16px 64px; }
+    .guia__indice { position: static; display: flex; flex-wrap: wrap; gap: 4px;
+                    padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
+  }
+</style>
+</head>
+<body>
+<div class="guia">
+
+  <nav class="guia__indice" aria-label="Secciones">
+    <a href="#color">Color</a>
+    <a href="#tipografia">Tipografía</a>
+    <a href="#medidas">Medidas y movimiento</a>
+    <a href="#botones">Botones</a>
+    <a href="#campos">Campos</a>
+    <a href="#estados">Estados</a>
+    <a href="#tablas">Tablas</a>
+    <a href="#contenedores">Tarjetas y métricas</a>
+    <a href="#mensajes">Avisos y vacíos</a>
+    <a href="#datos">Historial y barras</a>
+    <a href="#navegacion">Pestañas y diálogos</a>
+    <a href="#reglas">Reglas que no se negocian</a>
+  </nav>
+
+  <main>
+    <header>
+      <img src="assets/brand/lockup-white.svg" alt="The Carriers" style="height:24px;width:auto">
+      <h1 style="margin-top:22px;font-size:28px">Sistema de diseño</h1>
+      <p class="intro">
+        Todo lo que sigue se renderiza con <code>assets/app.css</code>, el mismo archivo que usa la
+        plataforma. No hay una sola regla inventada en esta página: si algo se ve aquí, existe; si
+        cambias un token, esta guía cambia sola. Los contrastes se miden sobre el render, en el
+        momento en que abres la página.
+      </p>
+      <p class="intro" style="margin-top:12px">
+        Los colores de marca son los mismos del sitio público. El modo oscuro no introdujo ninguno
+        nuevo: la escalera se arma con los tokens que ya existían más un solo valor derivado del
+        mismo tono navy.
+      </p>
+    </header>
+
+    <!-- ============================ COLOR ============================ -->
+    <section id="color">
+      <h2>Color</h2>
+      <p class="intro">
+        Tres superficies apiladas y un solo acento. La profundidad se hace con la escalera, no con
+        sombras: <code>abyss</code> es la página, <code>navy-900</code> la tarjeta y
+        <code>navy</code> lo que está por encima.
+      </p>
+
+      <h3>Superficies</h3>
+      <div class="paleta" id="superficies"></div>
+
+      <h3>Texto</h3>
+      <div class="paleta" id="textos"></div>
+
+      <h3>Marca</h3>
+      <div class="paleta" id="marca"></div>
+
+      <h3>Líneas y bordes</h3>
+      <div class="paleta" id="lineas"></div>
+
+      <h3>Estado</h3>
+      <div class="paleta" id="estado"></div>
+    </section>
+
+    <!-- ========================= TIPOGRAFÍA ========================= -->
+    <section id="tipografia">
+      <h2>Tipografía</h2>
+      <p class="intro">
+        Inter variable, servida desde el propio sitio en <code>assets/fonts/</code>, subseteada al
+        rango latin. Un solo tipo para todo; el monoespaciado del sistema solo para guías, folios,
+        importes y respuestas de paquetería, donde la alineación importa.
+      </p>
+      <div class="muestra tipos" style="margin-top:14px">
+        <div><small>28px / 600 / -0.015em — título de página de guía</small>
+          <p style="font-size:28px;font-weight:600;letter-spacing:-.015em">Todas tus paqueterías</p></div>
+        <div><small>24px / 600 — h1 de pantalla · .encabezado h1</small>
+          <p style="font-size:24px;font-weight:600;letter-spacing:-.015em">Envíos</p></div>
+        <div><small>17px / 600 — título de diálogo</small>
+          <p style="font-size:17px;font-weight:600">¿Cancelar la recolección?</p></div>
+        <div><small>15px / 600 — título de tarjeta · .tarjeta__cabeza h2</small>
+          <p style="font-size:15px;font-weight:600">Envíos detenidos</p></div>
+        <div><small>14px / 400 — cuerpo, el tamaño base de la aplicación</small>
+          <p>Los pedidos entran por un lado y las guías salen por el otro.</p></div>
+        <div><small>13px / 400 / muted — apoyo y ayuda de campo</small>
+          <p style="font-size:13px;color:var(--muted)">Se actualiza con lo que reporta cada paquetería.</p></div>
+        <div><small>12px / 500 — pastillas, pies de tarjeta, metadatos</small>
+          <p style="font-size:12px;font-weight:500">14 piezas · 3 recolecciones</p></div>
+        <div><small>11px / 500 / 0.1em / mayúsculas — encabezado de tabla</small>
+          <p style="font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Estado original</p></div>
+        <div><small>12.5px monoespaciado — guías, folios, respuestas de paquetería · .mono</small>
+          <p class="mono">JD01480000123 · Delivery exception — incorrect address</p></div>
+        <div><small>tabular-nums — toda cifra que se apile en columna · .tabular</small>
+          <p class="tabular">1,514 · 412 · 96% · $4,283.00</p></div>
+      </div>
+    </section>
+
+    <!-- ========================== MEDIDAS =========================== -->
+    <section id="medidas">
+      <h2>Medidas y movimiento</h2>
+      <div class="muestra" style="margin-top:14px">
+        <div class="regla"><b>--r-sm · 6px</b><span>Pastillas, casillas, botones chicos.</span></div>
+        <div class="regla"><b>--r · 10px</b><span>Botones, campos, fichas del menú.</span></div>
+        <div class="regla"><b>--r-lg · 14px</b><span>Tarjetas, diálogos, métricas.</span></div>
+        <div class="regla"><b>--lateral · 236px</b><span>Ancho de la barra lateral. En angosto pasa a cajón de 272.</span></div>
+        <div class="regla"><b>--superior · 60px</b><span>Alto de la barra superior.</span></div>
+        <div class="regla"><b>--curva</b><span>cubic-bezier(0.16, 1, 0.3, 1). Una sola curva para todo el producto.</span></div>
+        <div class="regla"><b>--sombra</b><span>Solo para lo que flota de verdad: diálogos y la ventana del producto.</span></div>
+        <div class="regla"><b>Duración</b><span>150 ms lo que responde al cursor, 200–300 ms lo que cambia de estado, 500 ms una barra que crece.</span></div>
+        <div class="regla"><b>Movimiento reducido</b><span>Toda animación decorativa se apaga con <code>prefers-reduced-motion</code>.</span></div>
+      </div>
+    </section>
+
+    <!-- ========================== BOTONES ============================ -->
+    <section id="botones">
+      <h2>Botones</h2>
+      <p class="intro">
+        Una acción principal por pantalla. Si dos botones compiten en verde, ninguno es el principal.
+      </p>
+
+      <h3>Jerarquía</h3>
+      <div class="muestra">
+        <div class="grupo-botones">
+          <button class="boton boton--primario" type="button">Aceptar</button>
+          <button class="boton boton--fantasma" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/></svg>
+            Descargar guía
+          </button>
+          <button class="boton boton--sutil" type="button">Cancelar</button>
+          <button class="boton boton--peligro" type="button">Eliminar cuenta</button>
+        </div>
+        <p style="margin-top:14px;color:var(--muted);font-size:13px">
+          <b style="color:var(--ink)">Primario</b> para la acción que completa la tarea · 
+          <b style="color:var(--ink)">Fantasma</b> para acciones secundarias como descargar o exportar · 
+          <b style="color:var(--ink)">Sutil</b> para salidas y terciarias · 
+          <b style="color:var(--ink)">Peligro</b> para lo que destruye o no se puede deshacer.
+        </p>
+        <span class="cls">.boton .boton--primario .boton--fantasma .boton--sutil .boton--peligro</span>
+      </div>
+
+      <h3>Tamaños y estados</h3>
+      <div class="muestra">
+        <div class="grupo-botones">
+          <button class="boton boton--primario boton--chico" type="button">Atender</button>
+          <button class="boton boton--fantasma boton--chico" type="button">Ver detalle</button>
+          <button class="boton boton--primario" type="button" aria-busy="true"><span class="girador"></span>Enviando…</button>
+          <button class="boton boton--primario" type="button" disabled>Bloqueado</button>
+          <button class="boton boton--fantasma" type="button" disabled>No disponible</button>
+        </div>
+        <span class="cls">.boton--chico · aria-busy="true" + .girador · [disabled]</span>
+      </div>
+
+      <h3>De ancho completo</h3>
+      <div class="muestra" style="max-width:360px">
+        <button class="boton boton--primario boton--bloque" type="button">Entrar</button>
+        <span class="cls">.boton--bloque — solo en formularios de una columna</span>
+      </div>
+    </section>
+
+    <!-- =========================== CAMPOS ============================ -->
+    <section id="campos">
+      <h2>Campos</h2>
+      <p class="intro">
+        El borde de un control usa <code>--field</code>, nunca <code>--hairline</code>: un borde
+        decorativo no llega al 3:1 que exige el criterio 1.4.11 y el campo deja de verse.
+      </p>
+      <div class="muestra" style="display:grid;gap:18px;max-width:440px">
+        <label class="campo">
+          <span>Correo de trabajo</span>
+          <input type="email" placeholder="tu@empresa.mx">
+          <span class="campo__ayuda">Ahí llegan los avisos de incidencia.</span>
+        </label>
+
+        <label class="campo">
+          <span>Paquetería</span>
+          <select><option>DHL</option><option>FedEx</option><option>Estafeta</option></select>
+        </label>
+
+        <label class="campo campo--error">
+          <span>Código postal</span>
+          <input type="text" value="7200" aria-invalid="true">
+          <span class="campo__error">Deben ser cinco dígitos.</span>
+        </label>
+
+        <label class="campo">
+          <span>Notas para la recolección</span>
+          <textarea rows="3" placeholder="Referencias del domicilio, horarios…"></textarea>
+        </label>
+
+        <label class="campo">
+          <span>Deshabilitado</span>
+          <input type="text" value="No editable en acceso anticipado" disabled>
+        </label>
+
+        <div style="display:grid;gap:11px">
+          <label class="marca-campo"><input type="checkbox" checked> Avisarme cuando un envío se detenga</label>
+          <label class="marca-campo"><input type="checkbox"> Incluir envíos entregados en la exportación</label>
+          <label class="marca-campo"><input type="radio" name="r" checked> Recolección de una sola vez</label>
+          <label class="marca-campo"><input type="radio" name="r"> Recolección recurrente</label>
+          <label class="interruptor"><input type="checkbox" checked> Enviar cambios de estado a mi sistema</label>
+        </div>
+        <span class="cls">.campo · .campo--error · .marca-campo · .interruptor</span>
+      </div>
+    </section>
+
+    <!-- ========================== ESTADOS ============================ -->
+    <section id="estados">
+      <h2>Pastillas de estado</h2>
+      <p class="intro">
+        El color no es el único portador del significado: la pastilla siempre lleva su texto. Quien
+        no distingue el rojo del verde lee lo mismo.
+      </p>
+      <div class="muestra">
+        <div class="grupo-botones">
+          <span class="pastilla pastilla--info">En tránsito</span>
+          <span class="pastilla pastilla--ok">Entregado</span>
+          <span class="pastilla pastilla--mal">Detenido</span>
+          <span class="pastilla pastilla--aviso">Recolección pendiente</span>
+          <span class="pastilla pastilla--neutra">Sin asignar</span>
+        </div>
+        <p style="margin-top:14px;color:var(--muted);font-size:13px">
+          <b style="color:var(--ink)">info</b> en curso, sin problema · 
+          <b style="color:var(--ink)">ok</b> terminado bien · 
+          <b style="color:var(--ink)">mal</b> necesita que alguien actúe · 
+          <b style="color:var(--ink)">aviso</b> pendiente de algo · 
+          <b style="color:var(--ink)">neutra</b> ausencia de dato.
+        </p>
+        <span class="cls">.pastilla .pastilla--info .pastilla--ok .pastilla--mal .pastilla--aviso .pastilla--neutra</span>
+      </div>
+    </section>
+
+    <!-- =========================== TABLAS ============================ -->
+    <section id="tablas">
+      <h2>Tablas</h2>
+      <p class="intro">
+        La tabla es la pantalla principal del producto, así que manda la densidad. Encabezado
+        pegajoso con <code>top: 0</code>, filas de 11px de aire vertical, separadores al 5.5% y el
+        dato identificador —la guía— siempre en la primera columna, en monoespaciado y como enlace
+        real, para que el teclado llegue.
+      </p>
+      <div class="muestra" style="padding:0">
+        <div class="filtros">
+          <button class="ficha-filtro" type="button" aria-pressed="true">Detenidos</button>
+          <button class="ficha-filtro" type="button" aria-pressed="false">Entregados</button>
+          <span class="filtros__sep"></span>
+          <select style="width:auto"><option>Todas las paqueterías</option></select>
+        </div>
+        <div class="tabla-caja scroll-fino">
+          <table>
+            <caption class="sr-only">Ejemplo de tabla del sistema.</caption>
+            <thead><tr>
+              <th scope="col">Guía</th><th scope="col">Paquetería</th><th scope="col">Destino</th>
+              <th scope="col">Estado</th><th scope="col">Estado original</th><th scope="col">Costo</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><a class="mono" href="#tablas">JD01480000123</a></td><td><b>DHL</b></td>
+                  <td>Monterrey, NL<br><span class="apagado" style="font-size:12px">Laura Méndez</span></td>
+                  <td><span class="pastilla pastilla--info">En tránsito</span></td>
+                  <td class="mono apagado">Shipment in transit</td><td class="tabular">$189.00</td></tr>
+              <tr><td><a class="mono" href="#tablas">782394001122</a></td><td><b>FedEx</b></td>
+                  <td>Guadalajara, JAL<br><span class="apagado" style="font-size:12px">Comercializadora Vega</span></td>
+                  <td><span class="pastilla pastilla--mal">Detenido</span></td>
+                  <td class="mono apagado">Delivery exception</td><td class="tabular">$264.00</td></tr>
+              <tr><td><a class="mono" href="#tablas">6050000112233</a></td><td><b>Estafeta</b></td>
+                  <td>Puebla, PUE<br><span class="apagado" style="font-size:12px">Ana Sotelo</span></td>
+                  <td><span class="pastilla pastilla--ok">Entregado</span></td>
+                  <td class="mono apagado">Entregado a destinatario</td><td class="tabular">$121.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tarjeta__pie">
+          <span><b>3</b> envíos visibles</span>
+          <div class="paginacion">
+            <button type="button" disabled>‹</button>
+            <button type="button" aria-current="page">1</button>
+            <button type="button">2</button>
+            <button type="button">3</button>
+            <button type="button">›</button>
+          </div>
+        </div>
+      </div>
+      <span class="cls">.tabla-caja .filtros .ficha-filtro .tarjeta__pie .paginacion · td .mono .tabular .apagado</span>
+    </section>
+
+    <!-- ======================== CONTENEDORES ========================= -->
+    <section id="contenedores">
+      <h2>Tarjetas y métricas</h2>
+      <div class="rejilla rejilla--3" style="margin-top:14px">
+        <div class="metrica"><p class="metrica__etiqueta">Envíos del periodo</p>
+          <p class="metrica__valor tabular">1,514</p><p class="metrica__nota">Últimos 30 días</p></div>
+        <div class="metrica"><p class="metrica__etiqueta">A tiempo</p>
+          <p class="metrica__valor tabular">90%</p><p class="metrica__nota">Promedio ponderado</p></div>
+        <div class="metrica"><p class="metrica__etiqueta">Detenidos</p>
+          <p class="metrica__valor tabular">3</p><p class="metrica__nota">Necesitan que alguien los atienda</p></div>
+      </div>
+      <p class="intro" style="margin-top:12px">
+        La métrica siempre lleva las tres partes: qué es, cuánto, y contra qué se compara. Un número
+        sin su nota no dice nada.
+      </p>
+      <span class="cls">.metrica .metrica__etiqueta .metrica__valor .metrica__nota · .rejilla--2 --3 --4</span>
+
+      <div class="tarjeta" style="margin-top:20px">
+        <div class="tarjeta__cabeza"><h2>Título de la tarjeta</h2>
+          <span class="apagado" style="font-size:12px">Apoyo a la derecha</span></div>
+        <div class="tarjeta__cuerpo">El cuerpo lleva 18px de aire por lado.</div>
+        <div class="tarjeta__pie"><span>El pie es para totales y acciones menores.</span></div>
+      </div>
+      <span class="cls">.tarjeta .tarjeta__cabeza .tarjeta__cuerpo .tarjeta__pie</span>
+    </section>
+
+    <!-- ========================== MENSAJES =========================== -->
+    <section id="mensajes">
+      <h2>Avisos y estados vacíos</h2>
+      <div style="display:grid;gap:10px;margin-top:14px">
+        <p class="aviso aviso--info">Prototipo de interfaz: no hay servidor.</p>
+        <p class="aviso aviso--ok">Recibimos tu solicitud. Te escribimos en menos de 48 horas hábiles.</p>
+        <p class="aviso aviso--mal">No pudimos enviar tu solicitud. Vuelve a intentarlo.</p>
+      </div>
+      <span class="cls">.aviso .aviso--info .aviso--ok .aviso--mal</span>
+
+      <div class="tarjeta" style="margin-top:20px">
+        <div class="vacio">
+          <span class="vacio__icono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:20px;height:20px"><path d="M3 5h18v14H3z"/><path d="M3 10h18M9 10v9"/></svg>
+          </span>
+          <h3 style="margin:0;font-size:16px;text-transform:none;letter-spacing:0;color:var(--ink)">Ningún envío coincide</h3>
+          <p>Un estado vacío dice qué falta y ofrece la salida. Nunca se queda en “no hay datos”.</p>
+          <div class="vacio__acciones">
+            <button class="boton boton--primario" type="button">Quitar filtros</button>
+            <button class="boton boton--sutil" type="button">Ver todos</button>
+          </div>
+        </div>
+      </div>
+      <span class="cls">.vacio .vacio__icono .vacio__acciones</span>
+    </section>
+
+    <!-- ============================ DATOS ============================ -->
+    <section id="datos">
+      <h2>Historial y barras</h2>
+      <div class="rejilla rejilla--2" style="margin-top:14px">
+        <div class="tarjeta"><div class="tarjeta__cuerpo">
+          <div class="linea">
+            <div class="linea__evento linea__evento--mal"><span class="linea__punto"><i></i></span>
+              <div><b>Detenido</b><p class="linea__cuando">19-sep · 11:20</p>
+              <p class="linea__original">Delivery exception — incorrect address</p></div></div>
+            <div class="linea__evento"><span class="linea__punto"><i></i></span>
+              <div><b>En tránsito</b><p class="linea__cuando">18-sep · 22:05</p>
+              <p class="linea__original">IN_TRANSIT</p></div></div>
+            <div class="linea__evento"><span class="linea__punto"><i></i></span>
+              <div><b>Guía generada</b><p class="linea__cuando">18-sep · 09:12</p>
+              <p class="linea__original">label_created</p></div></div>
+          </div>
+          <p style="margin-top:14px;color:var(--muted);font-size:13px">
+            Cada evento conserva el texto original de la paquetería debajo del estado traducido.
+            Es un principio del producto, no un adorno.
+          </p>
+          <span class="cls">.linea .linea__evento --activo --mal .linea__original</span>
+        </div></div>
+
+        <div class="tarjeta"><div class="tarjeta__cuerpo">
+          <div class="barras">
+            <div class="barras__fila"><span>UPS</span>
+              <span class="barras__pista"><span class="barras__valor" style="width:96%"></span></span>
+              <span class="barras__num tabular">96%</span></div>
+            <div class="barras__fila"><span>FedEx</span>
+              <span class="barras__pista"><span class="barras__valor barras__valor--aviso" style="width:91%"></span></span>
+              <span class="barras__num tabular">91%</span></div>
+            <div class="barras__fila"><span>Redpack</span>
+              <span class="barras__pista"><span class="barras__valor barras__valor--mal" style="width:82%"></span></span>
+              <span class="barras__num tabular">82%</span></div>
+          </div>
+          <p style="margin-top:14px;color:var(--muted);font-size:13px">
+            Escala de 0 a 100 siempre. Recortar el eje para exagerar diferencias es mentir con el
+            dato correcto; el color marca el umbral y la cifra da la precisión.
+          </p>
+          <span class="cls">.barras .barras__pista .barras__valor --aviso --mal</span>
+        </div></div>
+      </div>
+
+      <h3>Carga</h3>
+      <div class="muestra">
+        <div style="display:grid;gap:9px;max-width:420px">
+          <span class="esqueleto" style="height:13px;width:38%"></span>
+          <span class="esqueleto" style="height:13px;width:88%"></span>
+          <span class="esqueleto" style="height:13px;width:66%"></span>
+        </div>
+        <span class="cls">.esqueleto — con la forma del contenido que va a llegar, no un girador genérico</span>
+      </div>
+    </section>
+
+    <!-- ========================= NAVEGACIÓN ========================== -->
+    <section id="navegacion">
+      <h2>Pestañas y diálogos</h2>
+      <div class="muestra" style="padding-bottom:0">
+        <div class="pestanas" role="tablist">
+          <button class="pestana" role="tab" aria-selected="true" type="button">Todos</button>
+          <button class="pestana" role="tab" aria-selected="false" type="button">Detenidos</button>
+          <button class="pestana" role="tab" aria-selected="false" type="button">Por recolectar</button>
+          <button class="pestana" role="tab" aria-selected="false" type="button">Entregados</button>
+        </div>
+        <p style="padding:18px 0;color:var(--muted);font-size:13px">
+          Pestañas para vistas del mismo objeto. Para filtrar una lista van fichas
+          (<code>.ficha-filtro</code>), que se pueden combinar y quitar.
+        </p>
+      </div>
+      <span class="cls">.pestanas .pestana[aria-selected]</span>
+
+      <div class="muestra" style="margin-top:20px">
+        <button class="boton boton--peligro" type="button" id="abrir-dialogo">Cancelar recolección</button>
+        <span class="cls">dialog.dialogo — se abre con showModal(), cierra con Escape</span>
+      </div>
+
+      <dialog class="dialogo" id="dialogo">
+        <div class="dialogo__cabeza"><h2>¿Cancelar la recolección RC-8841?</h2></div>
+        <div class="dialogo__cuerpo">
+          DHL ya confirmó esta recolección de 14 piezas para mañana de 10:00 a 14:00.
+          Si la cancelas, hay que programar una nueva.
+        </div>
+        <div class="dialogo__pie">
+          <button class="boton boton--sutil" type="button" data-cerrar>Conservarla</button>
+          <button class="boton boton--peligro" type="button" data-cerrar>Sí, cancelar</button>
+        </div>
+      </dialog>
+    </section>
+
+    <!-- =========================== REGLAS ============================ -->
+    <section id="reglas">
+      <h2>Reglas que no se negocian</h2>
+      <p class="intro">
+        Cada una salió de un defecto real, medido. Si algo aquí se rompe, se rompe la accesibilidad
+        o se rompe el render.
+      </p>
+      <div class="muestra" style="margin-top:14px">
+        <div class="regla"><b>Texto sobre verde</b><span>Va <code>--abyss</code>, no blanco. Blanco sobre el acento da 3.46:1 y reprueba AA. El hover <b>aclara</b>; si oscureciera, el texto oscuro se quedaría sin contraste.</span></div>
+        <div class="regla"><b>Bordes de control</b><span><code>--field</code>, nunca <code>--hairline</code>. El decorativo no llega al 3:1 de 1.4.11.</span></div>
+        <div class="regla"><b>Piso de texto</b><span><code>white/50</code> sobre el fondo. Por debajo, reprueba.</span></div>
+        <div class="regla"><b>Color solo, nunca</b><span>Toda pastilla lleva su texto. El color acompaña, no informa por su cuenta.</span></div>
+        <div class="regla"><b>[hidden]</b><span>Necesita <code>!important</code>: varios componentes declaran <code>display:flex</code> y le ganan al atributo.</span></div>
+        <div class="regla"><b>thead pegajoso</b><span><code>top: 0</code>, no la altura de la barra. <code>.tabla-caja</code> es contenedor de scroll y el sticky se mide contra ella.</span></div>
+        <div class="regla"><b>Barras</b><span><code>display:block</code> a fuerza: son <code>&lt;span&gt;</code> y en línea no aplican <code>width</code> ni <code>height</code>.</span></div>
+        <div class="regla"><b>.boton</b><span>Declara <code>background</code>. Sin eso hereda el gris claro del navegador.</span></div>
+        <div class="regla"><b>Anchos en el CSS</b><span>Nunca en un <code>style=</code> del HTML: en línea, la consulta de medios no los puede corregir.</span></div>
+        <div class="regla"><b>En angosto se compacta</b><span>No se oculta. Esconder el arte del acceso dejaba un formulario pelón sobre un fondo plano.</span></div>
+        <div class="regla"><b>Foco visible</b><span>Anillo del acento a 2px en todo lo interactivo. No se quita nunca.</span></div>
+        <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+/* Los contrastes se miden sobre el render. Si alguien cambia un token, esta
+   página lo delata sola en vez de repetir una cifra que ya no es cierta. */
+const lienzo = document.createElement("canvas");
+lienzo.width = lienzo.height = 1;
+const ctx = lienzo.getContext("2d", { willReadFrequently: true });
+
+const rgba = (css) => {
+  ctx.clearRect(0, 0, 1, 1);
+  ctx.fillStyle = "#000"; ctx.fillStyle = css; ctx.fillRect(0, 0, 1, 1);
+  const d = ctx.getImageData(0, 0, 1, 1).data;
+  return [d[0], d[1], d[2], d[3] / 255];
+};
+const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+const sobre = (f, b) => [0, 1, 2].map((i) => f[i] * f[3] + b[i] * (1 - f[3])).concat([1]);
+const razon = (a, b) => {
+  const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+};
+const tk = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hex = (c) => "#" + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+
+const ABYSS = rgba(tk("--abyss"));
+
+function ficha({ nombre, valor, fondo = ABYSS, texto, nota, contra, hexToken }) {
+  const color = rgba(valor);
+  const plano = color[3] < 1 ? sobre(color, fondo) : color;
+  // Lo que se imprime es el valor del token documentado. Cuando el token es de
+  // texto, el recuadro se pinta con el fondo y el token va encima: imprimir el
+  // fondo ahí sería documentar el color equivocado.
+  const documentado = hexToken || (texto && texto !== valor ? texto : valor);
+  const planoDoc = rgba(documentado);
+  let medida = "";
+  if (contra) {
+    const c = razon(sobre(rgba(contra.color), plano), plano);
+    const pasa = c >= contra.min;
+    medida = `<p class="razon ${pasa ? "razon--ok" : "razon--no"}">${c.toFixed(2)}:1 · ${contra.que} · ${pasa ? "cumple" : "REPRUEBA"}</p>`;
+  }
+  return `
+    <div class="ficha-color">
+      <div class="ficha-color__tapa" style="background:${valor};color:${texto || "transparent"}">${texto ? "Texto" : ""}</div>
+      <div class="ficha-color__pie">
+        <b>${nombre}</b>
+        <span>${documentado}${planoDoc[3] < 1 ? " → " + hex(sobre(planoDoc, plano)) : ""}</span>
+        ${nota ? `<p class="razon" style="color:var(--muted)">${nota}</p>` : ""}
+        ${medida}
+      </div>
+    </div>`;
+}
+
+const pinta = (id, fichas) => { document.getElementById(id).innerHTML = fichas.map(ficha).join(""); };
+
+pinta("superficies", [
+  { nombre: "--abyss", valor: tk("--abyss"), nota: "La página. Único derivado del modo oscuro." },
+  { nombre: "--navy-900", valor: tk("--navy-900"), nota: "Tarjetas, barra lateral, encabezado de tabla." },
+  { nombre: "--navy", valor: tk("--navy"), nota: "Lo que está por encima de una tarjeta." },
+  { nombre: "--navy-700", valor: tk("--navy-700"), nota: "Avatares y pastilla informativa." },
+]);
+
+// Un token de texto se muestra SOBRE el fondo, no como fondo: medirlo contra
+// sí mismo da 1.00:1 y no significa nada.
+pinta("textos", [
+  { nombre: "--ink", valor: tk("--abyss"), texto: tk("--ink"),
+    nota: "Titulares y dato principal.",
+    contra: { color: tk("--ink"), min: 4.5, que: "sobre abyss" } },
+  { nombre: "--muted", valor: tk("--abyss"), texto: tk("--muted"),
+    nota: "Apoyo, etiquetas y celdas secundarias.",
+    contra: { color: tk("--muted"), min: 4.5, que: "sobre abyss" } },
+  { nombre: "--ink sobre tarjeta", valor: tk("--navy-900"), texto: tk("--ink"),
+    nota: "El mismo texto, una superficie arriba.",
+    contra: { color: tk("--ink"), min: 4.5, que: "sobre navy-900" } },
+  { nombre: "--muted sobre tarjeta", valor: tk("--navy-900"), texto: tk("--muted"),
+    nota: "El piso real del texto de apoyo.",
+    contra: { color: tk("--muted"), min: 4.5, que: "sobre navy-900" } },
+]);
+
+pinta("marca", [
+  { nombre: "--accent", valor: tk("--accent"), texto: tk("--abyss"), hexToken: tk("--accent"),
+    nota: "Fondo de botón principal. El texto encima va en abyss.",
+    contra: { color: tk("--abyss"), min: 4.5, que: "texto abyss encima" } },
+  { nombre: "--accent (como texto)", valor: tk("--abyss"), texto: tk("--accent"),
+    nota: "El acento como color de texto sobre el fondo.",
+    contra: { color: tk("--accent"), min: 4.5, que: "sobre abyss" } },
+  { nombre: "--accent-claro", valor: tk("--abyss"), texto: tk("--accent-claro"),
+    nota: "Enlaces, cifras de acento y estado correcto.",
+    contra: { color: tk("--accent-claro"), min: 4.5, que: "sobre abyss" } },
+]);
+
+pinta("lineas", [
+  { nombre: "--hairline", valor: tk("--hairline"), nota: "Separadores. NO sirve como borde de control." },
+  { nombre: "--hairline-fuerte", valor: tk("--hairline-fuerte"), nota: "Bordes de botón fantasma." },
+  { nombre: "--field", valor: tk("--field"), nota: "Borde de campo. Cumple el 3:1 de 1.4.11." },
+  { nombre: "--hover", valor: tk("--hover"), nota: "Fila de tabla y ficha de menú bajo el cursor." },
+]);
+
+// Un estado es un par: relleno tenue más texto legible encima. Se documenta el
+// relleno, y el color del texto va en la nota porque no se elige por separado.
+pinta("estado", [
+  { nombre: "correcto", valor: "rgba(15,157,110,.15)", texto: tk("--accent-claro"),
+    hexToken: "rgba(15,157,110,.15)", nota: "Texto #6EE7B7 · borde accent/45",
+    contra: { color: tk("--accent-claro"), min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "problema", valor: "rgba(248,113,113,.12)", texto: "#fca5a5",
+    hexToken: "rgba(248,113,113,.12)", nota: "Texto #FCA5A5 · borde #F87171/40",
+    contra: { color: "#fca5a5", min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "pendiente", valor: "rgba(251,191,36,.12)", texto: "#fde68a",
+    hexToken: "rgba(251,191,36,.12)", nota: "Texto #FDE68A · borde #FBBF24/40",
+    contra: { color: "#fde68a", min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "informativo", valor: "rgba(43,58,103,.45)", texto: "#e6e9f1",
+    hexToken: "rgba(43,58,103,.45)", nota: "Texto #E6E9F1 · borde navy-700",
+    contra: { color: "#e6e9f1", min: 4.5, que: "texto de la pastilla" } },
+]);
+
+const dialogo = document.getElementById("dialogo");
+document.getElementById("abrir-dialogo").addEventListener("click", () => dialogo.showModal());
+dialogo.querySelectorAll("[data-cerrar]").forEach((b) => b.addEventListener("click", () => dialogo.close()));
+</script>
+</body>
+</html>
