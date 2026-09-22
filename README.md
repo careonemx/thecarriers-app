@@ -25,8 +25,9 @@ sistema.html               el sistema de diseño, renderizado
 login.html                 entrar
 recuperar.html             recuperar contraseña
 
-app/inicio.html            qué atender hoy, antes de las métricas
-app/pedidos.html           el módulo de pedidos del MVP, vestido
+app/pedidos.html           la pantalla de entrada: franja "Hoy" y la lista
+app/inicio.html            redirección: Inicio dejó de ser una pantalla
+app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
 app/pendiente.html         nota para las pantallas del MVP sin vestir
 
 app/envios.html            la tabla principal, con filtros y métricas

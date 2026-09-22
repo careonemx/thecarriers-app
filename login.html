@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Entrar · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=948af1b6">
-<script src="assets/vigia.js?v=948af1b6" defer></script>
+<link rel="stylesheet" href="assets/app.css?v=1effd3ee">
+<script src="assets/vigia.js?v=1effd3ee" defer></script>
 </head>
 <body>
 <div class="auth">
@@ -108,7 +108,7 @@
 </div>
 
 <script type="module">
-  import { sesion } from "./assets/app.js?v=948af1b6";
+  import { sesion } from "./assets/app.js?v=1effd3ee";
 
   const form = document.getElementById("acceso");
   const error = document.getElementById("error");
@@ -126,7 +126,7 @@
       return;
     }
     sesion.abrir(correo);
-    location.href = "app/" + (destino && /^[a-z-]+\.html$/.test(destino) ? destino : "envios.html");
+    location.href = "app/" + (destino && /^[a-z-]+\.html$/.test(destino) ? destino : "pedidos.html");
   });
 </script>
 </body>

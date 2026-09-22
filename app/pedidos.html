@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=948af1b6">
-<script src="../assets/vigia.js?v=948af1b6" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=1effd3ee">
+<script src="../assets/vigia.js?v=1effd3ee" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -17,15 +17,16 @@
       <p>Los pedidos que entran por tus canales de venta. Desde aquí se genera la guía con tus propias cuentas de paquetería.</p>
     </div>
     <div class="encabezado__acciones">
-      <button class="boton boton--sutil" type="button" id="actualizar">Actualizar</button>
-      <button class="boton boton--fantasma" type="button" id="sincronizar">
+      <button class="boton boton--sutil" type="button" id="sincronizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/></svg>
         Sincronizar estatus
       </button>
     </div>
   </div>
 
-  <div class="rejilla rejilla--4" style="margin-bottom:16px" id="metricas"></div>
+  <section class="hoy" id="hoy" aria-label="Pendientes de hoy"></section>
+
+  <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
 
   <section class="tarjeta">
     <div class="tarjeta__cabeza" style="padding-bottom:0;border-bottom:0">
@@ -61,6 +62,9 @@
       <select id="fp"><option value="">Toda paquetería</option></select>
       <label class="sr-only" for="fc">Filtrar por canal</label>
       <select id="fc"><option value="">Todo canal</option></select>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <button class="ficha-filtro ficha-filtro--quitable" type="button" id="ficha-foco" hidden></button>
 
       <span class="filtros__sep"></span>
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
@@ -115,11 +119,14 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=948af1b6";
-import { pedidos, sinGuia, conGuia, conError, ingresos,
+import { montar, exigirSesion } from "../assets/app.js?v=1effd3ee";
+import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
+         PENDIENTES, recoleccionesHoy, detenidoMasAntiguo,
+         conexionesCaidas, reconectar, romperConexion, minutosDesdeSync,
+         origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=948af1b6";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=1effd3ee";
 if (exigirSesion()) {
   montar();
 
@@ -144,8 +151,7 @@ if (exigirSesion()) {
   document.getElementById("metricas").innerHTML =
     metrica("Total de pedidos", pedidos.length, "En el periodo") +
     metrica("Sin guía", sinGuia.length, conError.length ? `${conError.length} con error al generarla` : "Pendientes de despachar") +
-    metrica("En tránsito", cuenta("transito"), `${cuenta("detenidos")} detenidos`) +
-    metrica("Ingresos", dineroMXN(ingresos), "Suma de los pedidos");
+    metrica("En tránsito", cuenta("transito"), `${cuenta("detenidos")} detenidos`);
 
   /* La columna de envío carga tres cosas distintas: la guía si existe, el
      error si lo hubo, y —lo que el MVP todavía no dice— cuántos días lleva
@@ -923,7 +929,25 @@ if (exigirSesion()) {
       verbo: "Continuar con",
       aplica: (p) => (!p.envio ? "Todavía no tiene guía"
                       : p.recoleccion ? "Ya tiene recolección" : null),
-      resumen: "Se agrupan por paquetería y origen, y se abre el flujo de recolección precargado.",
+      resumen: "Cada paquetería recoge por su cuenta: sale una solicitud por grupo.",
+      /* Una recolección se pide POR paquetería y POR origen: no existe una
+         sola que junte un paquete de DHL con uno de FedEx. Enseñar los grupos
+         antes de continuar es enseñar cuántas solicitudes van a salir. */
+      detalle: (lista) => {
+        const grupos = {};
+        for (const p of lista) {
+          const clave = `${p.envio.paqueteria} · ${origen.contacto}`;
+          (grupos[clave] ||= []).push(p);
+        }
+        return `<div>
+          <p style="color:var(--ink);font-size:13px;margin-bottom:8px">
+            ${Object.keys(grupos).length} ${Object.keys(grupos).length === 1
+              ? "solicitud" : "solicitudes"}, agrupadas por paquetería y origen:</p>
+          ${Object.entries(grupos).map(([k, ps]) => `
+            <div class="dato"><span>${esc(k)}</span>
+              <span>${ps.length} ${ps.length === 1 ? "guía" : "guías"}</span></div>`).join("")}
+        </div>`;
+      },
     },
   };
 
@@ -984,6 +1008,8 @@ if (exigirSesion()) {
 
         ${cortados ? `<p class="aviso aviso--mal">En esta versión el lote admite ${TOPE_LOTE} pedidos.
           Quedan ${cortados} fuera; ejecútalos en una segunda pasada.</p>` : ""}
+
+        ${cfg.detalle ? cfg.detalle(aprocesar) : ""}
 
         <p style="color:var(--muted);font-size:13px">${cfg.resumen}</p>
       </div>
@@ -1176,12 +1202,22 @@ if (exigirSesion()) {
       .forEach((v) => sel.add(new Option(v, v)));
   }
 
+  /* El foco es un filtro más: si no contara como tal, "Quitar filtros" no
+     aparecería y la lista se quedaría corta sin que nada explique por qué. */
+  let foco = null;
+
   const hayFiltro = () =>
-    !!(desde.value || hasta.value || selPaq.value || selCanal.value ||
+    !!(foco || desde.value || hasta.value || selPaq.value || selCanal.value ||
        (busqueda?.value || "").trim());
 
-  function pasa({ p, fila }) {
-    if (vista !== "todos" && fila.dataset.vista !== vista) return false;
+  /* El filtrado está partido en tres a propósito.
+
+     `pasaBase` son los filtros que el usuario dejó puestos: fecha, paquetería,
+     canal, búsqueda. Las cifras de la franja se cuentan CON ellos y SIN la
+     pestaña ni el foco, que es exactamente lo que va a quedar al pulsarlas.
+     Si se contaran sobre la lista completa, la franja diría cinco con el
+     filtro de "Hoy" puesto y al hacer clic aparecerían dos. */
+  function pasaBase({ p, fila }) {
     if (desde.value && p.fecha < desde.value) return false;
     if (hasta.value && p.fecha > hasta.value) return false;
     if (selPaq.value && p.envio?.paqueteria !== selPaq.value) return false;
@@ -1190,6 +1226,16 @@ if (exigirSesion()) {
     if (texto && !fila.textContent.toLowerCase().includes(texto)) return false;
     return true;
   }
+
+  function pasa(item) {
+    if (vista !== "todos" && item.fila.dataset.vista !== vista) return false;
+    if (foco && !PENDIENTES[foco].pasa(item.p)) return false;
+    return pasaBase(item);
+  }
+
+  /** Cuántos hay de un pendiente, con los filtros que el usuario dejó puestos. */
+  const contarPendiente = (clave) =>
+    [...porFolio.values()].filter((it) => pasaBase(it) && PENDIENTES[clave].pasa(it.p)).length;
 
   /* La paginación corta lo FILTRADO, no la lista completa: si filtras y la
      página sigue mostrando los mismos veintitantos, el filtro no sirvió de
@@ -1230,6 +1276,8 @@ if (exigirSesion()) {
 
     document.querySelector("[data-sin-resultados]").hidden = coinciden.length > 0;
     limpiar.hidden = !hayFiltro();
+    pintarFoco();
+    pintarHoy();
     revisarSeleccion();
   }
 
@@ -1282,6 +1330,7 @@ if (exigirSesion()) {
     desde.value = hasta.value = "";
     selPaq.value = selCanal.value = "";
     if (busqueda) busqueda.value = "";
+    foco = null;
     marcarAtajo();
     aplicar();
   });
@@ -1335,6 +1384,168 @@ if (exigirSesion()) {
     const b = e.target.closest("[data-abrir]");
     if (b) { e.preventDefault(); abrirPanel(b.dataset.abrir); }
   });
+
+  /* ---------- Franja "Hoy" ----------
+     Cada cifra es un botón y cada botón hace lo que su número promete. Lo que
+     se cuenta y lo que se filtra salen del MISMO predicado (`PENDIENTES`), así
+     que no pueden decir cosas distintas.
+
+     Las etiquetas son cortas a propósito: van debajo de un número grande y en
+     una columna angosta. El bloque que las agrupa —"Por hacer", "Problemas"—
+     da el contexto que la etiqueta no tiene que cargar. */
+  const fichaFoco = document.getElementById("ficha-foco");
+  const hoy = document.getElementById("hoy");
+
+  const PLAN = {
+    hacer: { titulo: "Por hacer", cifras: ["pagados-sin-guia", "sin-recoleccion"] },
+    problema: { titulo: "Problemas", cifras: ["detenidos", "error-guia", "por-corregir"] },
+  };
+  const CORTO = {
+    "pagados-sin-guia": "Pagados sin guía",
+    "sin-recoleccion": "Sin recolección",
+    "detenidos": "Detenidos",
+    "error-guia": "Guías fallidas",
+    "por-corregir": "Por corregir",
+  };
+
+  function pintarFoco() {
+    fichaFoco.hidden = !foco;
+    if (foco) {
+      fichaFoco.setAttribute("aria-pressed", "true");
+      fichaFoco.innerHTML = `${PENDIENTES[foco].etiqueta}<span aria-hidden="true">✕</span>`;
+      fichaFoco.setAttribute("aria-label", `Quitar el filtro ${PENDIENTES[foco].etiqueta}`);
+    }
+  }
+  fichaFoco.addEventListener("click", () => { foco = null; aplicar(); });
+
+  const cifra = (clave, n) => `
+    <button class="cifra${n === 0 ? " cifra--cero" : ""}${
+      n > 0 && PENDIENTES[clave].grupo === "problema" ? " cifra--urge" : ""}"
+      type="button" data-pendiente="${clave}"${n === 0 ? " disabled" : ""}>
+      <b class="cifra__n">${n}</b>
+      <span class="cifra__et">${CORTO[clave]}</span>
+    </button>`;
+
+  function bloqueConexion() {
+    const caidas = conexionesCaidas();
+    if (!caidas.length) return "";
+    return `<div class="hoy__bloque">
+      <p class="hoy__titulo">Conexiones</p>
+      ${caidas.map((c) => `<div class="hoy__conexion">
+        <b>${c.nombre} · ${c.motivo} desde ${c.desde}</b>
+        <span>${c.detalle}</span>
+        <div><button class="boton boton--primario boton--chico" type="button"
+          data-reconectar="${c.id}">Reconectar</button></div>
+      </div>`).join("")}
+    </div>`;
+  }
+
+  function pintarHoy() {
+    const visibles = [...porFolio.values()].filter(pasaBase);
+    const n = Object.fromEntries(Object.keys(PENDIENTES).map((k) => [k, contarPendiente(k)]));
+    const total = Object.values(n).reduce((a, b) => a + b, 0);
+    const conexion = bloqueConexion();
+
+    /* Nada pendiente: una línea y la tabla sube. Pero si una conexión está
+       caída sigue apareciendo su bloque: es lo único que se puede hacer. */
+    if (total === 0) {
+      hoy.className = conexion ? "hoy" : "hoy hoy--vacia";
+      hoy.innerHTML = `<div class="hoy__bloque">
+        <b>Nada pendiente.</b>
+        <span>Última sincronización hace ${minutosDesdeSync} min.</span>
+      </div>${conexion}`;
+      return;
+    }
+
+    const viejo = detenidoMasAntiguo(visibles.map((it) => it.p));
+    const proxima = recoleccionesHoy[0];
+
+    hoy.className = "hoy";
+    hoy.innerHTML = `
+      <div class="hoy__bloque">
+        <p class="hoy__titulo">${PLAN.hacer.titulo}</p>
+        <div class="hoy__cifras">
+          ${PLAN.hacer.cifras.map((k) => cifra(k, n[k])).join("")}
+          <button class="cifra${recoleccionesHoy.length ? "" : " cifra--cero"}" type="button"
+            data-ir="recolecciones.html"${recoleccionesHoy.length ? "" : " disabled"}>
+            <b class="cifra__n">${recoleccionesHoy.length}</b>
+            <span class="cifra__et">Recolecciones hoy</span>
+          </button>
+        </div>
+        <div class="hoy__pie">
+          ${proxima ? `<span>Próxima: ${proxima.paqueteria} · ${proxima.ventana} · ${proxima.piezas} piezas</span>` : ""}
+          <span>Última sincronización hace ${minutosDesdeSync} min</span>
+        </div>
+      </div>
+
+      <div class="hoy__bloque">
+        <p class="hoy__titulo">${PLAN.problema.titulo}</p>
+        <div class="hoy__cifras">
+          ${PLAN.problema.cifras.map((k) => cifra(k, n[k])).join("")}
+        </div>
+        <div class="hoy__pie">
+          ${viejo ? `<span>El detenido más antiguo lleva ${viejo.dias} ${viejo.dias === 1 ? "día" : "días"}.</span>` : ""}
+        </div>
+      </div>
+      ${conexion}`;
+  }
+
+  /* Enfocar: la pestaña vuelve a "Todos" porque si no, una pestaña activa
+     podría esconder justo lo que el número prometió. */
+  function enfocar(clave, { seleccionar = false } = {}) {
+    foco = clave;
+    vista = "todos";
+    pestanas.forEach((o) => o.setAttribute("aria-selected", String(o.dataset.vista === "todos")));
+
+    if (seleccionar) {
+      /* La selección solo alcanza a las filas visibles, así que la página
+         tiene que caber: si no, la barra diría "(10)" donde la franja dijo 12. */
+      const n = contarPendiente(clave);
+      const opcion = [...porPagina.options].find((o) => +o.value >= n);
+      if (opcion) porPagina.value = opcion.value;
+    }
+
+    aplicar();
+
+    if (seleccionar) {
+      filas.forEach((f) => { const c = f.querySelector(".sel"); if (c) c.checked = !f.hidden; });
+      revisarSeleccion();
+      hoy.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
+  hoy.addEventListener("click", (e) => {
+    const ir = e.target.closest("[data-ir]");
+    if (ir) { location.href = ir.dataset.ir; return; }
+
+    const re = e.target.closest("[data-reconectar]");
+    if (re) { reconectar(); pintarHoy(); return; }
+
+    const b = e.target.closest("[data-pendiente]");
+    if (!b || b.disabled) return;
+    const clave = b.dataset.pendiente;
+
+    if (clave === "detenidos") { location.href = "excepciones.html"; return; }
+
+    /* Recolección no es solo un filtro: el número promete abrir el flujo, así
+       que lo abre, ya con esas guías dentro. */
+    if (clave === "sin-recoleccion") {
+      enfocar(clave, { seleccionar: true });
+      abrirLote("recoleccion");
+      return;
+    }
+
+    enfocar(clave, { seleccionar: clave === "pagados-sin-guia" });
+  });
+
+  /* Gancho para probar el bloque de conexiones sin tener que romper nada:
+     ?conexion=shopify lo levanta, "Reconectar" lo baja. Se limpia la URL para
+     que una recarga no lo vuelva a encender. */
+  const romper = new URLSearchParams(location.search).get("conexion");
+  if (romper) {
+    romperConexion(romper);
+    history.replaceState(null, "", location.pathname + location.search.replace(/[?&]conexion=[^&]*/, "").replace(/^&/, "?"));
+  }
 
   const abrirAlEntrar = new URLSearchParams(location.search).get("pedido");
   if (abrirAlEntrar) abrirPanel("#" + abrirAlEntrar.replace(/[^0-9]/g, ""));

@@ -80,8 +80,8 @@ const enviosBase = [
 ];
 
 export const recolecciones = [
-  { fecha: "2026-09-22", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, estado: "Confirmada", folio: "RC-8841" },
-  { fecha: "2026-09-22", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, estado: "Confirmada", folio: "RC-8842" },
+  { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, estado: "Confirmada", folio: "RC-8841" },
+  { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, estado: "Confirmada", folio: "RC-8842" },
   { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, estado: "Por confirmar", folio: "RC-8845" },
   { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, estado: "Confirmada", folio: "RC-8846" },
   { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, estado: "Recurrente", folio: "RC-8850" },
@@ -161,7 +161,8 @@ const pedidosBase = [
   { folio: "#1006", fecha: "2026-09-17", total: 60, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada", costo: 156, peso: 3.4 } },
+    pago: "Pagado", recoleccion: "RC-8841",
+    envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada", costo: 156, peso: 3.4 } },
 
   { folio: "#1005", fecha: "2026-09-17", total: 50, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
@@ -171,12 +172,14 @@ const pedidosBase = [
   { folio: "#1004", fecha: "2026-09-17", total: 30, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: null },
+    pago: "Pagado", envio: null,
+    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle." },
 
   { folio: "#1003", fecha: "2026-09-17", total: 10, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: null },
+    pago: "Pagado", envio: null,
+    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle." },
 
   // Un pedido al que le falla la generación de la guía. El MVP todavía no
   // tiene este estado y es el que más duele: el pedido parece pendiente,
@@ -371,6 +374,105 @@ export function marcarImpresas(guias) {
 }
 
 export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
+
+/* =================================================================
+ * Lo pendiente.
+ *
+ * Un solo lugar define qué cuenta como pendiente de cada tipo. La franja de
+ * Pedidos usa estos predicados para CONTAR y la tabla los usa para FILTRAR:
+ * si cada una tuviera el suyo, tarde o temprano la cifra diría cinco y al
+ * hacer clic saldrían cuatro, y entonces no se puede confiar en ninguna.
+ *
+ * Los tres primeros son trabajo por hacer; los tres siguientes, problemas.
+ * "Pagados sin guía" excluye los que fallaron y los que esperan corrección
+ * porque ésos no se arreglan generando: cada uno tiene su propio camino.
+ * ================================================================= */
+
+const necesitaRecoleccion = (p) =>
+  !!p.envio && !p.recoleccion && ["Creada", "Generada", "Recolección pendiente"].includes(p.envio.estado);
+
+export const PENDIENTES = {
+  "pagados-sin-guia": {
+    grupo: "hacer", etiqueta: "Pagados sin guía",
+    pasa: (p) => p.pago === "Pagado" && !p.envio && !p.error && !p.requiereCorreccion,
+  },
+  "sin-recoleccion": {
+    grupo: "hacer", etiqueta: "Guías sin recolección",
+    pasa: necesitaRecoleccion,
+  },
+  "detenidos": {
+    grupo: "problema", etiqueta: "Detenidos en paquetería",
+    pasa: (p) => p.envio?.estado === "Detenido" || p.envio?.estado === "Con incidencia",
+  },
+  "error-guia": {
+    grupo: "problema", etiqueta: "Guías que no se pudieron generar",
+    pasa: (p) => !!p.error,
+  },
+  "por-corregir": {
+    grupo: "problema", etiqueta: "Direcciones por corregir",
+    pasa: (p) => !!p.requiereCorreccion,
+  },
+};
+
+/** Las recolecciones de hoy, de la más próxima a la más tardía. */
+export const recoleccionesHoy = recolecciones
+  .filter((r) => r.fecha === HOY)
+  .sort((a, b) => a.ventana.localeCompare(b.ventana));
+
+/**
+ * Antigüedad del detenido más viejo, en días desde el último evento que
+ * reportó la paquetería. No desde que se creó la guía: un envío puede llevar
+ * dos semanas en ruta y estar detenido desde ayer.
+ */
+export const detenidoMasAntiguo = (lista = pedidos) => {
+  const fechas = lista
+    .filter(PENDIENTES.detenidos.pasa)
+    .map((p) => p.envio.detenidoDesde)
+    .filter(Boolean);
+  if (!fechas.length) return null;
+  const vieja = fechas.sort()[0];
+  return { fecha: vieja, dias: diasDesde(vieja) };
+};
+
+/* =================================================================
+ * Conexiones.
+ *
+ * El detalle de qué está conectado vive en Configuración. Aquí solo interesa
+ * lo que está roto, porque es lo único que exige una acción hoy.
+ *
+ * La caída se simula con `?conexion=<id>` y se guarda en la sesión: hace
+ * falta para poder enseñar el bloque y verlo desaparecer al reconectar, que
+ * es justo lo que hay que poder probar.
+ * ================================================================= */
+
+export const conexiones = [
+  { id: "shopify", tipo: "Canal", nombre: "Shopify", detalle: tienda.dominio },
+  { id: "dhl", tipo: "Paquetería", nombre: "DHL", detalle: "Cuenta 9540213" },
+  { id: "estafeta", tipo: "Paquetería", nombre: "Estafeta", detalle: "Cuenta 0117702" },
+  { id: "fedex", tipo: "Paquetería", nombre: "FedEx", detalle: "Cuenta 602113448" },
+];
+
+const CLAVE_CAIDA = "tc:conexion-caida";
+
+/** Las conexiones con problema. Vacío cuando todo responde. */
+export function conexionesCaidas() {
+  let caida = null;
+  try { caida = sessionStorage.getItem(CLAVE_CAIDA); } catch { /* modo privado */ }
+  if (!caida) return [];
+  const c = conexiones.find((x) => x.id === caida);
+  return c ? [{ ...c, desde: "hace 3 h", motivo: "sin sincronizar" }] : [];
+}
+
+export function romperConexion(id) {
+  try { sessionStorage.setItem(CLAVE_CAIDA, id); } catch { /* modo privado */ }
+}
+
+export function reconectar() {
+  try { sessionStorage.removeItem(CLAVE_CAIDA); } catch { /* modo privado */ }
+}
+
+/** Minutos desde la última sincronización. Fijo: no hay con qué sincronizar. */
+export const minutosDesdeSync = 4;
 
 /** El envío es una vista del pedido, no otra lista. */
 export const envios = pedidos

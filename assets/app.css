@@ -286,6 +286,10 @@ select option { background: var(--navy-900); }
 .ficha-filtro[aria-pressed="true"] {
   border-color: rgba(15,157,110,.5); background: rgba(15,157,110,.14); color: var(--accent-claro);
 }
+/* Ficha que se quita: la pone la franja al enfocar un pendiente. Sin ella la
+   lista se queda corta y nada en pantalla dice por qué. */
+.ficha-filtro--quitable span { opacity: .7; font-size: 13px; line-height: 1; }
+.ficha-filtro--quitable:hover span { opacity: 1; }
 
 /* -----------------------------------------------------------------
  * Tabla
@@ -646,6 +650,73 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 }
 .conmutador button:hover { color: var(--ink); }
 .conmutador button[aria-pressed="true"] { background: rgba(255,255,255,.09); color: var(--ink); }
+
+/* ---------- Franja "Hoy" ----------
+   Va arriba de la tabla, no en otra pantalla: lo pendiente y la lista donde
+   se resuelve son la misma vista. Cada cifra es un botón que filtra la tabla
+   de abajo, así que el número y lo que aparece al pulsarlo salen del mismo
+   predicado y no se pueden separar.
+
+   `auto-fit` resuelve solo el caso de las conexiones: cuando no hay ninguna
+   caída el bloque no se renderiza y los otros dos ocupan el ancho, sin que
+   nadie tenga que cambiar las columnas. */
+.hoy {
+  display: grid; gap: 14px; margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.hoy__bloque {
+  display: grid; grid-template-rows: auto auto 1fr; gap: 13px;
+  padding: 15px 18px 17px;
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900);
+}
+.hoy__titulo {
+  color: var(--muted); font-size: 11px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.hoy__cifras { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+
+/* Las notas largas van al pie del bloque, no debajo de su cifra: en una
+   columna de noventa y pico píxeles, "DHL · 10:00 – 14:00 · 14 piezas" se
+   parte en cuatro renglones y deja de leerse de un vistazo. */
+.hoy__pie { display: grid; gap: 3px; margin-top: auto; padding-top: 2px; }
+.hoy__pie span { font-size: 11px; color: var(--muted); }
+
+/* Sin icono y sin párrafo: el número es lo que se lee, y el texto solo dice
+   de qué es. El botón no se pinta como botón para no hacer ruido, pero
+   conserva su foco y su área de clic. */
+.cifra {
+  display: block; align-self: start; padding: 3px 0; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.cifra:disabled { cursor: default; }
+.cifra__n {
+  display: block; font-size: 27px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.cifra__et { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.cifra__nota { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+.cifra--cero .cifra__n { color: var(--muted); }
+.cifra--urge .cifra__n { color: #fca5a5; }
+.cifra:not(:disabled):hover .cifra__et { color: var(--ink); }
+.cifra:not(:disabled):hover .cifra__n { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Conexiones: solo aparece cuando algo dejó de responder. */
+.hoy__conexion { display: grid; gap: 9px; }
+.hoy__conexion b { font-size: 14px; }
+.hoy__conexion span { font-size: 12px; color: var(--muted); }
+
+/* Nada pendiente: una línea, y la tabla sube. */
+.hoy--vacia {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+.hoy--vacia .hoy__bloque {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
+  padding: 12px 18px;
+}
+.hoy--vacia .hoy__bloque b { font-weight: 600; }
+.hoy--vacia .hoy__bloque span { font-size: 12px; color: var(--muted); }
 
 /* ---------- Barra de selección múltiple ----------
    Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando
@@ -1116,6 +1187,8 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   /* Cuatro cifras cortas caben en dos columnas; una sola convierte el
      encabezado en una escalera de cuatro pantallazos. */
   .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }
+  .hoy { grid-template-columns: minmax(0, 1fr); }
+  .hoy__cifras { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
   .encabezado h1 { font-size: 20px; }
 }
