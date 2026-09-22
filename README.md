@@ -58,9 +58,23 @@ no lo reemplaza: el módulo de Pedidos conserva su estructura —pestañas Todos
 enviar / Enviados, conmutador Clásico / Mosaico, insignia de la tienda conectada,
 Sincronizar estatus, casillas solo en lo pendiente, paginación— y le aplica el sistema.
 
-El menú lateral separa **Operación** (lo del MVP) de **Propuesto** (lo que falta por
-decidir). Los ítems con un punto ya existen en la app y solo están pendientes de vestir;
-llevan a una nota, no a un 404.
+### Una sola navegación
+
+El menú no separa "lo del MVP" de "lo propuesto": se ordena por el recorrido real del
+trabajo, en tres grupos — **Operación**, **Análisis** y **Ajustes**. El punto marca las
+pantallas que todavía no existen en este prototipo; llevan a una nota, no a un 404.
+
+**Pedidos y Envíos son el mismo objeto en dos momentos.** El pedido entra por un canal y
+pregunta *¿ya tiene guía?*; cuando la tiene se convierte en un envío y la pregunta cambia
+a *¿dónde va y va a llegar a tiempo?*. Por eso van seguidos en el menú, y por eso los
+pedidos con guía se normalizan y entran a la misma lista que el resto de los envíos: si
+cada pantalla tuviera su propia lista, Rastrear llevaría a una guía que no existe en
+Envíos y las dos mitades del producto no se hablarían.
+
+El recorrido cierra en los dos sentidos: Pedidos → Rastrear abre el detalle del envío, y
+el detalle enlaza de vuelta a su pedido. **Excepciones** es una vista filtrada de Envíos,
+pero se saca al menú con su cuenta a la vista porque es lo único que exige que alguien
+actúe.
 
 Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
 

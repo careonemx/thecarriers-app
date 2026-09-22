@@ -42,12 +42,19 @@ const svg = (d, clase = "") =>
     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="${clase}">${d}</svg>`;
 
 /**
- * El menú separa lo que ya existe del MVP de lo que estamos proponiendo.
- * Mezclarlos haría creer que todo está construido; marcarlo deja ver de un
- * vistazo qué es de Lalo y qué falta por decidir.
+ * Una sola navegación, ordenada por el recorrido real del trabajo.
  *
- * `pendiente` significa que la pantalla existe en la app pero todavía no la
- * hemos vestido: se navega a una nota, no a un 404.
+ * Pedidos y Envíos no son dos productos: son el mismo objeto en dos
+ * momentos. El pedido entra por un canal y pregunta "¿ya tiene guía?";
+ * cuando la tiene se convierte en un envío y la pregunta cambia a
+ * "¿dónde va y va a llegar a tiempo?". Por eso van seguidos, y por eso
+ * Rastrear en Pedidos abre el detalle del envío: es el mismo objeto.
+ *
+ * Excepciones es una vista filtrada de Envíos, pero se saca al menú con
+ * su cuenta a la vista porque es lo único que exige que alguien actúe.
+ *
+ * El punto marca las pantallas que todavía no existen en este prototipo:
+ * llevan a una nota, no a un 404.
  */
 const GRUPOS = [
   {
@@ -55,20 +62,25 @@ const GRUPOS = [
     items: [
       { id: "inicio", texto: "Inicio", href: "inicio.html" },
       { id: "pedidos", texto: "Pedidos", href: "pedidos.html", cuenta: sinGuia.length },
+      { id: "envios", texto: "Envíos", href: "envios.html" },
+      { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
+      { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
+    ],
+  },
+  {
+    titulo: "Análisis",
+    items: [
+      { id: "desempeno", texto: "Desempeño", href: "desempeno.html" },
+      { id: "cobros", texto: "Cobros", href: "cobros.html" },
+    ],
+  },
+  {
+    titulo: "Ajustes",
+    items: [
       { id: "origenes", texto: "Orígenes", href: "pendiente.html?p=Orígenes", pendiente: true },
       { id: "plantillas", texto: "Plantillas", href: "pendiente.html?p=Plantillas", pendiente: true },
       { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },
       { id: "ajustes", texto: "Configuración", href: "pendiente.html?p=Configuración", pendiente: true },
-    ],
-  },
-  {
-    titulo: "Propuesto",
-    items: [
-      { id: "envios", texto: "Envíos", href: "envios.html" },
-      { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
-      { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
-      { id: "desempeno", texto: "Desempeño", href: "desempeno.html" },
-      { id: "cobros", texto: "Cobros", href: "cobros.html" },
     ],
   },
 ];
@@ -79,7 +91,7 @@ function lateral(activa) {
     ${g.items.map((s) => `
       <a class="nav-item${s.pendiente ? " nav-item--pendiente" : ""}" href="${s.href}"${
         s.id === activa ? ' aria-current="page"' : ""
-      }${s.pendiente ? ' title="Ya existe en la app; falta vestirla"' : ""}>
+      }${s.pendiente ? ' title="Todavía no hay pantalla para esto en el prototipo"' : ""}>
         ${svg(icono[s.id])}
         <span>${s.texto}</span>
         ${s.cuenta ? `<span class="nav-item__cuenta">${s.cuenta}</span>` : ""}

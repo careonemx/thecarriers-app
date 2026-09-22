@@ -52,7 +52,7 @@ if (exigirSesion()) {
         <div>
           <a class="boton boton--sutil" href="envios.html" style="margin-left:-15px">← Envíos</a>
           <h1 class="mono" style="margin-top:6px">${e.guia}</h1>
-          <p>${e.paqueteria} · pedido ${e.pedido} · entró por ${e.canal}</p>
+          <p>${e.paqueteria} · pedido <a href="pedidos.html" style="color:var(--accent-claro)">${e.pedido}</a> · entró por ${e.canal}</p>
         </div>
         <div class="encabezado__acciones">
           <span class="pastilla pastilla--${tonos[e.estado]}" style="align-self:center">${e.estado}</span>

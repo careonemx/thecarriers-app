@@ -121,8 +121,10 @@ if (exigirSesion()) {
      en vez de dejar que alguien genere una guía que no debía. */
   function celdaAccion(p) {
     if (p.envio) {
+      // El pedido ya es un envío: Rastrear abre su detalle, no otra pantalla.
       return `<div class="grupo-botones" style="gap:6px;flex-wrap:nowrap">
-        <button class="boton boton--fantasma boton--chico" type="button">Rastrear</button>
+        <a class="boton boton--fantasma boton--chico"
+           href="envio.html?guia=${encodeURIComponent(p.envio.guia)}">Rastrear</a>
         <button class="boton boton--sutil boton--chico" type="button">Etiqueta</button></div>`;
     }
     if (p.pago !== "Pagado") {

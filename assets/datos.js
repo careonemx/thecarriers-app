@@ -20,7 +20,7 @@ export const tonos = {
   "Generada": "neutra",
 };
 
-export const envios = [
+const enviosBase = [
   { guia: "JD01480000123", canal: "Shopify", paqueteria: "DHL", pedido: "#10422",
     estado: "En tránsito", original: "Shipment in transit", destino: "Monterrey, NL",
     cliente: "Laura Méndez", fecha: "2026-09-19", peso: 2.4, cotizado: 189.00, facturado: 189.00 },
@@ -95,11 +95,6 @@ export const destinosRed = [
   { nombre: "Estafeta", sigla: "Es" },
 ];
 
-/* ---------- Derivados ---------- */
-export const detenidos = envios.filter((e) => e.estado === "Detenido" || e.estado === "Con incidencia");
-export const porRecolectar = envios.filter((e) => e.estado === "Recolección pendiente" || e.estado === "Generada");
-export const conDiferencia = envios.filter((e) => e.diferencia);
-
 export const dinero = (n) =>
   n == null ? "—" : n.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
@@ -131,17 +126,17 @@ export const pedidos = [
   { folio: "#1007", fecha: "2026-09-21", total: 10,
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: { guia: "877543753572", paqueteria: "FedEx", estado: "Creada" } },
+    pago: "Pagado", envio: { guia: "877543753572", paqueteria: "FedEx", estado: "Creada", costo: 189, peso: 1.2 } },
 
   { folio: "#1006", fecha: "2026-09-17", total: 60,
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada" } },
+    pago: "Pagado", envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada", costo: 156, peso: 3.4 } },
 
   { folio: "#1005", fecha: "2026-09-17", total: 50,
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
-    pago: "Pagado", envio: { guia: "877394716724", paqueteria: "FedEx", estado: "Creada" } },
+    pago: "Pagado", envio: { guia: "877394716724", paqueteria: "FedEx", estado: "Creada", costo: 142, peso: 2 } },
 
   { folio: "#1004", fecha: "2026-09-17", total: 30,
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
@@ -172,3 +167,36 @@ export const sinGuia = pedidos.filter((p) => !p.envio);
 export const conGuia = pedidos.filter((p) => p.envio);
 export const conError = pedidos.filter((p) => p.error);
 export const ingresos = pedidos.reduce((s, p) => s + p.total, 0);
+
+/* -----------------------------------------------------------------
+ * Pedidos y envíos son el mismo objeto en dos momentos.
+ *
+ * Un pedido deja de estar "sin guía" y se convierte en un envío que hay
+ * que seguir. Si cada pantalla tuviera su propia lista, Rastrear llevaría
+ * a una guía que no existe en Envíos y las dos mitades del producto no se
+ * hablarían. Así que los pedidos con guía se normalizan y entran a la
+ * misma lista.
+ * --------------------------------------------------------------- */
+const enviosDePedidos = pedidos
+  .filter((p) => p.envio)
+  .map((p) => ({
+    guia: p.envio.guia,
+    canal: tienda.canal,
+    paqueteria: p.envio.paqueteria,
+    pedido: p.folio,
+    estado: "En tránsito",
+    original: p.envio.paqueteria === "DHL" ? "Shipment picked up" : "In transit",
+    destino: p.ciudad,
+    cliente: p.cliente.nombre,
+    fecha: p.fecha,
+    peso: p.envio.peso,
+    cotizado: p.envio.costo,
+    facturado: p.envio.costo,
+  }));
+
+export const envios = [...enviosDePedidos, ...enviosBase];
+
+/* ---------- Derivados de la lista ya completa ---------- */
+export const detenidos = envios.filter((e) => e.estado === "Detenido" || e.estado === "Con incidencia");
+export const porRecolectar = envios.filter((e) => e.estado === "Recolección pendiente" || e.estado === "Generada");
+export const conDiferencia = envios.filter((e) => e.diferencia);
