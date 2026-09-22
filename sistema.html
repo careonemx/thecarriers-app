@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=259c75d9">
+<link rel="stylesheet" href="assets/app.css?v=671d69b4">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=259c75d9" defer></script>
+<script src="assets/vigia.js?v=671d69b4" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -736,6 +736,8 @@
         <div class="regla"><b>Una tabla, aunque haya grupos</b><span>Dos <code>&lt;table&gt;</code> miden sus columnas por separado: "Folio" empieza en un sitio el lunes y en otro el miércoles, y todo se ve descuadrado sin que ninguna esté mal. El grupo va como fila con <code>colspan</code>, no como tabla aparte.</span></div>
         <div class="regla"><b>Plataforma no es paquetería</b><span>T1 Envíos, Skydropx, EnviaYa y Envíame revenden guías: quien recoge y entrega sigue siendo DHL o Estafeta. Se guardan por separado —<code>paqueteria</code> y <code>via</code>— porque cambia a quién se le reclama: el transportista falló, pero el contrato es con la plataforma.</span></div>
         <div class="regla"><b>"Todas las", no "Toda"</b><span>En un desplegable de filtro, el plural es como se lee: "Todas las paqueterías", no "Toda paquetería". La forma corta suena a formulario oficial.</span></div>
+        <div class="regla"><b>En el móvil, los filtros son columna</b><span>Una fila que se parte deja cada control con el ancho de su texto: seis cajas de anchos distintos alineadas a la izquierda, como una escalera. Se ponen al 100%, salvo las dos fechas, que comparten renglón porque son un rango.</span></div>
+        <div class="regla"><b>Una tabla se desplaza, no se comprime</b><span>Sin un ancho mínimo el navegador la exprime hasta partir las palabras: "15 piezas sin recoger" salía en cuatro renglones de una palabra. Y una nota corta dentro de una celda lleva <code>nowrap</code>, para que la columna tenga que medir lo que mide la frase.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

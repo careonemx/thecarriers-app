@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=259c75d9">
-<script src="../assets/vigia.js?v=259c75d9" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=671d69b4">
+<script src="../assets/vigia.js?v=671d69b4" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -84,10 +84,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=259c75d9";
+import { montar, exigirSesion } from "../assets/app.js?v=671d69b4";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
-         origenes, menosDias, HOY } from "../assets/datos.js?v=259c75d9";
+         origenes, menosDias, HOY } from "../assets/datos.js?v=671d69b4";
 if (exigirSesion()) {
   montar();
 
@@ -182,9 +182,9 @@ if (exigirSesion()) {
                 <td>
                   <span class="pastilla pastilla--${s.pct === 100 ? "ok" : s.pct >= 90 ? "aviso" : "mal"}">${s.pct}%</span>
                 </td>
-                <td class="tabular">${s.recogidas} de ${s.programadas}
+                <td class="tabular"><span class="nota-celda">${s.recogidas} de ${s.programadas}</span>
                   ${s.programadas - s.recogidas
-                    ? `<div class="apagado" style="margin-top:3px;font-size:12px">
+                    ? `<div class="apagado nota-celda" style="margin-top:3px;font-size:12px">
                          ${plural(s.programadas - s.recogidas, "pieza sin recoger", "piezas sin recoger")}</div>` : ""}</td>
                 <td class="tabular">${s.citas}</td>
                 <td>${[s.fallidas ? `${s.fallidas} sin cumplir` : "",

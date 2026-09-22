@@ -962,6 +962,8 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 }
 .tabla-reco .fila-dia:first-child th { padding-top: 12px; }
 
+.nota-celda { white-space: nowrap; }
+
 /* ---------- Ficha ----------
    Tarjeta de un registro que se administra: una dirección de origen, una
    plantilla de paquete. Nombre arriba, datos en medio, acciones al pie.
@@ -1487,6 +1489,25 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }
   /* Objetivo táctil de 44px: los chips de 27px se fallan con el pulgar. */
   .periodo__mando .ficha-filtro { min-height: 44px; padding-inline: 14px; }
+
+  /* Una barra de filtros en el móvil es una columna, no una fila que se
+     parte: cada control tomaba el ancho de su texto y quedaban seis cajas de
+     anchos distintos alineadas a la izquierda, como una escalera. */
+  .filtros { gap: 8px; }
+  .filtros .buscador,
+  .filtros select { flex: 1 1 100%; width: 100%; min-width: 0; }
+  .filtros select { max-width: none; }
+  /* Las dos fechas sí comparten renglón: son un rango y se leen juntas. */
+  .filtros .campo-fecha { flex: 1 1 40%; }
+  .filtros .campo-fecha input { width: 100%; min-width: 0; }
+  .filtros__div { display: none; }
+  .filtros__sep { display: none; }
+  .filtros .boton { flex: 1 1 100%; justify-content: center; }
+
+  /* Una tabla de datos no se comprime hasta romper las palabras: se desplaza.
+     Sin un ancho mínimo, "15 piezas sin recoger" salía en cuatro renglones de
+     una palabra cada uno. */
+  .tabla-caja table { min-width: 560px; }
   .periodo__cabeza { gap: 12px; }
   .periodo__mando { margin-left: 0; width: 100%; }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
