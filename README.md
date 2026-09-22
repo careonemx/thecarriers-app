@@ -38,6 +38,28 @@ app/cobros.html            cotizado contra facturado
 app/bienvenida.html        primer ingreso, todavía sin datos
 ```
 
+## Antes de cada commit
+
+```bash
+python3 herramientas/version.py
+```
+
+Sella `app.css`, `app.js`, `datos.js` y `vigia.js` con una versión derivada de su
+contenido, y la escribe en cada `href`, `src` e `import`.
+
+**No es opcional.** GitHub Pages responde `cache-control: max-age=600`, así que durante
+diez minutos después de cada despliegue un navegador puede combinar el HTML nuevo con el
+JavaScript viejo. Si el HTML nuevo importa algo que el JS viejo no exporta, el módulo
+entero falla **al enlazar** y no se ejecuta ni una línea: no se inyecta el armazón, no se
+pintan los datos, y queda el esqueleto estático en pantalla. Se ve como si el producto
+estuviera roto.
+
+`assets/vigia.js` es la red de seguridad: un script clásico —no un módulo, porque un
+módulo que no enlaza tampoco podría avisar— que muestra una explicación y un botón de
+recargar. Detecta el fallo por el error real del módulo, y como respaldo por tiempo solo
+en las pantallas que montan armazón: la guía de diseño y el índice no montan nada, y sin
+esa distinción mostrarían una alerta falsa cada vez que cargan bien.
+
 ## Sistema de diseño
 
 `sistema.html` es la referencia: colores con su contraste **medido sobre el render**,

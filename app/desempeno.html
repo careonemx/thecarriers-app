@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Desempeño · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css">
+<link rel="stylesheet" href="../assets/app.css?v=7c62d7d6">
+<script src="../assets/vigia.js?v=7c62d7d6" defer></script>
 </head>
 <body data-seccion="desempeno">
 <main class="contenido contenido--ancho">
@@ -50,8 +51,8 @@
   </section>
 </main>
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js";
-import { desempeno } from "../assets/datos.js";
+import { montar, exigirSesion } from "../assets/app.js?v=7c62d7d6";
+import { desempeno } from "../assets/datos.js?v=7c62d7d6";
 if (exigirSesion()) {
   montar();
   const total = desempeno.reduce((s, d) => s + d.envios, 0);
