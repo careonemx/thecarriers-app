@@ -135,7 +135,6 @@ a { color: inherit; }
   background: rgba(248,113,113,.16); color: #fca5a5;
 }
 
-.lateral__pie { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--hairline); }
 
 /* -----------------------------------------------------------------
  * Barra superior
@@ -1169,6 +1168,56 @@ tr.fila--principal td:first-child::before {
   padding-top: 12px; border-top: 1px solid var(--hairline);
 }
 .ficha__pie-sep { flex: 1; }
+
+/* ---------- El menú de la cuenta ----------
+   Cuelga del avatar, que era un adorno. Lo de la cuenta —quién eres, qué plan
+   pagas, salir— no es navegación de la operación y no compite con ella en la
+   barra lateral. */
+.cuenta { position: relative; }
+.avatar--boton { border: 0; cursor: pointer; font: inherit; }
+.avatar--boton:hover { filter: brightness(1.15); }
+
+.cuenta__menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 232px; padding: 6px;
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900); box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+}
+.cuenta__quien {
+  padding: 10px 10px 12px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--hairline);
+}
+.cuenta__quien b { display: block; font-size: 13px; }
+.cuenta__quien span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+.cuenta__opcion {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: var(--r-md);
+  color: var(--ink); font-size: 13px; text-decoration: none;
+}
+.cuenta__opcion svg { width: 17px; height: 17px; color: var(--muted); }
+.cuenta__opcion:hover { background: rgba(255, 255, 255, .06); }
+.cuenta__opcion:hover svg { color: var(--ink); }
+
+/* ---------- Consumo del plan ----------
+   La pregunta es "¿me alcanza?". Lo que se lee primero es lo que QUEDA; el
+   porcentaje solo existe para pintar la barra, porque nadie decide con un 92 %. */
+.uso { display: grid; gap: 14px; }
+.uso__cifras { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.uso__n { font-size: 38px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.uso__n--aviso { color: #fbbf24; }
+.uso__n--alerta { color: #f87171; }
+.uso__et { margin-left: 8px; color: var(--muted); font-size: 13px; }
+.uso__detalle { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.uso__nota { color: var(--muted); font-size: 12px; }
+
+.barra {
+  height: 8px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, .08);
+}
+.barra__lleno { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.barra__lleno--aviso { background: #fbbf24; }
+.barra__lleno--alerta { background: #f87171; }
 
 /* Una conexión que todavía no existe se ve, pero no compite con las que sí:
    sin ella la lista de lo conectado y la de lo conectable pesarían igual. */

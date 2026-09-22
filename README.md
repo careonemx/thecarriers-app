@@ -30,6 +30,7 @@ app/pedidos.html           la lista, con filtros, lote y detalle
 app/origenes.html          direcciones de origen: de dónde sale y dónde recogen
 app/plantillas.html        plantillas de paquete y el peso que de verdad se cobra
 app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
+app/plan.html              plan de TheCarriers, envíos consumidos y cambio de plan
 app/canales.html           canales de venta conectados y por conectar
 app/paqueterias.html       cuentas por las que se compran las guías
 app/configuracion.html     qué ocurre solo al entrar un pedido y qué paquetería se elige

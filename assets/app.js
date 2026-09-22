@@ -10,7 +10,7 @@
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=f2442efe";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=688d08c5";
 
 const CLAVE = "tc_sesion";
 
@@ -36,6 +36,7 @@ const icono = {
   desempeno: '<path d="M4 20V4M4 20h16"/><path d="M8.5 20v-6M13 20V9M17.5 20v-10"/>',
   cobros: '<path d="M6 3h12v18l-3-1.8-3 1.8-3-1.8L6 21z"/><path d="M9.5 8.5h5M9.5 12.5h5"/>',
   salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
+  plan: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10.5h18"/><path d="M7 15h4"/>',
   buscar: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   menu: '<path d="M4 8h16M4 16h16"/>',
   cerrar: '<path d="m6 6 12 12M18 6 6 18"/>',
@@ -124,9 +125,6 @@ function lateral(activa) {
       </button>
     </div>
     ${items}
-    <div class="lateral__pie">
-      <a class="nav-item" href="../login.html" data-salir>${svg(icono.salir)}<span>Cerrar sesión</span></a>
-    </div>
   </aside>`;
 }
 
@@ -152,7 +150,30 @@ function superior(titulo) {
     </div>
 
     <span class="insignia-demo" title="${titulo}">Datos de ejemplo</span>
-    <span class="avatar" title="${usuario.nombre}">${usuario.iniciales}</span>
+
+    <!-- Lo de la cuenta —quién eres, qué plan pagas, salir— cuelga del avatar.
+         "Cerrar sesión" estaba abajo en la barra lateral; aparecer en los dos
+         sitios sería la misma duplicación que ya quitamos de las conexiones. -->
+    <div class="cuenta">
+      <button class="avatar avatar--boton" type="button" data-abrir-cuenta
+        aria-haspopup="menu" aria-expanded="false" aria-controls="menu-cuenta">
+        <span class="sr-only">Tu cuenta, ${usuario.nombre}</span>
+        <span aria-hidden="true">${usuario.iniciales}</span>
+      </button>
+
+      <div class="cuenta__menu" id="menu-cuenta" role="menu" hidden>
+        <div class="cuenta__quien">
+          <b>${usuario.nombre}</b>
+          <span>${usuario.correo}</span>
+        </div>
+        <a class="cuenta__opcion" role="menuitem" href="plan.html">
+          ${svg(icono.plan)}<span>Plan y uso</span>
+        </a>
+        <a class="cuenta__opcion" role="menuitem" href="../login.html" data-salir>
+          ${svg(icono.salir)}<span>Cerrar sesión</span>
+        </a>
+      </div>
+    </div>
   </header>`;
 }
 
@@ -188,6 +209,38 @@ export function montar() {
   abrir.addEventListener("click", () => cambiar(panel.dataset.abierto !== "true"));
   cuerpo.querySelector("[data-cerrar-menu]")?.addEventListener("click", () => cambiar(false));
   addEventListener("keydown", (e) => e.key === "Escape" && cambiar(false));
+
+  /* Un menú que solo se cierra con su propio botón deja al usuario atrapado:
+     se cierra también con Escape, con un clic fuera y al salir el foco con el
+     tabulador. Al cerrarlo con Escape el foco vuelve al avatar, o se quedaría
+     perdido al final de la página. */
+  const cuenta = cuerpo.querySelector(".cuenta");
+  const abreCuenta = cuenta.querySelector("[data-abrir-cuenta]");
+  const menuCuenta = cuenta.querySelector(".cuenta__menu");
+
+  const verCuenta = (abierto) => {
+    menuCuenta.hidden = !abierto;
+    abreCuenta.setAttribute("aria-expanded", String(abierto));
+  };
+
+  abreCuenta.addEventListener("click", (e) => {
+    e.stopPropagation();
+    verCuenta(menuCuenta.hidden);
+  });
+
+  addEventListener("click", (e) => {
+    if (!menuCuenta.hidden && !cuenta.contains(e.target)) verCuenta(false);
+  });
+
+  addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || menuCuenta.hidden) return;
+    verCuenta(false);
+    abreCuenta.focus();
+  });
+
+  cuenta.addEventListener("focusout", (e) => {
+    if (!cuenta.contains(e.relatedTarget)) verCuenta(false);
+  });
 
   cuerpo.querySelector("[data-salir]").addEventListener("click", () => sesion.cerrar());
 

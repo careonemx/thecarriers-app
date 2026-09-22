@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Plan y uso · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=688d08c5">
+<script src="../assets/vigia.js?v=688d08c5" defer></script>
+</head>
+<body data-seccion="plan">
+<main class="contenido contenido--ancho">
+
+  <div class="encabezado" style="margin-bottom:24px">
+    <div>
+      <h1>Plan y uso</h1>
+      <p>Cuántos envíos llevas este periodo y qué plan los cubre.</p>
+    </div>
+  </div>
+
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
+  <section class="zona">
+    <div class="tarjeta" id="consumo"></div>
+  </section>
+
+  <section class="zona">
+    <h2 class="zona__titulo">Los planes</h2>
+    <div class="tarjeta">
+      <div class="tabla-caja scroll-fino">
+        <table id="tabla-planes">
+          <caption class="sr-only">Planes disponibles, sus envíos incluidos y su precio.</caption>
+          <thead><tr>
+            <th scope="col">Plan</th>
+            <th scope="col">Envíos incluidos</th>
+            <th scope="col">Al mes</th>
+            <th scope="col">Por envío</th>
+            <th scope="col"><span class="sr-only">Cambiar</span></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=688d08c5";
+import { PLANES, suscripcion, planActual, planSiguiente,
+         costoPorEnvio, consumoPct, dinero } from "../assets/datos.js?v=688d08c5";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  const aviso = document.getElementById("guardado");
+  let quitando;
+  function avisar(texto) {
+    clearTimeout(quitando);
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 3500);
+  }
+
+  const miles = (n) => n.toLocaleString("es-MX");
+
+  /* ---------- Lo consumido ----------
+     La pregunta es "¿me alcanza?", no "¿cuánto he usado?". Por eso lo que se
+     lee primero es lo que queda, y la cifra grande de al lado es cuántos días
+     faltan para que el contador vuelva a empezar: las dos juntas dicen si hay
+     problema. El porcentaje solo pinta la barra; nadie decide con un 92 %. */
+  function pintarConsumo() {
+    const plan = planActual();
+    const pct = consumoPct();
+    const quedan = Math.max(0, plan.envios - suscripcion.usados);
+    const agotado = quedan === 0;
+    const apurado = !agotado && pct >= 85;
+    const sigue = planSiguiente();
+
+    document.getElementById("consumo").innerHTML = `
+      <div class="tarjeta__cabeza">
+        <div>
+          <h2>Tu plan es ${esc(plan.nombre)}</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            ${plan.precio === 0 ? "Sin costo" : `${esc(dinero(plan.precio))} al mes`} ·
+            ${miles(plan.envios)} envíos incluidos · desde el ${esc(suscripcion.desde)}</p>
+        </div>
+      </div>
+
+      <div class="tarjeta__cuerpo">
+        <div class="uso">
+          <div class="uso__cifras">
+            <div>
+              <span class="uso__n${agotado ? " uso__n--alerta" : apurado ? " uso__n--aviso" : ""}">${miles(quedan)}</span>
+              <span class="uso__et">envíos te quedan</span>
+            </div>
+            <p class="uso__detalle">
+              Llevas <b>${miles(suscripcion.usados)}</b> de ${miles(plan.envios)}.
+              El contador vuelve a cero el ${esc(suscripcion.renueva)}.</p>
+          </div>
+
+          <div class="barra" role="img"
+            aria-label="${pct}% de los envíos del plan, ${miles(suscripcion.usados)} de ${miles(plan.envios)}">
+            <span class="barra__lleno${agotado ? " barra__lleno--alerta" : apurado ? " barra__lleno--aviso" : ""}"
+              style="width:${pct}%"></span>
+          </div>
+
+          <p class="uso__nota">Cada guía que generas cuenta como un envío.</p>
+        </div>
+
+        ${(agotado || apurado) && sigue ? `
+          <p class="aviso aviso--alerta aviso--bloque">
+            <b>${agotado
+              ? `Se acabaron los envíos de ${esc(plan.nombre)}.`
+              : `Te quedan ${miles(quedan)} envíos de ${esc(plan.nombre)}.`}</b>
+            <span>El siguiente plan es ${esc(sigue.nombre)}: ${
+              sigue.envios === null ? "envíos a la medida" : `${miles(sigue.envios)} envíos`}${
+              sigue.precio === null ? ", con cotización" : ` por ${esc(dinero(sigue.precio))} al mes`}.</span>
+          </p>` : ""}
+      </div>
+
+      <div class="tarjeta__pie">
+        <button class="boton boton--sutil boton--chico" type="button" data-facturas>Ver facturas</button>
+        <span class="ficha__pie-sep"></span>
+        ${sigue ? `<button class="boton boton--primario boton--chico" type="button"
+          data-cambiar="${esc(sigue.id)}">Cambiar a ${esc(sigue.nombre)}</button>` : ""}
+      </div>`;
+  }
+
+  /* ---------- Los planes ----------
+     En tabla y no en tarjetas: cinco columnas de precios obligan a ir y venir
+     con la vista para comparar. Una tabla pone los números en la misma
+     vertical, que es lo que se está comparando. */
+  /* Un plan con menos envíos de los que ya llevas gastados no es una opción:
+     ofrecer "Cambiar a Free" con 458 envíos hechos sería ofrecer romper la
+     cuenta. En vez del botón, la fila dice por qué no cabe.
+
+     Y bajar no es lo mismo que subir, aunque el botón sea el mismo control:
+     el verbo lo distingue. */
+  function accion(p, mio, hoy) {
+    if (mio) return '<span class="apagado" style="font-size:12px">En uso</span>';
+    if (p.precio === null) {
+      return '<button class="boton boton--sutil boton--chico" type="button"' +
+             ' data-ventas>Pedir cotización</button>';
+    }
+    if (p.envios < suscripcion.usados) {
+      return `<span class="apagado" style="font-size:12px">Ya llevas ${miles(suscripcion.usados)}</span>`;
+    }
+    const verbo = p.envios < hoy.envios ? "Bajar a" : "Cambiar a";
+    return `<button class="boton boton--sutil boton--chico" type="button"
+      data-cambiar="${esc(p.id)}">${verbo} ${esc(p.nombre)}</button>`;
+  }
+
+  function pintarPlanes() {
+    const hoy = planActual();
+    document.querySelector("#tabla-planes tbody").innerHTML = PLANES.map((p) => {
+      const mio = p.id === hoy.id;
+      const porEnvio = costoPorEnvio(p);
+      return `
+      <tr${mio ? ' class="fila--principal"' : ""}>
+        <th scope="row">${esc(p.nombre)}${
+          mio ? ' <span class="pastilla pastilla--ok">Tu plan</span>' : ""}</th>
+        <td class="tabular">${p.envios === null ? "A la medida" : miles(p.envios)}</td>
+        <td class="tabular">${
+          p.precio === null ? "Cotización" : p.precio === 0 ? "Sin costo" : esc(dinero(p.precio))}</td>
+        <td class="tabular apagado">${
+          porEnvio === null ? "—" : porEnvio === 0 ? "Sin costo" : esc(dinero(porEnvio))}</td>
+        <td class="acciones-fila">${accion(p, mio, hoy)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  document.addEventListener("click", (e) => {
+    const cambia = e.target.closest("[data-cambiar]");
+    if (cambia) {
+      const p = PLANES.find((x) => x.id === cambia.dataset.cambiar);
+      avisar(`Aquí se confirmaría el cambio a ${p.nombre} y el cobro correspondiente.`);
+      return;
+    }
+    if (e.target.closest("[data-ventas]")) avisar("Aquí se abriría el contacto con ventas.");
+    else if (e.target.closest("[data-facturas]")) avisar("Aquí estarían las facturas del periodo.");
+  });
+
+  pintarConsumo();
+  pintarPlanes();
+}
+</script>
+</body>
+</html>

@@ -10,6 +10,62 @@
 export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
+/* =================================================================
+ * El plan de TheCarriers.
+ *
+ * NO es lo mismo que Cobros. Ahí se concilia lo que cobró la paquetería por
+ * llevar un paquete; aquí se paga el software que genera las guías. Mezclarlos
+ * haría que "cuánto llevas gastado" significara dos cosas a la vez.
+ *
+ * Cada plan incluye un número de envíos al mes. `precio` y `envios` en null
+ * es Enterprise: se cotiza, y por eso no tiene ni barra ni precio por envío.
+ * ================================================================= */
+
+export const PLANES = [
+  { id: "free",       nombre: "Free",       precio: 0,    envios: 100 },
+  { id: "starter",    nombre: "Starter",    precio: 499,  envios: 500 },
+  { id: "growth",     nombre: "Growth",     precio: 799,  envios: 1000 },
+  { id: "scale",      nombre: "Scale",      precio: 2990, envios: 5000 },
+  { id: "enterprise", nombre: "Enterprise", precio: null, envios: null },
+];
+
+/**
+ * Lo consumido en el periodo en curso.
+ *
+ * `usados` sale de contar guías, no de estimarlo: una guía generada es un
+ * envío. Aquí es un dato de ejemplo como el resto del prototipo.
+ */
+export const suscripcion = {
+  plan: "starter",
+  desde: "2 de abril de 2026",
+  renueva: "30 de septiembre de 2026",
+  usados: 458,
+};
+
+export const planActual = () => PLANES.find((p) => p.id === suscripcion.plan) ?? PLANES[0];
+
+/** El siguiente plan con más envíos. Null si ya está en el último medible. */
+export const planSiguiente = () => {
+  const hoy = planActual();
+  if (hoy.envios === null) return null;
+  return PLANES.find((p) => p.envios === null || p.envios > hoy.envios) ?? null;
+};
+
+/**
+ * Cuánto cuesta cada envío en un plan. Es la cifra que de verdad compara dos
+ * planes: Scale cuesta seis veces más que Starter y cada envío sale a la
+ * mitad. Sin ella hay que dividir a mano para elegir.
+ */
+export const costoPorEnvio = (plan) =>
+  plan.precio === null || plan.envios === null || !plan.envios ? null : plan.precio / plan.envios;
+
+/** Lo consumido, en porcentaje, acotado a 100 para que la barra no se salga. */
+export const consumoPct = () => {
+  const p = planActual();
+  if (!p.envios) return null;
+  return Math.min(100, Math.round((suscripcion.usados / p.envios) * 100));
+};
+
 /**
  * Direcciones de origen: de dónde sale la mercancía y a dónde llega la
  * paquetería a recogerla. Son la misma dirección vista desde los dos lados.
