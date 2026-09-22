@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=7511478e">
+<link rel="stylesheet" href="assets/app.css?v=a44065df">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -34,7 +34,7 @@
   .ficha-color__pie span { color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
   .razon { margin-top: 5px; font-size: 11px; }
   .razon--ok { color: var(--enlace); }
-  .razon--no { color: #fca5a5; }
+  .razon--no { color: var(--mal); }
   .tipos > div { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
   .tipos > div:last-child { border-bottom: 0; }
   .tipos small { display: block; color: var(--muted); font-size: 11px;
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=7511478e" defer></script>
+<script src="assets/vigia.js?v=a44065df" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -809,9 +809,14 @@ const razon = (a, b) => {
 const tk = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const hex = (c) => "#" + c.slice(0, 3).map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 
-const ABYSS = rgba(tk("--abyss"));
+/* Contra qué se aplana un color translúcido. Era `--abyss`, que ya no existe:
+   la pastilla verde salía compuesta contra un negro y la medida daba 3.25:1
+   cuando sobre la página de verdad da más del doble. Un medidor que compone
+   contra un fondo que la pantalla no tiene miente en la dirección que menos
+   se nota: avisa de fallos que no están. */
+const BASE = rgba(tk("--pagina"));
 
-function ficha({ nombre, valor, fondo = ABYSS, texto, nota, contra, hexToken }) {
+function ficha({ nombre, valor, fondo = BASE, texto, nota, contra, hexToken }) {
   const color = rgba(valor);
   const plano = color[3] < 1 ? sobre(color, fondo) : color;
   // Lo que se imprime es el valor del token documentado. Cuando el token es de
@@ -869,7 +874,7 @@ pinta("marca", [
     nota: "Fondo de botón principal. Encima va blanco.",
     contra: { color: tk("--sobre-accent"), min: 4.5, que: "texto blanco encima" } },
   { nombre: "--accent (como texto)", valor: tk("--pagina"), texto: tk("--accent"),
-    nota: "El verde de marca NO sirve como texto sobre blanco: 3.3:1.",
+    nota: "El verde de marca no se lee como texto sobre blanco.",
     contra: { color: tk("--accent"), min: 4.5, que: "sobre la página" } },
   { nombre: "--enlace", valor: tk("--pagina"), texto: tk("--enlace"),
     nota: "El verde que sí se lee: enlaces, cifras de acento y estado correcto.",

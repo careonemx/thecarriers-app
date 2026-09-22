@@ -55,7 +55,7 @@
 
   /* El trazo de los diagramas: la línea por la que corre el pulso verde.
      Escrito a mano era blanco al 14% y sobre blanco no existe. */
-  --trazo: rgba(18, 28, 51, 0.16);
+  --trazo: rgba(18, 28, 51, 0.22);
 
   /* El verde de marca da 3.3:1 sobre blanco y no sirve como texto: para
      leerlo hace falta un paso más oscuro, y como relleno de botón lleva
@@ -67,10 +67,10 @@
 
   /* Estados. */
   --mal: #b42318;
-  --mal-fondo: var(--mal-fondo);
+  --mal-fondo: rgba(248, 113, 113, 0.14);
   --mal-borde: rgba(220, 38, 38, 0.35);
   --aviso: #92610a;
-  --aviso-fondo: var(--aviso-fondo);
+  --aviso-fondo: rgba(251, 191, 36, 0.18);
   --aviso-borde: rgba(217, 119, 6, 0.35);
 
   --sombra-tarjeta: 0 1px 2px rgba(18, 28, 51, 0.04),
@@ -612,15 +612,17 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__panel {
   position: relative; z-index: 1;
   width: 100%; max-width: 560px; margin-inline: auto;
-  display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
+  display: flex; flex-direction: column; justify-content: center; gap: 34px;
 }
 .auth__panel > img { align-self: flex-start; } /* si no, se estira a todo el ancho */
 .auth__brillo {
   position: absolute; inset: -30% -20% auto -20%; height: 760px; pointer-events: none;
   background: radial-gradient(52% 58% at 50% 0%, rgba(27, 42, 74, 0.07), transparent 72%);
 }
+/* El verde detrás del contenido, no encima de él: flotando arriba se leía
+   como una mancha en un sitio donde no hay nada. */
 .auth__brillo--verde {
-  inset: 10% -10% auto -10%; height: 560px;
+  inset: 24% -10% auto -10%; height: 520px;
   background: radial-gradient(38% 52% at 50% 0%, rgba(15,157,110,.18), transparent 70%);
 }
 .auth__contenido { position: relative; }
@@ -630,7 +632,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__caja { width: 100%; max-width: 372px; margin: 0 auto; display: grid; gap: 16px; }
 .auth__caja h1 { font-size: 23px; }
 .auth__pie { color: var(--muted); font-size: 13px; text-align: center; }
-.auth__lema { color: var(--muted); font-size: 13px; }
+.auth__lema { color: var(--muted); font-size: 13px; margin-top: 8px; }
 .auth__pie a { color: var(--enlace); }
 
 .aviso {
@@ -658,12 +660,13 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
    en línea, la consulta de medios no los puede corregir. */
 .mini-red {
   display: flex; align-items: center; justify-content: center; gap: 0;
-  max-width: 520px; margin-top: 32px;
+  max-width: 560px; margin-top: 28px;
 }
 .mini-red__col { display: grid; gap: 7px; flex: 1; min-width: 0; }
 /* Alto fijo y sin saltos de línea: el SVG de los cables asume tres fichas de
-   36 con 7 de hueco (3*36 + 2*7 = 122). Si "Mercado Libre" parte en dos líneas,
-   la columna crece y los cables dejan de apuntar al centro de cada ficha. */
+   36 con 7 de hueco (4*36 + 3*7 = 165). Si "Mercado Libre" parte en dos
+   líneas, la columna crece y los cables dejan de apuntar al centro de cada
+   ficha. */
 .mini-red__ficha {
   display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 36px; min-width: 0;
   border: 1px solid var(--hairline); border-radius: var(--r); background: var(--hundido);
@@ -1108,7 +1111,7 @@ a.tarjeta-cifra--alerta:hover { border-color: var(--mal-borde); }
 .orden__asa {
   display: grid; place-items: center; width: 18px; height: 28px;
   color: var(--muted); cursor: grab;
-  transition: color .15s var(--ease-signal);
+  transition: color .15s var(--curva);
 }
 .orden__asa:active { cursor: grabbing; }
 .orden__fila:hover .orden__asa { color: var(--ink); }
@@ -1248,8 +1251,8 @@ tr.fila--principal td:first-child::before {
   width: 34px; height: 34px;
   border: 1px solid transparent; border-radius: 10px;
   background: none; color: var(--muted); cursor: pointer;
-  transition: border-color .15s var(--ease-signal), background .15s var(--ease-signal),
-              color .15s var(--ease-signal);
+  transition: border-color .15s var(--curva), background .15s var(--curva),
+              color .15s var(--curva);
 }
 .colgante__abrir svg { width: 19px; height: 19px; }
 .colgante__abrir:hover,
@@ -1316,13 +1319,13 @@ tr.fila--principal td:first-child::before {
   display: flex; align-items: center; gap: 6px; position: relative;
   padding: 4px 6px 4px 4px; border: 1px solid transparent; border-radius: 10px;
   background: none; color: var(--muted); cursor: pointer; font: inherit;
-  transition: border-color .15s var(--ease-signal), background .15s var(--ease-signal);
+  transition: border-color .15s var(--curva), background .15s var(--curva);
 }
 .cuenta__abrir:hover,
 .cuenta__abrir[aria-expanded="true"] {
   border-color: var(--hairline-fuerte); background: var(--hundido); color: var(--ink);
 }
-.cuenta__flecha { transition: transform .15s var(--ease-signal); }
+.cuenta__flecha { transition: transform .15s var(--curva); }
 .cuenta__abrir[aria-expanded="true"] .cuenta__flecha { transform: rotate(180deg); }
 
 /* El punto solo aparece cuando hay algo dentro que mirar. Un adorno
@@ -1352,7 +1355,7 @@ tr.fila--principal td:first-child::before {
 
 .cuenta__opcion {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: var(--r-md);
+  padding: 9px 10px; border-radius: var(--r);
   color: var(--ink); font-size: 13px; text-decoration: none;
 }
 .cuenta__opcion svg { width: 17px; height: 17px; color: var(--muted); }
