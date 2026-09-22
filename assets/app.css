@@ -281,7 +281,10 @@ input[type="time"]:hover::-webkit-calendar-picker-indicator,
 input[type="time"]:focus-within::-webkit-calendar-picker-indicator { background: var(--ink); }
 
 /* ---------- Campo de fecha con su botón ---------- */
-.campo-fecha { position: relative; display: inline-flex; flex: 1 1 auto; min-width: 0; }
+.campo-fecha { position: relative; display: inline-flex; flex: 0 0 auto; max-width: 100%; }
+/* Dentro de un formulario sí ocupa la celda entera, como cualquier campo. */
+.campo .campo-fecha { width: 100%; }
+.campo .campo-fecha input { width: 100%; }
 .campo-fecha input { padding-right: 34px; }
 .campo-fecha__abrir {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
