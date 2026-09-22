@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=468f5825">
+<link rel="stylesheet" href="assets/app.css?v=1a1956e6">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=468f5825" defer></script>
+<script src="assets/vigia.js?v=1a1956e6" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -252,6 +252,10 @@
           <span>Hora</span>
           <input type="time" value="09:00" data-lleno>
         </label>
+        <p class="campo__ayuda" style="margin-top:-10px">
+          La hora sigue usando el selector del navegador: es otro componente y
+          todavía no lo tenemos.
+        </p>
 
         <label class="campo">
           <span>Notas para la recolección</span>
@@ -717,7 +721,9 @@
         <div class="regla"><b>Un nombre por pantalla</b><span>Menú, título y tarjeta dicen lo mismo. Tres etiquetas distintas para una sola pantalla obligan a deducir que son la misma.</span></div>
         <div class="regla"><b>No repetir lo que el contexto ya dice</b><span>En una pantalla que solo trae detenidos, una columna "Detenido" y otra "Estatus" cuentan el mismo hecho dos veces. Cuánto lleva y qué reportó son el mismo evento visto por la fecha y por el texto: van juntos.</span></div>
         <div class="regla"><b>El buscador se queda con lo que sobra</b><span>Con un ancho tope queda diminuto y deja un hueco a su derecha que parece un error. Dentro de una barra de filtros, los atajos ocupan lo suyo y el buscador el resto —y su <code>input</code> tiene que llenar su caja, que <code>.filtros input { width: auto }</code> se lo impide—.</span></div>
-        <div class="regla"><b>El calendario nativo se viste por fuera</b><span>El panel lo dibuja el navegador y no se puede estilar; el campo sí. Sin tocarlo, un <code>input[type=date]</code> mete un icono azul de sistema que no es de la casa. Se usa <code>mask</code> y no <code>background-image</code> para que el icono tome el color de una variable y pueda cambiar al pasar por encima.</span></div>
+        <div class="regla"><b>El panel nativo se sustituye, no se maquilla</b><span>El calendario de <code>input[type=date]</code> lo dibuja el navegador y no hay CSS que lo alcance: llega con su tipografía, sus colores y su idioma. Se apaga su disparador y se dibuja uno propio. El input se queda —conserva el formato del valor, el teclado y lo que esperan los lectores de pantalla—; lo único que cambia es el panel.</span></div>
+        <div class="regla"><b>Un panel flotante vive en el body</b><span>Con posición fija. Dentro de una tarjeta lo recorta su <code>overflow: hidden</code>, y un calendario cortado por la mitad no se puede usar. Y se voltea hacia arriba o se alinea a la derecha cuando no cabe.</span></div>
+        <div class="regla"><b>Hoy y lo elegido se distinguen</b><span>Hoy va con borde, lo elegido con relleno. Si los dos usaran lo mismo, el día de hoy seleccionado se vería igual que cualquier otro.</span></div>
         <div class="regla"><b>"dd/mm/aaaa" es un marcador</b><span>No un dato, y a plena intensidad compite con los valores de al lado. El armazón marca con <code>data-lleno</code> los campos que tienen valor para que el CSS pueda apagar el resto: en CSS no hay forma de saber si un campo de fecha está vacío.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>

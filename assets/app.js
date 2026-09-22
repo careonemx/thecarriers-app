@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=468f5825";
+import { empresa, usuario, detenidos, sinGuia, tienda, HOY } from "./datos.js?v=1a1956e6";
 
 const CLAVE = "tc_sesion";
 
@@ -29,6 +29,7 @@ const icono = {
   envios: '<path d="M3 5h18v14H3z"/><path d="M3 10h18M9 10v9"/>',
   excepciones: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
   recolecciones: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>',
+  calendario: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   desempeno: '<path d="M4 20V4M4 20h16"/><path d="M8.5 20v-6M13 20V9M17.5 20v-10"/>',
   cobros: '<path d="M6 3h12v18l-3-1.8-3 1.8-3-1.8L6 21z"/><path d="M9.5 8.5h5M9.5 12.5h5"/>',
   salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/>',
@@ -192,6 +193,9 @@ export function montar() {
     if (i.value) i.setAttribute("data-lleno", "");
     else i.removeAttribute("data-lleno");
   };
+  prepararFechas(cuerpo);
+  conectarCalendario();
+
   const fechas = () => document.querySelectorAll('input[type="date"], input[type="time"]');
   fechas().forEach(marcarFecha);
   document.addEventListener("input", (e) => {
@@ -201,7 +205,7 @@ export function montar() {
     if (e.target.matches('input[type="date"], input[type="time"]')) marcarFecha(e.target);
   });
   /* Los campos que aparecen dentro de un panel nacen después de montar. */
-  new MutationObserver(() => fechas().forEach(marcarFecha))
+  new MutationObserver(() => { prepararFechas(cuerpo); fechas().forEach(marcarFecha); })
     .observe(cuerpo, { childList: true, subtree: true });
 
   // Una fila con data-href se comporta como enlace, sin dejar de ser accesible:
@@ -209,6 +213,183 @@ export function montar() {
   document.addEventListener("click", (e) => {
     const fila = e.target.closest("tr[data-href]");
     if (fila && !e.target.closest("a, button")) location.href = fila.dataset.href;
+  });
+}
+
+/* =================================================================
+ * Calendario propio.
+ *
+ * El panel que abre `input[type=date]` lo dibuja el navegador: llega con su
+ * tipografía, sus colores y su propio idioma, y en una interfaz oscura canta
+ * como prestado. No hay CSS que lo alcance.
+ *
+ * Así que se apaga su disparador y se dibuja el nuestro. El input se queda
+ * como está —conserva el formato del valor, el teclado y lo que esperan los
+ * lectores de pantalla—; lo único que se sustituye es el panel.
+ *
+ * Va en `body` y con posición fija porque `.tarjeta` recorta lo que se sale
+ * (`overflow: hidden`), y un calendario dentro de una barra de filtros se
+ * cortaría por la mitad.
+ * ================================================================= */
+
+const DIAS_CORTOS = ["L", "M", "X", "J", "V", "S", "D"];
+
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const deIso = (t) => { const [a, m, d] = t.split("-").map(Number); return new Date(a, m - 1, d); };
+
+let panelCal = null;
+let campoCal = null;
+let mesCal = null;
+
+function cerrarCalendario() {
+  if (!panelCal) return;
+  panelCal.remove();
+  panelCal = null;
+  campoCal?.focus();
+  campoCal = null;
+}
+
+function pintarCalendario() {
+  const hoy = deIso(HOY);
+  const elegido = campoCal.value ? deIso(campoCal.value) : null;
+  const primero = new Date(mesCal.getFullYear(), mesCal.getMonth(), 1);
+  /* Lunes primero, que es como se lee un calendario en México. */
+  const hueco = (primero.getDay() + 6) % 7;
+  const ultimo = new Date(mesCal.getFullYear(), mesCal.getMonth() + 1, 0).getDate();
+
+  const celdas = [];
+  for (let i = 0; i < hueco; i++) celdas.push('<span class="calendario__hueco"></span>');
+  for (let d = 1; d <= ultimo; d++) {
+    const fecha = new Date(mesCal.getFullYear(), mesCal.getMonth(), d);
+    const t = iso(fecha);
+    const clases = ["calendario__dia"];
+    if (elegido && t === iso(elegido)) clases.push("calendario__dia--elegido");
+    if (t === HOY) clases.push("calendario__dia--hoy");
+    celdas.push(`<button type="button" class="${clases.join(" ")}" data-dia="${t}"
+      tabindex="${t === (campoCal.value || HOY) ? 0 : -1}"
+      aria-label="${fecha.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}"
+      ${elegido && t === iso(elegido) ? 'aria-current="date"' : ""}>${d}</button>`);
+  }
+
+  const titulo = mesCal.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+  panelCal.innerHTML = `
+    <div class="calendario__cabeza">
+      <button type="button" class="calendario__mover" data-mes="-1" aria-label="Mes anterior">‹</button>
+      <b>${titulo[0].toUpperCase()}${titulo.slice(1)}</b>
+      <button type="button" class="calendario__mover" data-mes="1" aria-label="Mes siguiente">›</button>
+    </div>
+    <div class="calendario__semana" aria-hidden="true">${DIAS_CORTOS.map((d) => `<span>${d}</span>`).join("")}</div>
+    <div class="calendario__dias" role="grid">${celdas.join("")}</div>
+    <div class="calendario__pie">
+      <button type="button" class="boton boton--sutil boton--chico" data-dia="${HOY}">Hoy</button>
+      <button type="button" class="boton boton--sutil boton--chico" data-vaciar>Limpiar</button>
+    </div>`;
+}
+
+function colocarCalendario() {
+  const r = campoCal.getBoundingClientRect();
+  const alto = panelCal.offsetHeight || 320;
+  const ancho = panelCal.offsetWidth || 280;
+  /* Si no cabe abajo, se abre hacia arriba; si se sale por la derecha, se
+     alinea por su borde derecho. Un calendario medio fuera de pantalla no
+     se puede usar. */
+  const arriba = r.bottom + alto + 8 > innerHeight && r.top - alto - 8 > 0;
+  panelCal.style.top = `${arriba ? r.top - alto - 6 : r.bottom + 6}px`;
+  panelCal.style.left = `${Math.max(8, Math.min(r.left, innerWidth - ancho - 8))}px`;
+}
+
+function abrirCalendario(input) {
+  if (panelCal && campoCal === input) return cerrarCalendario();
+  cerrarCalendario();
+  campoCal = input;
+  mesCal = deIso(input.value || HOY);
+  panelCal = document.createElement("div");
+  panelCal.className = "calendario";
+  panelCal.setAttribute("role", "dialog");
+  panelCal.setAttribute("aria-label", "Elegir fecha");
+  document.body.appendChild(panelCal);
+  pintarCalendario();
+  colocarCalendario();
+  panelCal.querySelector('.calendario__dia[tabindex="0"]')?.focus();
+}
+
+function elegirDia(t) {
+  campoCal.value = t;
+  campoCal.dispatchEvent(new Event("input", { bubbles: true }));
+  campoCal.dispatchEvent(new Event("change", { bubbles: true }));
+  cerrarCalendario();
+}
+
+function conectarCalendario() {
+  document.addEventListener("click", (e) => {
+    const abrir = e.target.closest("[data-abrir-calendario]");
+    if (abrir) {
+      e.preventDefault();
+      return abrirCalendario(abrir.previousElementSibling);
+    }
+    if (!panelCal) return;
+    if (!e.target.closest(".calendario")) return cerrarCalendario();
+
+    const mover = e.target.closest("[data-mes]");
+    if (mover) {
+      mesCal = new Date(mesCal.getFullYear(), mesCal.getMonth() + +mover.dataset.mes, 1);
+      pintarCalendario();
+      colocarCalendario();
+      panelCal.querySelector(`[data-mes="${mover.dataset.mes}"]`)?.focus();
+      return;
+    }
+    if (e.target.closest("[data-vaciar]")) {
+      campoCal.value = "";
+      campoCal.dispatchEvent(new Event("input", { bubbles: true }));
+      campoCal.dispatchEvent(new Event("change", { bubbles: true }));
+      return cerrarCalendario();
+    }
+    const dia = e.target.closest("[data-dia]");
+    if (dia) elegirDia(dia.dataset.dia);
+  });
+
+  /* Teclado: flechas para moverse, Enter elige, Escape cierra. Sin esto el
+     calendario sería una trampa para quien no usa ratón. */
+  document.addEventListener("keydown", (e) => {
+    if (!panelCal) return;
+    if (e.key === "Escape") { e.preventDefault(); return cerrarCalendario(); }
+    const foco = document.activeElement.closest?.("[data-dia]");
+    if (!foco || !/^Arrow|^Home$|^End$|^PageUp$|^PageDown$/.test(e.key)) return;
+    e.preventDefault();
+    const salto = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7,
+                    PageUp: -30, PageDown: 30 }[e.key] ?? 0;
+    const base = deIso(foco.dataset.dia);
+    base.setDate(base.getDate() + salto);
+    if (e.key === "Home") base.setDate(base.getDate() - ((base.getDay() + 6) % 7));
+    if (e.key === "End") base.setDate(base.getDate() + (6 - ((base.getDay() + 6) % 7)));
+    mesCal = new Date(base.getFullYear(), base.getMonth(), 1);
+    const destino = iso(base);
+    campoCal.dataset.foco = destino;
+    pintarCalendario();
+    colocarCalendario();
+    const btn = panelCal.querySelector(`[data-dia="${destino}"]`);
+    if (btn) { btn.tabIndex = 0; btn.focus(); }
+  });
+
+  addEventListener("resize", cerrarCalendario);
+  addEventListener("scroll", () => { if (panelCal) colocarCalendario(); }, true);
+}
+
+/** Le pone su botón a cada campo de fecha. El input no se toca. */
+function prepararFechas(raiz) {
+  raiz.querySelectorAll('input[type="date"]:not([data-cal])').forEach((i) => {
+    i.dataset.cal = "1";
+    const caja = document.createElement("span");
+    caja.className = "campo-fecha";
+    i.parentNode.insertBefore(caja, i);
+    caja.appendChild(i);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "campo-fecha__abrir";
+    b.setAttribute("data-abrir-calendario", "");
+    b.setAttribute("aria-label", "Abrir calendario");
+    b.innerHTML = svg(icono.calendario);
+    caja.appendChild(b);
   });
 }
 
