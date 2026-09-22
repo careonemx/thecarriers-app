@@ -241,6 +241,75 @@ input:not([type="checkbox"], [type="radio"]):hover,
 select:hover,
 textarea:hover { border-color: rgba(255, 255, 255, 0.55); }
 select { cursor: pointer; }
+
+/* ---------- Fecha y hora ----------
+   El panel del calendario lo dibuja el navegador y no se puede estilar. Lo
+   que sí es nuestro es el campo: su icono, los segmentos, el separador y el
+   resalte del foco. Sin tocarlos, un `input[type=date]` mete en la interfaz
+   un icono azul de sistema y una tipografía que no es la nuestra.
+
+   Se usa `mask` y no `background-image` a propósito: así el icono toma el
+   color de una variable y puede cambiar al pasar por encima. Con una imagen
+   incrustada el color quedaría fijo dentro del SVG. */
+input[type="date"], input[type="time"] {
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  width: 16px; height: 16px; padding: 0; margin-left: 4px;
+  background: var(--muted);
+  cursor: pointer;
+  transition: background-color .16s var(--curva);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5.5l3.5 2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5.5l3.5 2'/%3E%3C/svg%3E");
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="date"]:focus-within::-webkit-calendar-picker-indicator,
+input[type="time"]:focus-within::-webkit-calendar-picker-indicator {
+  background: var(--ink);
+}
+
+/* Las barras entre día, mes y año son separadores, no datos. */
+::-webkit-datetime-edit-text { color: var(--muted); padding: 0 1px; }
+::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+
+/* Un campo vacío dice "dd/mm/aaaa": es un marcador, no un valor, y a plena
+   intensidad compite con los datos de al lado. `data-lleno` lo pone el
+   armazón al cargar y en cada cambio. */
+input[type="date"]:not([data-lleno])::-webkit-datetime-edit,
+input[type="time"]:not([data-lleno])::-webkit-datetime-edit { color: var(--muted); }
+
+/* El segmento que se está editando, con el acento de la casa en vez del azul
+   del sistema. Texto oscuro encima, que sobre el acento da 5.3:1. */
+::-webkit-datetime-edit-day-field:focus,
+::-webkit-datetime-edit-month-field:focus,
+::-webkit-datetime-edit-year-field:focus,
+::-webkit-datetime-edit-hour-field:focus,
+::-webkit-datetime-edit-minute-field:focus,
+::-webkit-datetime-edit-ampm-field:focus {
+  background: var(--accent); color: var(--abyss);
+  border-radius: 3px; outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator { transition: none; }
+}
 select option { background: var(--navy-900); }
 
 .campo { display: grid; gap: 6px; }

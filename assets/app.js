@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=370c9b19";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=468f5825";
 
 const CLAVE = "tc_sesion";
 
@@ -180,6 +180,29 @@ export function montar() {
   addEventListener("keydown", (e) => e.key === "Escape" && cambiar(false));
 
   cuerpo.querySelector("[data-salir]").addEventListener("click", () => sesion.cerrar());
+
+  /* Un campo de fecha vacío muestra "dd/mm/aaaa". Eso es un marcador, no un
+     dato, y a plena intensidad compite con los valores de al lado. Se marca
+     cuál tiene valor para que el CSS pueda apagar el resto.
+
+     Va aquí y no en cada pantalla: son los mismos campos en Pedidos y en
+     Tracking, y el panel de un origen los crea después, de ahí el delegado
+     sobre el documento. */
+  const marcarFecha = (i) => {
+    if (i.value) i.setAttribute("data-lleno", "");
+    else i.removeAttribute("data-lleno");
+  };
+  const fechas = () => document.querySelectorAll('input[type="date"], input[type="time"]');
+  fechas().forEach(marcarFecha);
+  document.addEventListener("input", (e) => {
+    if (e.target.matches('input[type="date"], input[type="time"]')) marcarFecha(e.target);
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.matches('input[type="date"], input[type="time"]')) marcarFecha(e.target);
+  });
+  /* Los campos que aparecen dentro de un panel nacen después de montar. */
+  new MutationObserver(() => fechas().forEach(marcarFecha))
+    .observe(cuerpo, { childList: true, subtree: true });
 
   // Una fila con data-href se comporta como enlace, sin dejar de ser accesible:
   // la primera celda lleva un <a> de verdad para el teclado.
