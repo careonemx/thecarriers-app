@@ -535,7 +535,7 @@ const enviosBase = [
  * La distinción cambia a quién se le reclama. El transportista falló, pero el
  * contrato es con la plataforma: la llamada va ahí.
  */
-export const PLATAFORMAS = ["T1 Envíos", "Skydropx", "EnviaYa", "Envíame"];
+export const PLATAFORMAS = ["T1 Envíos", "Skydropx", "EnviaYa", "Envíame", "Turbo Envíos"];
 
 /* =================================================================
  * Recolecciones.
