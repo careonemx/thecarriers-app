@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=066fff98">
-<script src="../assets/vigia.js?v=066fff98" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=f2442efe">
+<script src="../assets/vigia.js?v=f2442efe" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -28,16 +28,11 @@
     </div>
   </section>
 
-  <section class="zona zona--analitica">
-    <h2 class="zona__titulo">Lo demás se ajusta en su pantalla</h2>
-    <div class="fichas fichas--conexiones" id="atajos"></div>
-  </section>
-
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=066fff98";
-import { origenes, plantillas } from "../assets/datos.js?v=066fff98";
+import { montar, exigirSesion } from "../assets/app.js?v=f2442efe";
+import { origenes, plantillas } from "../assets/datos.js?v=f2442efe";
 if (exigirSesion()) {
   montar();
 
@@ -111,27 +106,6 @@ if (exigirSesion()) {
     avisar(e.target.checked
       ? "Guardado. Cada dirección se revisa antes de pedir la guía."
       : "Guardado. Las direcciones ya no se revisan."));
-
-  /* Cada ajuste vive en la pantalla del objeto que ajusta. Estas tarjetas no
-     duplican nada: dicen dónde está cada cosa para quien llegue aquí buscando
-     lo que antes estaba junto. */
-  const ATAJOS = [
-    { nombre: "Canales de venta", href: "canales.html",
-      que: "Por dónde entran los pedidos." },
-    { nombre: "Paqueterías", href: "paqueterias.html",
-      que: "Por dónde salen y con qué criterio se elige una u otra." },
-    { nombre: "Direcciones de Origen", href: "origenes.html",
-      que: "De dónde salen los paquetes y dónde los recogen." },
-    { nombre: "Plantillas", href: "plantillas.html",
-      que: "Peso y medidas de las cajas que usas." },
-  ];
-
-  document.getElementById("atajos").innerHTML = ATAJOS.map((a) => `
-    <a class="ficha ficha--enlace" href="${a.href}">
-      <div class="ficha__cabeza"><div><h2>${esc(a.nombre)}</h2></div>
-        <span class="ficha__ir" aria-hidden="true">&rarr;</span></div>
-      <p class="ficha__nota">${esc(a.que)}</p>
-    </a>`).join("");
 }
 </script>
 </body>

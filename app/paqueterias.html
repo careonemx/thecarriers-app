@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Paqueterías · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=066fff98">
-<script src="../assets/vigia.js?v=066fff98" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=f2442efe">
+<script src="../assets/vigia.js?v=f2442efe" defer></script>
 </head>
 <body data-seccion="paqueterias">
 <main class="contenido contenido--ancho">
@@ -54,26 +54,22 @@
     </div>
   </section>
 
-  <section class="zona">
-    <div class="rejilla rejilla--2" style="align-items:start">
-      <div class="tarjeta">
-        <div class="tarjeta__cabeza"><h2>Cuándo se sustituye la preferida</h2></div>
-        <div class="tarjeta__cuerpo campos" id="excepciones"></div>
-      </div>
-
-      <div class="tarjeta">
-        <div class="tarjeta__cabeza"><h2>Pruébalo</h2></div>
-        <div class="tarjeta__cuerpo campos" id="probador"></div>
-      </div>
+  <!-- Sin el probador al lado, la tarjeta se quedaría sola a lo ancho de la
+       pantalla y sus tres controles se perderían. Se acota a la anchura en la
+       que se leen. -->
+  <section class="zona" style="max-width:560px">
+    <div class="tarjeta">
+      <div class="tarjeta__cabeza"><h2>Cuándo se sustituye la paquetería preferida</h2></div>
+      <div class="tarjeta__cuerpo campos" id="excepciones"></div>
     </div>
   </section>
 
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=066fff98";
-import { reglasPaqueteria, PAPELES, decidirPaqueteria, cuentasEnvio,
-         PLATAFORMAS, conexionesCaidas, dinero } from "../assets/datos.js?v=066fff98";
+import { montar, exigirSesion } from "../assets/app.js?v=f2442efe";
+import { reglasPaqueteria, PAPELES, cuentasEnvio,
+         PLATAFORMAS, conexionesCaidas } from "../assets/datos.js?v=f2442efe";
 if (exigirSesion()) {
   montar();
 
@@ -163,12 +159,11 @@ if (exigirSesion()) {
   const preferidaAhora = () => reglasPaqueteria.orden.find((o) => o.papel === "normal");
 
   /* Mover una fila puede cambiar quién es la preferida, y la regla de
-     seguridad la nombra por su nombre. Las tres se repintan juntas para que
-     ninguna se quede hablando de la anterior. */
+     seguridad la nombra por su nombre. Las dos se repintan juntas para que
+     una no se quede hablando de la anterior. */
   function repintarReglas() {
     pintarOrden();
     pintarExcepciones();
-    pintarProbador();
   }
 
   function pintarOrden() {
@@ -325,7 +320,7 @@ if (exigirSesion()) {
         : `Ninguna paquetería está marcada como <b>Se puede usar</b>, así que no hay
            preferida y cada envío se resuelve entre las de evitar.`}</p>
 
-      <label class="campo">
+      <label class="campo campo--corto">
         <span>Cuando su costo supere</span>
         <input id="umbral" type="number" min="0" step="10" value="${r.cambiarSi.costoMayorA}"
                inputmode="numeric">
@@ -349,66 +344,17 @@ if (exigirSesion()) {
 
     document.getElementById("umbral").addEventListener("input", (e) => {
       r.cambiarSi.costoMayorA = +e.target.value || 0;
-      pintarProbador();
     });
     document.getElementById("zona").addEventListener("change", (e) => {
       r.cambiarSi.zonaExtendida = e.target.checked;
-      pintarProbador();
       avisar("Guardado.");
     });
     document.getElementById("manda").addEventListener("change", (e) => {
       r.mandaLaPreferida = e.target.checked;
-      pintarProbador();
       avisar(e.target.checked
         ? "Guardado. La preferida tiene prioridad sobre el precio."
         : "Guardado. Ahora se elige la más barata.");
     });
-  }
-
-  /* ---------- Pruébalo ----------
-     Unas reglas que no se pueden probar no se usan: nadie cambia algo que
-     decide por él sin ver antes qué decide. */
-  let caso = { peso: 2, costoPreferida: 180, zonaExtendida: false };
-
-  function pintarProbador() {
-    const d = decidirPaqueteria(caso);
-    document.getElementById("probador").innerHTML = `
-      <p style="font-size:13px">Un pedido de ejemplo, para ver qué paquetería saldría.</p>
-
-      <div class="campos campos--2">
-        <label class="campo"><span>Peso (kg)</span>
-          <input id="p-peso" type="number" min="0.1" step="0.5" value="${caso.peso}"></label>
-        <label class="campo"><span>Costo de la preferida</span>
-          <input id="p-costo" type="number" min="0" step="10" value="${caso.costoPreferida}"></label>
-      </div>
-
-      <label class="marca-campo">
-        <input type="checkbox" id="p-zona" ${caso.zonaExtendida ? "checked" : ""}>
-        <span>Es zona extendida</span>
-      </label>
-
-      <div class="veredicto">
-        <span class="veredicto__etiqueta">Se generaría con</span>
-        <b class="veredicto__quien">${esc(d.elegida ?? "ninguna")}</b>
-        ${d.costo !== null ? `<span class="veredicto__costo">${esc(dinero(d.costo))}</span>` : ""}
-        <p>${esc(d.porque)}</p>
-        ${d.alternativas.length
-          ? `<p class="apagado" style="font-size:12px;margin-top:6px">Siguientes opciones:
-               ${d.alternativas.map((a) => `${esc(a.paqueteria)} ${esc(dinero(a.costo))}`).join(" · ")}</p>`
-          : ""}
-      </div>`;
-
-    const leer = () => {
-      caso = {
-        peso: +document.getElementById("p-peso").value || 1,
-        costoPreferida: +document.getElementById("p-costo").value || 0,
-        zonaExtendida: document.getElementById("p-zona").checked,
-      };
-      pintarProbador();
-    };
-    ["p-peso", "p-costo"].forEach((id) =>
-      document.getElementById(id).addEventListener("input", leer));
-    document.getElementById("p-zona").addEventListener("change", leer);
   }
 
   repintarReglas();

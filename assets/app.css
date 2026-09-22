@@ -710,6 +710,10 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .interruptor input:checked::after { transform: translateX(16px); background: var(--abyss); }
 
 /* ---------- Campo con error ---------- */
+/* Un campo que solo recibe una cifra no gana nada con ocupar toda la fila:
+   el ancho de una caja es una pista de cuánto se espera que se escriba. */
+.campo--corto > input { max-width: 180px; }
+
 .campo--error input, .campo--error select, .campo--error textarea { border-color: #f87171; }
 .campo__error { color: #fca5a5; font-size: 12px; }
 input:disabled, select:disabled, textarea:disabled {
@@ -1063,19 +1067,6 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .orden__mover { display: flex; gap: 4px; }
 .orden__mover .boton { min-width: 32px; justify-content: center; }
 
-/* ---------- Veredicto del probador ----------
-   Unas reglas que no se pueden probar no se usan. Aquí se ve la decisión y,
-   debajo, por qué: una regla que no se puede explicar no se puede corregir. */
-.veredicto {
-  display: grid; gap: 4px; margin-top: 4px; padding: 14px 16px;
-  border: 1px solid rgba(15, 157, 110, .35); border-radius: var(--r-lg);
-  background: rgba(15, 157, 110, .08);
-}
-.veredicto__etiqueta { color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
-.veredicto__quien { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
-.veredicto__costo { color: var(--accent-claro); font-size: 14px; font-variant-numeric: tabular-nums; }
-.veredicto p { margin-top: 4px; font-size: 13px; line-height: 1.5; }
-
 /* ---------- Lo técnico, plegado ---------- */
 .avanzado > summary {
   padding: 12px 16px; border: 1px solid var(--hairline); border-radius: var(--r-lg);
@@ -1184,18 +1175,6 @@ tr.fila--principal td:first-child::before {
 .ficha--apagada { background: transparent; border-style: dashed; }
 .ficha--apagada h2 { color: var(--muted); }
 
-/* La ficha entera como enlace: el destino es la tarjeta, no una palabra
-   dentro de ella. */
-.ficha--enlace {
-  color: inherit; text-decoration: none;
-  transition: border-color .15s var(--ease-signal), background .15s var(--ease-signal);
-}
-.ficha--enlace:hover { border-color: var(--hairline-fuerte); background: var(--navy-800, var(--navy-900)); }
-.ficha--enlace:hover .ficha__ir { transform: translateX(3px); }
-.ficha__ir {
-  color: var(--muted); font-size: 16px;
-  transition: transform .15s var(--ease-signal);
-}
 
 
 /* ---------- Barra de selección múltiple ----------

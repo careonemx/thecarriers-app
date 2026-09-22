@@ -140,6 +140,12 @@ export const reglasPaqueteria = {
 /**
  * Qué paquetería saldría y POR QUÉ. Lo segundo importa tanto como lo primero:
  * una regla que no se puede explicar no se puede corregir.
+ *
+ * Ninguna pantalla la llama todavía: quien elige la paquetería al generar la
+ * guía es el backend. Se queda aquí porque es el único sitio donde está
+ * escrito qué significan exactamente las reglas de `reglasPaqueteria` —el
+ * orden, los papeles, el umbral y la regla de seguridad—, y sin ella esos
+ * datos serían una lista sin sentido.
  */
 export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendida = false } = {}) {
   const r = reglasPaqueteria;
