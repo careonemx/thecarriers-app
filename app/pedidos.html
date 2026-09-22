@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=670a3309">
-<script src="../assets/vigia.js?v=670a3309" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=5396365f">
+<script src="../assets/vigia.js?v=5396365f" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -112,10 +112,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=670a3309";
+import { montar, exigirSesion } from "../assets/app.js?v=5396365f";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
-         detalleDe } from "../assets/datos.js?v=670a3309";
+         detalleDe } from "../assets/datos.js?v=5396365f";
 if (exigirSesion()) {
   montar();
 
@@ -189,10 +189,8 @@ if (exigirSesion()) {
       <td><button class="mono" type="button" data-abrir="${p.folio}"
             style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
           <div class="apagado" style="font-size:12px">${fechaCorta(p.fecha)}</div></td>
-      <td><div class="tarjeta-pedido__cliente">
-            <span class="avatar">${p.cliente.iniciales}</span>
-            <div><b>${p.cliente.nombre}</b><span>${p.cliente.correo}</span></div>
-          </div></td>
+      <td style="max-width:220px">${p.cliente.nombre}
+          <div class="apagado" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente.correo}</div></td>
       <td style="max-width:260px">${p.direccion || p.destino || p.ciudad}
           <div class="apagado" style="font-size:12px">${
             (p.direccion || p.destino) ? p.ciudad : p.canal}</div></td>
@@ -208,9 +206,9 @@ if (exigirSesion()) {
         <button class="tarjeta-pedido__folio" type="button" data-abrir="${p.folio}" style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
         <span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>
       </div>
-      <div class="tarjeta-pedido__cliente">
-        <span class="avatar">${p.cliente.iniciales}</span>
-        <div><b>${p.cliente.nombre}</b><span>${p.ciudad}</span></div>
+      <div>
+        <b style="font-weight:500">${p.cliente.nombre}</b>
+        <div class="apagado" style="font-size:12px">${p.ciudad}</div>
       </div>
       <div>${celdaEnvio(p)}</div>
       <div class="tarjeta-pedido__pie">

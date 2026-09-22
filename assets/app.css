@@ -55,6 +55,15 @@
 
 html, body { max-width: 100%; overflow-x: clip; }
 
+/* El hueco de la barra se reserva siempre: si no, bloquear el scroll al abrir
+   un panel hace saltar toda la página unos píxeles. */
+html { scrollbar-gutter: stable; }
+
+/* Con un panel abierto, la página de atrás no scrollea ni muestra su barra.
+   Tres barras a la derecha —la de la página, la del diálogo y la del cuerpo—
+   era exactamente eso: tres capas que podían moverse a la vez. */
+html:has(dialog[open]) { overflow: hidden; }
+
 body {
   margin: 0;
   background: var(--abyss);
@@ -698,6 +707,8 @@ dialog.panel {
 dialog.panel::backdrop { background: rgba(0, 0, 0, 0.55); }
 /* El contenedor recibe el foco al abrir; su anillo sobra. */
 dialog.panel:focus { outline: none; }
+/* El propio <dialog> nunca scrollea: solo su cuerpo. */
+dialog.panel { overflow: hidden; }
 dialog.panel[open] { display: flex; flex-direction: column; }
 
 @keyframes entrar-panel { from { transform: translateX(24px); opacity: 0; } }
@@ -720,7 +731,13 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   cursor: pointer; transition: all .15s var(--curva);
 }
 .panel__cerrar:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
-.panel__cuerpo { overflow-y: auto; padding: 22px; display: grid; gap: 22px; }
+/* min-height:0 no es opcional. Un hijo de flex trae min-height:auto, así que
+   el cuerpo crece hasta su contenido en vez de encogerse, el diálogo se
+   desborda y aparece una SEGUNDA barra de scroll sobre la del cuerpo. */
+.panel__cuerpo {
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: 22px; display: grid; gap: 22px; align-content: start;
+}
 .panel__pie {
   flex: none; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap;
   padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--navy-900);
