@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=7c62d7d6">
-<script src="../assets/vigia.js?v=7c62d7d6" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=670a3309">
+<script src="../assets/vigia.js?v=670a3309" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -108,12 +108,14 @@
       <div class="paginacion" id="paginacion"></div>
     </div>
   </section>
+  <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=7c62d7d6";
+import { montar, exigirSesion } from "../assets/app.js?v=670a3309";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
-         dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY } from "../assets/datos.js?v=7c62d7d6";
+         dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
+         detalleDe } from "../assets/datos.js?v=670a3309";
 if (exigirSesion()) {
   montar();
 
@@ -184,7 +186,8 @@ if (exigirSesion()) {
     <tr data-vista="${vistaDe(p)}" data-folio="${p.folio}">
       <td>${p.envio ? "" : `<input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"${
         p.pago === "Pagado" ? "" : " disabled"}>`}</td>
-      <td><a class="mono" href="#${p.folio.slice(1)}">${p.folio}</a>
+      <td><button class="mono" type="button" data-abrir="${p.folio}"
+            style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
           <div class="apagado" style="font-size:12px">${fechaCorta(p.fecha)}</div></td>
       <td><div class="tarjeta-pedido__cliente">
             <span class="avatar">${p.cliente.iniciales}</span>
@@ -202,7 +205,7 @@ if (exigirSesion()) {
   document.getElementById("vista-mosaico").innerHTML = pedidos.map((p) => `
     <article class="tarjeta-pedido" data-vista="${vistaDe(p)}">
       <div class="tarjeta-pedido__alto">
-        <span class="tarjeta-pedido__folio">${p.folio}</span>
+        <button class="tarjeta-pedido__folio" type="button" data-abrir="${p.folio}" style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
         <span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>
       </div>
       <div class="tarjeta-pedido__cliente">
@@ -215,6 +218,237 @@ if (exigirSesion()) {
         ${celdaAccion(p)}
       </div>
     </article>`).join("");
+
+  /* ---------- Panel de detalle ----------
+     El orden de los bloques no es el del MVP. Ahí venía cliente, totales,
+     direcciones, guía. Aquí va primero envío y dirección, porque son lo
+     único sobre lo que el operador puede actuar; el dinero y los artículos
+     son referencia que se consulta, no se decide. */
+  const panel = document.getElementById("panel");
+
+  const esc = (t) => String(t ?? "").replace(/[<>&"]/g, (c) =>
+    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+
+  const direccionHTML = (d) => `
+    <div class="direccion">
+      <b>${esc(d.nombre)}</b>
+      ${d.lineas.map((l) => `<span>${esc(l)}</span>`).join("")}
+      ${d.telefono ? `<span>Tel. ${esc(d.telefono)}</span>` : ""}
+    </div>`;
+
+  function bloqueDireccion(d) {
+    const c = d.correccion;
+    if (!c) {
+      return `<div class="bloque">
+        <p class="bloque__titulo">Dirección de envío</p>
+        <div class="bloque__caja">${direccionHTML(d.direccion)}</div>
+      </div>`;
+    }
+    return `<div class="bloque">
+      <p class="bloque__titulo">
+        Dirección de envío
+        <span class="pastilla pastilla--${c.aplicada ? "ok" : "aviso"}">
+          ${c.aplicada ? "Corregida" : "Corrección sin aplicar"}
+        </span>
+      </p>
+      <div class="bloque__caja">
+        ${direccionHTML(c.aplicada ? d.direccion : c.original)}
+
+        ${c.motivo ? `<p class="aviso aviso--mal" style="margin-top:13px">${esc(c.motivo)}</p>` : ""}
+
+        <p style="margin-top:15px;color:var(--muted);font-size:12px">
+          ${c.aplicada
+            ? "Se corrigió automáticamente y <b style=\"color:var(--ink)\">con esta versión se generó la guía</b>."
+            : "Hay una corrección propuesta y <b style=\"color:var(--ink)\">todavía no se aplica</b>. Por eso el pedido sigue sin guía."}
+        </p>
+
+        <div style="margin-top:11px;border-top:1px solid var(--hairline);padding-top:11px">
+          ${c.cambios.map((x) => `
+            <div class="cambio">
+              <span class="cambio__campo">${esc(x.campo)}</span>
+              <span class="cambio__antes">${esc(x.antes)}</span>
+              <span class="cambio__flecha" aria-hidden="true">→</span>
+              <span class="cambio__despues">${esc(x.despues)}</span>
+            </div>`).join("")}
+        </div>
+
+        <p style="margin-top:12px;color:var(--muted);font-size:12px">Fuente: ${esc(c.fuente)}</p>
+
+        <details class="desplegable" style="margin-top:6px">
+          <summary>Ver la dirección tal como llegó de ${esc(d.canal)}</summary>
+          <div class="desplegable__cuerpo">${direccionHTML(c.original)}</div>
+        </details>
+
+        <div class="grupo-botones" style="margin-top:13px">
+          ${c.aplicada
+            ? '<button class="boton boton--sutil boton--chico" type="button">Usar la original</button>'
+            : '<button class="boton boton--primario boton--chico" type="button">Aplicar corrección y generar guía</button>'}
+          <button class="boton boton--fantasma boton--chico" type="button">Editar a mano</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function bloqueEnvio(d) {
+    if (!d.envio) {
+      /* Una sola acción principal por pantalla. Si hay una corrección de
+         dirección sin aplicar, "Generar guía" aquí volvería a fallar por el
+         mismo motivo: el botón vive abajo, junto a lo que hay que resolver. */
+      const bloqueado = d.correccion && !d.correccion.aplicada;
+      const dias = diasDesde(d.fecha);
+      let porque;
+      if (d.pago !== "Pagado") porque = "El pedido no está pagado, así que no se puede enviar.";
+      else if (bloqueado) porque = "La dirección tiene una corrección sin aplicar. Se resuelve abajo.";
+      else porque = `Lleva ${dias} ${dias === 1 ? "día" : "días"} esperando.`;
+
+      return `<div class="bloque">
+        <p class="bloque__titulo">Envío</p>
+        <div class="bloque__caja">
+          <p style="color:var(--muted)">Todavía sin guía. ${porque}</p>
+          ${d.pago === "Pagado" && !bloqueado
+            ? '<button class="boton boton--primario boton--chico" type="button" style="margin-top:12px">Generar guía</button>'
+            : ""}
+        </div>
+      </div>`;
+    }
+    const e = d.envio;
+    return `<div class="bloque">
+      <p class="bloque__titulo">Envío</p>
+      <div class="bloque__caja">
+        <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+          <b style="font-size:15px">${esc(e.paqueteria)}</b>
+          <span class="mono">${esc(e.guia)}</span>
+        </div>
+        <dl style="margin:13px 0 0">
+          <div class="dato"><dt>Estado</dt><dd>
+            <span class="pastilla pastilla--${e.estado === "Entregado" ? "ok" : e.estado === "Detenido" ? "mal" : "info"}">${esc(e.estado)}</span>
+          </dd></div>
+          ${e.original ? `<div class="dato"><dt>Lo que reporta la paquetería</dt>
+            <dd class="mono" style="font-size:12px">${esc(e.original)}</dd></div>` : ""}
+          <div class="dato"><dt>Costo de la guía</dt><dd class="tabular">${dinero(d.costoGuia)}</dd></div>
+          <div class="dato"><dt>Generada</dt><dd>${fechaCorta(d.fecha)}</dd></div>
+        </dl>
+        <div class="grupo-botones" style="margin-top:13px">
+          <a class="boton boton--fantasma boton--chico" href="envio.html?guia=${encodeURIComponent(e.guia)}">Ver historial</a>
+          <button class="boton boton--sutil boton--chico" type="button">Ver etiqueta</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function abrirPanel(folio) {
+    const d = detalleDe(folio);
+    if (!d) return;
+    const arts = d.articulos.reduce((n, a) => n + a.cantidad, 0);
+
+    panel.innerHTML = `
+      <div class="panel__cabeza">
+        <div>
+          <h2 id="panel-titulo">${esc(d.folio)}</h2>
+          <p>${fechaCorta(d.fecha)} · entró por ${esc(d.canal)}</p>
+        </div>
+        <span class="pastilla pastilla--${d.pago === "Pagado" ? "ok" : "aviso"}"
+              title="Shopify lo reporta como &quot;${esc(d.pagoOriginal)}&quot;">${esc(d.pago)}</span>
+        <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
+      </div>
+
+      <div class="panel__cuerpo">
+        ${bloqueEnvio(d)}
+        ${bloqueDireccion(d)}
+
+        <div class="bloque">
+          <p class="bloque__titulo">Cliente</p>
+          <div class="bloque__caja">
+            <div style="display:flex;align-items:center;gap:11px">
+              <span class="avatar">${esc(d.cliente.iniciales)}</span>
+              <div style="min-width:0">
+                <b>${esc(d.cliente.nombre)}</b>
+                <div class="apagado" style="font-size:13px">${esc(d.cliente.correo)}</div>
+                ${d.telefono ? `<div class="apagado" style="font-size:13px">${esc(d.telefono)}</div>` : ""}
+              </div>
+            </div>
+            <p style="margin-top:12px;color:var(--muted);font-size:13px">
+              ${d.pedidosPrevios > 0
+                ? `${d.pedidosPrevios} pedidos anteriores · ${dinero(d.gastadoPrevio)} en total`
+                : "Primer pedido de este cliente."}
+            </p>
+          </div>
+        </div>
+
+        <div class="bloque">
+          <p class="bloque__titulo">Artículos <span class="apagado" style="letter-spacing:0;text-transform:none;font-weight:400">${arts} ${arts === 1 ? "pieza" : "piezas"}</span></p>
+          <div class="bloque__caja" style="padding:0">
+            <div class="tabla-caja scroll-fino">
+              <table>
+                <caption class="sr-only">Artículos del pedido ${esc(d.folio)}</caption>
+                <thead><tr><th scope="col">Artículo</th><th scope="col">SKU</th>
+                  <th scope="col">Cant.</th><th scope="col">Precio</th></tr></thead>
+                <tbody>${d.articulos.map((a) => `<tr>
+                  <td>${esc(a.nombre)}</td>
+                  <td class="mono apagado">${a.sku ? esc(a.sku) : "—"}</td>
+                  <td class="tabular">${a.cantidad}</td>
+                  <td class="tabular">${dinero(a.precio)}</td></tr>`).join("")}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="bloque">
+          <p class="bloque__titulo">Totales</p>
+          <div class="bloque__caja">
+            <dl style="margin:0">
+              <div class="dato"><dt>Subtotal</dt><dd class="tabular">${dinero(d.subtotal)}</dd></div>
+              <div class="dato dato--fuerte"><dt>Total</dt><dd class="tabular">${dineroMXN(d.total)}</dd></div>
+            </dl>
+            <p style="margin-top:9px;color:var(--muted);font-size:12px">
+              ${d.impuestosIncluidos
+                ? `El total ya incluye ${dinero(d.impuestos)} de IVA.`
+                : `Más ${dinero(d.impuestos)} de IVA.`}
+            </p>
+            <div class="dato" style="margin-top:9px;border-top:1px solid var(--hairline);padding-top:11px">
+              <span>Forma de pago</span><span>${esc(d.formaPago)}</span>
+            </div>
+          </div>
+        </div>
+
+        <details class="desplegable">
+          <summary>${d.facturacionIgual
+            ? "Dirección de facturación · igual que la de envío"
+            : "Dirección de facturación"}</summary>
+          <div class="desplegable__cuerpo">
+            ${direccionHTML(d.facturacionIgual ? (d.correccion?.original ?? d.direccion) : d.facturacion)}
+          </div>
+        </details>
+      </div>
+
+      <div class="panel__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-panel>Cerrar</button>
+        <button class="boton boton--fantasma" type="button">Abrir en ${esc(d.canal)}</button>
+      </div>`;
+
+    panel.querySelectorAll("[data-cerrar-panel]").forEach((b) =>
+      b.addEventListener("click", () => panel.close()));
+    panel.showModal();
+    // El foco al contenedor, no al primer botón: así el lector de pantalla
+    // empieza por el título y nadie ve un anillo brillante sobre la ✕.
+    panel.setAttribute("tabindex", "-1");
+    panel.focus();
+
+    // La URL guarda el pedido abierto: el enlace se puede compartir y el
+    // botón Atrás cierra el panel en vez de salirse de la lista.
+    const u = new URL(location.href);
+    u.searchParams.set("pedido", d.folio.slice(1));
+    history.pushState({ panel: true }, "", u);
+  }
+
+  panel.addEventListener("close", () => {
+    const u = new URL(location.href);
+    if (u.searchParams.has("pedido")) {
+      u.searchParams.delete("pedido");
+      history.replaceState({}, "", u);
+    }
+  });
+  addEventListener("popstate", () => { if (panel.open) panel.close(); });
 
   /* ---------- Vistas, filtros y selección ----------
      Un solo predicado decide qué se ve, y lo aplican por igual la tabla y
@@ -387,6 +621,14 @@ if (exigirSesion()) {
       setTimeout(() => { b.removeAttribute("aria-busy"); b.innerHTML = texto; }, 1400);
     });
   }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-abrir]");
+    if (b) { e.preventDefault(); abrirPanel(b.dataset.abrir); }
+  });
+
+  const abrirAlEntrar = new URLSearchParams(location.search).get("pedido");
+  if (abrirAlEntrar) abrirPanel("#" + abrirAlEntrar.replace(/[^0-9]/g, ""));
 
   aplicar();
 }

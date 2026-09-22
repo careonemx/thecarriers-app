@@ -275,3 +275,110 @@ export const ingresos = pedidos.reduce((s, p) => s + p.total, 0);
 export const detenidos = envios.filter((e) => e.estado === "Detenido" || e.estado === "Con incidencia");
 export const porRecolectar = envios.filter((e) => e.estado === "Recolección pendiente" || e.estado === "Generada");
 export const conDiferencia = envios.filter((e) => e.diferencia);
+
+/* =================================================================
+ * Detalle del pedido.
+ *
+ * Lo que trae Shopify más lo que agrega la plataforma: la corrección de
+ * dirección. Esa corrección es el corazón de la pantalla, así que no se
+ * guarda como "otra dirección" sino como una LISTA DE CAMBIOS: qué campo,
+ * qué decía antes, qué dice ahora. Dos bloques de texto obligan a
+ * compararlos con el dedo; una lista de cambios se lee de un vistazo.
+ *
+ * `aplicada` responde la pregunta más consecuente de la pantalla: con cuál
+ * de las dos direcciones se generó la guía.
+ * ================================================================= */
+
+const DETALLES = {
+  "#1007": {
+    telefono: "+52 222 198 7512",
+    subtotal: 10, impuestos: 1.38, impuestosIncluidos: true,
+    formaPago: "Bank Deposit", pagoOriginal: "paid",
+    pedidosPrevios: 0, gastadoPrevio: 0,
+    articulos: [{ nombre: "Playera Negra", sku: null, cantidad: 1, precio: 10 }],
+    direccion: {
+      nombre: "Arturo García",
+      lineas: ["Porto Alegre 9", "Int. Casa", "Geovillas del Sur", "Puebla, Puebla", "CP 72495", "México"],
+      telefono: "222 198 7512",
+    },
+    correccion: {
+      fuente: "SEPOMEX · automática",
+      aplicada: true,
+      cambios: [
+        { campo: "Calle", antes: "Port Agrere 9", despues: "Porto Alegre 9" },
+        { campo: "Colonia", antes: "Sin colonia", despues: "Geovillas del Sur" },
+        { campo: "Interior", antes: "casa (dentro de la calle)", despues: "Int. Casa" },
+        { campo: "Nombre", antes: "Arturo Garcia", despues: "Arturo García" },
+        { campo: "Teléfono", antes: "+522221987512", despues: "222 198 7512" },
+      ],
+      original: {
+        nombre: "Arturo Garcia",
+        lineas: ["Port Agrere 9 Geovillas del sur, casa", "Puebla, Puebla", "CP 72495", "Mexico"],
+        telefono: "+522221987512",
+      },
+    },
+    facturacionIgual: true,
+    costoGuia: 133.44,
+  },
+
+  // El pedido cuya guía falló. La corrección existe pero NADIE la ha
+  // aceptado, y por eso sigue sin guía: la pantalla tiene que decirlo.
+  "#1002": {
+    telefono: "+52 81 8340 2211",
+    subtotal: 15, impuestos: 2.07, impuestosIncluidos: true,
+    formaPago: "Tarjeta de crédito", pagoOriginal: "paid",
+    pedidosPrevios: 4, gastadoPrevio: 3820,
+    articulos: [
+      { nombre: "Cuaderno cosido A5", sku: "CUA-A5-NEG", cantidad: 2, precio: 6 },
+      { nombre: "Pluma de gel 0.5", sku: "PLU-05", cantidad: 1, precio: 3 },
+    ],
+    direccion: {
+      nombre: "Mariana Ordaz",
+      lineas: ["Av. Juárez 1804", "Col. Centro", "Monterrey, Nuevo León", "CP 64000", "México"],
+      telefono: "81 8340 2211",
+    },
+    correccion: {
+      fuente: "SEPOMEX · automática",
+      aplicada: false,
+      motivo: "La paquetería rechazó el código postal: 64000 no coincide con la colonia.",
+      cambios: [
+        { campo: "Colonia", antes: "Col. Centro", despues: "Centro" },
+        { campo: "Código postal", antes: "64000", despues: "64720" },
+      ],
+      original: {
+        nombre: "Mariana Ordaz",
+        lineas: ["Av. Juárez 1804, Col. Centro", "Monterrey, NL", "CP 64000", "México"],
+        telefono: "+528183402211",
+      },
+    },
+    facturacionIgual: true,
+    costoGuia: null,
+  },
+};
+
+/** Relleno para los pedidos sin detalle propio: completo, pero sin inventar. */
+function detalleGenerico(p) {
+  return {
+    telefono: null,
+    subtotal: p.total, impuestos: +(p.total * 0.16 / 1.16).toFixed(2), impuestosIncluidos: true,
+    formaPago: p.pago === "Pagado" ? "Tarjeta de crédito" : "Pendiente",
+    pagoOriginal: p.pago === "Pagado" ? "paid" : "pending",
+    pedidosPrevios: 0, gastadoPrevio: 0,
+    articulos: [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }],
+    direccion: {
+      nombre: p.cliente.nombre,
+      lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
+      telefono: null,
+    },
+    correccion: null,
+    facturacionIgual: true,
+    costoGuia: p.envio?.costo ?? null,
+  };
+}
+
+/** El detalle completo de un pedido, listo para pintar. */
+export const detalleDe = (folio) => {
+  const p = pedidos.find((x) => x.folio === folio);
+  if (!p) return null;
+  return { ...p, ...(DETALLES[folio] ?? detalleGenerico(p)) };
+};

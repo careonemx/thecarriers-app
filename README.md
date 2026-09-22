@@ -125,6 +125,27 @@ Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
   de filtro devuelve a la primera página: quedarse en la 3 de una lista que ahora tiene
   4 resultados deja la pantalla vacía sin explicación. El pie dice el rango real y, si
   hay filtros activos, cuántos pedidos hay en total.
+- **Detalle del pedido en panel lateral.** Cajón, no pantalla aparte: el operador va
+  bajando una lista, abre, revisa, actúa y sigue; navegar a otra página le tira el filtro,
+  la página y el lugar donde iba. Es un `<dialog>` nativo, que trae foco atrapado, Escape
+  y fondo inerte sin escribir una línea. La URL guarda el pedido abierto (`?pedido=1007`),
+  así que el enlace se puede compartir y Atrás cierra el panel en vez de salirse.
+
+  Tres decisiones de contenido, cada una porque el dato del MVP confundía:
+
+  - **Los totales no cuadraban.** Subtotal $10.00 + Impuestos $1.38 daba $11.38, pero el
+    Total decía $10.00. El IVA va incluido, así que se dice: *"El total ya incluye $1.38
+    de IVA"*, en vez de un renglón suelto que parece un error de cálculo.
+  - **"0 pedido(s) · $0.00 gastado"** junto a un pedido real se lee como dato roto. Si no
+    hay historial, dice *"Primer pedido de este cliente"*.
+  - **La corrección de dirección no se muestra como dos bloques de texto** para que
+    alguien los compare con el dedo, sino como una lista de cambios campo por campo. Y
+    contesta la pregunta más consecuente de la pantalla, que el MVP no contestaba: **con
+    cuál de las dos direcciones se generó la guía**.
+
+  Una sola acción principal por pantalla: si la corrección está sin aplicar, el bloque de
+  Envío no ofrece "Generar guía" —volvería a fallar por el mismo motivo—; el botón vive
+  junto a lo que hay que resolver.
 - **Inicio.** El MVP no tenía. No es un tablero de vanidad: lista qué atender hoy, y
   separa los tres motivos por los que un pedido sigue sin guía, porque cada uno se
   resuelve distinto.

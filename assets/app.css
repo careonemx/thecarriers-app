@@ -677,6 +677,117 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 }
 
 /* =================================================================
+ * Panel de detalle del pedido.
+ *
+ * Cajón lateral, no pantalla aparte: el operador va bajando una lista,
+ * abre, revisa, actúa y sigue. Navegar a otra página le tira el filtro,
+ * la página y el lugar donde iba.
+ *
+ * Es un <dialog> nativo a propósito: trae foco atrapado, Escape y fondo
+ * inerte sin una línea de JavaScript. Reescribir eso a mano es como se
+ * pierde la accesibilidad.
+ * ================================================================= */
+dialog.panel {
+  margin: 0 0 0 auto; padding: 0; border: 0;
+  border-left: 1px solid var(--hairline);
+  width: min(660px, 100vw); max-width: 100vw;
+  height: 100dvh; max-height: 100dvh;
+  background: var(--abyss); color: var(--ink);
+  box-shadow: -40px 0 80px -40px rgba(0, 0, 0, 0.9);
+}
+dialog.panel::backdrop { background: rgba(0, 0, 0, 0.55); }
+/* El contenedor recibe el foco al abrir; su anillo sobra. */
+dialog.panel:focus { outline: none; }
+dialog.panel[open] { display: flex; flex-direction: column; }
+
+@keyframes entrar-panel { from { transform: translateX(24px); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.panel[open] { animation: entrar-panel .24s var(--curva); }
+}
+
+.panel__cabeza {
+  position: sticky; top: 0; z-index: 2; flex: none;
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 22px; border-bottom: 1px solid var(--hairline);
+  background: var(--navy-900);
+}
+.panel__cabeza h2 { font-size: 20px; font-family: ui-monospace, Menlo, monospace; }
+.panel__cabeza p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.panel__cerrar {
+  margin-left: auto; flex: none; width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center; border-radius: var(--r);
+  border: 1px solid var(--hairline); background: transparent; color: var(--muted);
+  cursor: pointer; transition: all .15s var(--curva);
+}
+.panel__cerrar:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
+.panel__cuerpo { overflow-y: auto; padding: 22px; display: grid; gap: 22px; }
+.panel__pie {
+  flex: none; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap;
+  padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--navy-900);
+}
+
+/* ---------- Bloques del detalle ---------- */
+.bloque { display: grid; gap: 11px; }
+.bloque__titulo {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.bloque__caja {
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900); padding: 15px 17px;
+}
+
+.dato { display: flex; justify-content: space-between; gap: 16px; padding: 5px 0; }
+.dato + .dato { border-top: 1px solid rgba(255, 255, 255, .055); }
+.dato dt, .dato > span:first-child { color: var(--muted); }
+.dato dd, .dato > span:last-child { margin: 0; text-align: right; }
+.dato--fuerte { font-weight: 600; font-size: 15px; padding-top: 9px; }
+
+.direccion { line-height: 1.6; }
+.direccion b { display: block; font-weight: 600; }
+.direccion span { display: block; color: var(--muted); }
+
+/* ---------- Corrección de dirección ----------
+   No se muestran dos bloques de texto para que alguien los compare con el
+   dedo: se muestra QUÉ cambió, campo por campo. */
+.cambio {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr) 14px minmax(0, 1fr);
+  gap: 10px; align-items: baseline; padding: 7px 0; font-size: 13px;
+}
+.cambio + .cambio { border-top: 1px solid rgba(255, 255, 255, .055); }
+.cambio__campo { color: var(--muted); font-size: 12px; }
+.cambio__antes { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); }
+.cambio__flecha { color: var(--accent); text-align: center; }
+.cambio__despues { color: var(--ink); font-weight: 500; }
+
+.desplegable > summary {
+  cursor: pointer; color: var(--muted); font-size: 13px; padding: 7px 0;
+  list-style: none; display: flex; align-items: center; gap: 7px;
+}
+.desplegable > summary::-webkit-details-marker { display: none; }
+.desplegable > summary::before {
+  content: "›"; display: inline-block; transition: transform .2s var(--curva);
+}
+.desplegable[open] > summary::before { transform: rotate(90deg); }
+.desplegable > summary:hover { color: var(--ink); }
+.desplegable__cuerpo { padding: 10px 0 4px 16px; }
+
+@media (max-width: 767px) {
+  /* El tachado lo pinta el elemento padre sobre todo su contenido, así que
+     una flecha metida dentro del "antes" sale tachada también. Va fuera, en
+     su propia línea, girada para que apunte hacia abajo. */
+  .cambio { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .cambio__flecha {
+    display: inline-block; text-align: left;
+    transform: rotate(90deg); transform-origin: left center;
+    line-height: 1; margin: 4px 0 4px 3px;
+  }
+  .panel__cuerpo { padding: 16px; }
+  .panel__cabeza, .panel__pie { padding: 14px 16px; }
+}
+
+/* =================================================================
  * Adaptable — SIEMPRE AL FINAL DEL ARCHIVO.
  *
  * Estas reglas tienen la misma especificidad que las de arriba, así que
