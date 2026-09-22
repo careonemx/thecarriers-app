@@ -146,6 +146,14 @@ Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
   Una sola acción principal por pantalla: si la corrección está sin aplicar, el bloque de
   Envío no ofrece "Generar guía" —volvería a fallar por el mismo motivo—; el botón vive
   junto a lo que hay que resolver.
+- **Editar la dirección**, dentro del mismo bloque y no en otro diálogo encima: apilar
+  ventanas modales esconde el contexto que hace falta para decidir. El código postal va
+  primero porque en México determina colonia, ciudad y estado: al escribirlo completo, el
+  formulario ofrece las colonias que le corresponden y llena lo demás.
+
+  Y dice la verdad incómoda que el MVP callaba: **si la guía ya está generada, cambiar la
+  dirección aquí no modifica la etiqueta impresa**. El aviso sale antes de editar y otra
+  vez al guardar, y la acción pasa a ser "Cancelar guía y generar otra".
 - **Inicio.** El MVP no tenía. No es un tablero de vanidad: lista qué atender hoy, y
   separa los tres motivos por los que un pedido sigue sin guía, porque cada uno se
   resuelve distinto.

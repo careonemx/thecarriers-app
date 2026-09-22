@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=5396365f">
+<link rel="stylesheet" href="assets/app.css?v=23eadb8f">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=5396365f" defer></script>
+<script src="assets/vigia.js?v=23eadb8f" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -489,6 +489,8 @@
         <div class="regla"><b>.boton</b><span>Declara <code>background</code>. Sin eso hereda el gris claro del navegador.</span></div>
         <div class="regla"><b>Anchos en el CSS</b><span>Nunca en un <code>style=</code> del HTML: en línea, la consulta de medios no los puede corregir.</span></div>
         <div class="regla"><b>Un scroll por capa</b><span>Un hijo de flex con <code>overflow:auto</code> necesita <code>min-height:0</code>, o crece hasta su contenido y aparece una segunda barra encima. Y con un panel abierto, la página de atrás se bloquea con <code>html:has(dialog[open])</code>.</span></div>
+        <div class="regla"><b>Etiquetas sin modismos</b><span>Un botón es verbo y objeto: "Editar dirección", no "Editar a mano". "Ver dirección original", no "ver la dirección tal como llegó". El modismo envejece mal y no se traduce.</span></div>
+        <div class="regla"><b>Editar en su lugar</b><span>Un formulario se abre dentro del bloque que edita, no en otro diálogo encima. Apilar ventanas modales esconde justo el contexto que hace falta para decidir.</span></div>
         <div class="regla"><b>Avatares</b><span>Identifican a una persona recurrente —tu cuenta, tu empresa—, no una fila de datos. En una lista donde el nombre está al lado, las iniciales son ruido que cuesta ancho.</span></div>
         <div class="regla"><b>En angosto se compacta</b><span>No se oculta. Esconder el arte del acceso dejaba un formulario pelón sobre un fondo plano.</span></div>
         <div class="regla"><b>Foco visible</b><span>Anillo del acento a 2px en todo lo interactivo. No se quita nunca.</span></div>

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=5396365f">
-<script src="../assets/vigia.js?v=5396365f" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=23eadb8f">
+<script src="../assets/vigia.js?v=23eadb8f" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -112,10 +112,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=5396365f";
+import { montar, exigirSesion } from "../assets/app.js?v=23eadb8f";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
-         detalleDe } from "../assets/datos.js?v=5396365f";
+         detalleDe, coloniasPorCP, telefonoMX } from "../assets/datos.js?v=23eadb8f";
 if (exigirSesion()) {
   montar();
 
@@ -231,22 +231,67 @@ if (exigirSesion()) {
     <div class="direccion">
       <b>${esc(d.nombre)}</b>
       ${d.lineas.map((l) => `<span>${esc(l)}</span>`).join("")}
-      ${d.telefono ? `<span>Tel. ${esc(d.telefono)}</span>` : ""}
+      ${d.telefono ? `<span>Tel. ${esc(telefonoMX(d.telefono))}</span>` : ""}
     </div>`;
+
+  /* Direcciones editadas en esta sesión. El prototipo no tiene servidor, pero
+     el cambio tiene que sobrevivir a cerrar y reabrir el panel; si no, no se
+     puede juzgar el flujo. */
+  const editados = new Map();
+
+  const lineasDe = (c) => [
+    [c.calle, c.interior ? `Int. ${c.interior}` : ""].filter(Boolean).join(" · "),
+    c.colonia,
+    [c.ciudad, c.estado].filter(Boolean).join(", "),
+    c.cp ? `CP ${c.cp}` : "",
+    "México",
+  ].filter(Boolean);
 
   function bloqueDireccion(d) {
     const c = d.correccion;
-    if (!c) {
-      return `<div class="bloque">
-        <p class="bloque__titulo">Dirección de envío</p>
-        <div class="bloque__caja">${direccionHTML(d.direccion)}</div>
+    const editada = editados.get(d.folio);
+
+    if (editada) {
+      return `<div class="bloque" data-bloque-direccion>
+        <p class="bloque__titulo">Dirección de envío
+          <span class="pastilla pastilla--info">Editada</span></p>
+        <div class="bloque__caja">
+          ${direccionHTML({ nombre: editada.nombre, lineas: lineasDe(editada), telefono: editada.telefono })}
+          <p style="margin-top:14px;color:var(--muted);font-size:12px">
+            Origen: edición manual · ${fechaCorta(HOY)}
+          </p>
+          ${d.envio ? `<p class="aviso aviso--aviso" style="margin-top:12px;border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12);color:#fde68a">
+            La guía ${esc(d.envio.guia)} ya está generada con la dirección anterior.
+            Para enviar a esta, hay que cancelarla y generar una nueva.
+          </p>` : ""}
+          <div class="grupo-botones" style="margin-top:13px">
+            ${d.envio
+              ? '<button class="boton boton--peligro boton--chico" type="button">Cancelar guía y generar otra</button>'
+              : '<button class="boton boton--primario boton--chico" type="button">Generar guía</button>'}
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
+            <button class="boton boton--sutil boton--chico" type="button" data-descartar="${d.folio}">Descartar cambios</button>
+          </div>
+        </div>
       </div>`;
     }
-    return `<div class="bloque">
+
+    if (!c) {
+      return `<div class="bloque" data-bloque-direccion>
+        <p class="bloque__titulo">Dirección de envío</p>
+        <div class="bloque__caja">
+          ${direccionHTML(d.direccion)}
+          <div class="grupo-botones" style="margin-top:13px">
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="bloque" data-bloque-direccion>
       <p class="bloque__titulo">
         Dirección de envío
         <span class="pastilla pastilla--${c.aplicada ? "ok" : "aviso"}">
-          ${c.aplicada ? "Corregida" : "Corrección sin aplicar"}
+          ${c.aplicada ? "Corregida" : "Corrección pendiente"}
         </span>
       </p>
       <div class="bloque__caja">
@@ -256,8 +301,8 @@ if (exigirSesion()) {
 
         <p style="margin-top:15px;color:var(--muted);font-size:12px">
           ${c.aplicada
-            ? "Se corrigió automáticamente y <b style=\"color:var(--ink)\">con esta versión se generó la guía</b>."
-            : "Hay una corrección propuesta y <b style=\"color:var(--ink)\">todavía no se aplica</b>. Por eso el pedido sigue sin guía."}
+            ? "Corregida automáticamente. <b style=\"color:var(--ink)\">La guía se generó con esta versión.</b>"
+            : "Corrección propuesta <b style=\"color:var(--ink)\">sin aplicar</b>. El pedido no genera guía hasta resolverla."}
         </p>
 
         <div style="margin-top:11px;border-top:1px solid var(--hairline);padding-top:11px">
@@ -270,21 +315,151 @@ if (exigirSesion()) {
             </div>`).join("")}
         </div>
 
-        <p style="margin-top:12px;color:var(--muted);font-size:12px">Fuente: ${esc(c.fuente)}</p>
+        <p style="margin-top:12px;color:var(--muted);font-size:12px">Origen: ${esc(c.fuente)}</p>
 
         <details class="desplegable" style="margin-top:6px">
-          <summary>Ver la dirección tal como llegó de ${esc(d.canal)}</summary>
+          <summary>Ver dirección original de ${esc(d.canal)}</summary>
           <div class="desplegable__cuerpo">${direccionHTML(c.original)}</div>
         </details>
 
         <div class="grupo-botones" style="margin-top:13px">
           ${c.aplicada
-            ? '<button class="boton boton--sutil boton--chico" type="button">Usar la original</button>'
+            ? '<button class="boton boton--sutil boton--chico" type="button">Restaurar la original</button>'
             : '<button class="boton boton--primario boton--chico" type="button">Aplicar corrección y generar guía</button>'}
-          <button class="boton boton--fantasma boton--chico" type="button">Editar a mano</button>
+          <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
         </div>
       </div>
     </div>`;
+  }
+
+  /* ---------- Edición de la dirección ----------
+     Se edita dentro del mismo bloque, no en otro diálogo encima: apilar
+     ventanas modales esconde el contexto que se necesita para decidir.
+
+     El código postal va primero porque en México determina colonia, ciudad y
+     estado. Al escribirlo completo, el formulario ofrece las colonias que le
+     corresponden y llena lo demás, en vez de dejar teclear cualquier cosa. */
+  function formularioDireccion(d) {
+    const c = editados.get(d.folio) ?? d.direccion.campos ?? {};
+    const campo = (id, etiqueta, valor, extra = "") => `
+      <label class="campo" data-campo="${id}">
+        <span>${etiqueta}</span>
+        <input id="dir-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
+        <span class="campo__error" hidden></span>
+      </label>`;
+
+    return `
+      <form id="form-direccion" novalidate style="display:grid;gap:14px">
+        ${d.envio ? `<p class="aviso aviso--info">
+          Este pedido ya tiene la guía ${esc(d.envio.guia)}. Cambiar la dirección aquí
+          <b style="color:var(--ink)">no modifica la etiqueta ya generada</b>.
+        </p>` : ""}
+
+        ${campo("nombre", "Nombre del destinatario", c.nombre, "autocomplete=\"name\" required")}
+
+        <div style="display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px">
+          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required')}
+          <label class="campo" data-campo="colonia">
+            <span>Colonia</span>
+            <input id="dir-colonia" name="colonia" list="colonias" value="${esc(c.colonia ?? "")}" required>
+            <datalist id="colonias"></datalist>
+            <span class="campo__error" hidden></span>
+          </label>
+        </div>
+
+        ${campo("calle", "Calle y número", c.calle, "required")}
+        ${campo("interior", "Interior o referencia", c.interior, 'placeholder="Opcional"')}
+
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+          ${campo("ciudad", "Ciudad o municipio", c.ciudad, "required")}
+          ${campo("estado", "Estado", c.estado, "required")}
+        </div>
+
+        ${campo("telefono", "Teléfono", c.telefono, 'inputmode="tel" maxlength="10" placeholder="10 dígitos"')}
+
+        <div class="grupo-botones" style="margin-top:2px">
+          <button class="boton boton--primario boton--chico" type="submit">Guardar dirección</button>
+          <button class="boton boton--sutil boton--chico" type="button" data-cancelar-edicion>Cancelar</button>
+        </div>
+      </form>`;
+  }
+
+  function abrirEdicion(folio) {
+    const d = detalleActual(folio);
+    const bloque = panel.querySelector("[data-bloque-direccion]");
+    bloque.innerHTML = `
+      <p class="bloque__titulo">Editar dirección de envío</p>
+      <div class="bloque__caja">${formularioDireccion(d)}</div>`;
+
+    const form = bloque.querySelector("#form-direccion");
+    const cp = form.querySelector("#dir-cp");
+    const colonia = form.querySelector("#dir-colonia");
+    const lista = form.querySelector("#colonias");
+
+    function sugerirPorCP() {
+      const info = coloniasPorCP[cp.value.trim()];
+      lista.innerHTML = info ? info.colonias.map((x) => `<option value="${esc(x)}">`).join("") : "";
+      if (info) {
+        form.querySelector("#dir-ciudad").value = info.ciudad;
+        form.querySelector("#dir-estado").value = info.estado;
+        if (!info.colonias.includes(colonia.value)) colonia.value = info.colonias[0];
+      }
+    }
+    cp.addEventListener("input", sugerirPorCP);
+    sugerirPorCP();
+
+    const marcarError = (nombre, mensaje) => {
+      const l = form.querySelector(`[data-campo="${nombre}"]`);
+      const e = l.querySelector(".campo__error");
+      l.classList.toggle("campo--error", !!mensaje);
+      e.textContent = mensaje || "";
+      e.hidden = !mensaje;
+    };
+
+    form.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const v = Object.fromEntries(new FormData(form).entries());
+      let ok = true;
+      for (const [k, etiqueta] of [["nombre", "el nombre"], ["calle", "la calle"],
+                                   ["colonia", "la colonia"], ["ciudad", "la ciudad"], ["estado", "el estado"]]) {
+        const falta = !String(v[k] || "").trim();
+        marcarError(k, falta ? `Falta ${etiqueta}.` : "");
+        if (falta) ok = false;
+      }
+      const malCP = !/^\d{5}$/.test(String(v.cp || "").trim());
+      marcarError("cp", malCP ? "El código postal son cinco dígitos." : "");
+      if (malCP) ok = false;
+
+      const tel = String(v.telefono || "").replace(/\D/g, "");
+      const malTel = tel && tel.length !== 10;
+      marcarError("telefono", malTel ? "El teléfono son diez dígitos, sin lada internacional." : "");
+      if (malTel) ok = false;
+
+      if (!ok) { form.querySelector(".campo--error input")?.focus(); return; }
+
+      editados.set(folio, { ...v, telefono: tel });
+      repintarDireccion(folio);
+    });
+
+    form.querySelector("[data-cancelar-edicion]")
+      .addEventListener("click", () => repintarDireccion(folio));
+
+    form.querySelector("#dir-nombre").focus();
+  }
+
+  function repintarDireccion(folio) {
+    const bloque = panel.querySelector("[data-bloque-direccion]");
+    const nuevo = document.createElement("div");
+    nuevo.innerHTML = bloqueDireccion(detalleActual(folio));
+    bloque.replaceWith(nuevo.firstElementChild);
+  }
+
+  /** El detalle, con la edición de esta sesión encima si la hay. */
+  function detalleActual(folio) {
+    const d = detalleDe(folio);
+    const e = editados.get(folio);
+    if (!d || !e) return d;
+    return { ...d, direccion: { nombre: e.nombre, lineas: lineasDe(e), telefono: e.telefono, campos: e } };
   }
 
   function bloqueEnvio(d) {
@@ -295,14 +470,14 @@ if (exigirSesion()) {
       const bloqueado = d.correccion && !d.correccion.aplicada;
       const dias = diasDesde(d.fecha);
       let porque;
-      if (d.pago !== "Pagado") porque = "El pedido no está pagado, así que no se puede enviar.";
-      else if (bloqueado) porque = "La dirección tiene una corrección sin aplicar. Se resuelve abajo.";
-      else porque = `Lleva ${dias} ${dias === 1 ? "día" : "días"} esperando.`;
+      if (d.pago !== "Pagado") porque = "El pedido no registra pago. No se genera guía hasta confirmarlo.";
+      else if (bloqueado) porque = "La dirección tiene una corrección pendiente.";
+      else porque = `${dias} ${dias === 1 ? "día" : "días"} desde que entró el pedido.`;
 
       return `<div class="bloque">
         <p class="bloque__titulo">Envío</p>
         <div class="bloque__caja">
-          <p style="color:var(--muted)">Todavía sin guía. ${porque}</p>
+          <p style="color:var(--muted)">Sin guía. ${porque}</p>
           ${d.pago === "Pagado" && !bloqueado
             ? '<button class="boton boton--primario boton--chico" type="button" style="margin-top:12px">Generar guía</button>'
             : ""}
@@ -321,7 +496,7 @@ if (exigirSesion()) {
           <div class="dato"><dt>Estado</dt><dd>
             <span class="pastilla pastilla--${e.estado === "Entregado" ? "ok" : e.estado === "Detenido" ? "mal" : "info"}">${esc(e.estado)}</span>
           </dd></div>
-          ${e.original ? `<div class="dato"><dt>Lo que reporta la paquetería</dt>
+          ${e.original ? `<div class="dato"><dt>Estado original de la paquetería</dt>
             <dd class="mono" style="font-size:12px">${esc(e.original)}</dd></div>` : ""}
           <div class="dato"><dt>Costo de la guía</dt><dd class="tabular">${dinero(d.costoGuia)}</dd></div>
           <div class="dato"><dt>Generada</dt><dd>${fechaCorta(d.fecha)}</dd></div>
@@ -335,7 +510,7 @@ if (exigirSesion()) {
   }
 
   function abrirPanel(folio) {
-    const d = detalleDe(folio);
+    const d = detalleActual(folio);
     if (!d) return;
     const arts = d.articulos.reduce((n, a) => n + a.cantidad, 0);
 
@@ -368,7 +543,7 @@ if (exigirSesion()) {
             <p style="margin-top:12px;color:var(--muted);font-size:13px">
               ${d.pedidosPrevios > 0
                 ? `${d.pedidosPrevios} pedidos anteriores · ${dinero(d.gastadoPrevio)} en total`
-                : "Primer pedido de este cliente."}
+                : "Sin pedidos anteriores registrados."}
             </p>
           </div>
         </div>
@@ -400,8 +575,8 @@ if (exigirSesion()) {
             </dl>
             <p style="margin-top:9px;color:var(--muted);font-size:12px">
               ${d.impuestosIncluidos
-                ? `El total ya incluye ${dinero(d.impuestos)} de IVA.`
-                : `Más ${dinero(d.impuestos)} de IVA.`}
+                ? `IVA incluido: ${dinero(d.impuestos)}.`
+                : `Más IVA: ${dinero(d.impuestos)}.`}
             </p>
             <div class="dato" style="margin-top:9px;border-top:1px solid var(--hairline);padding-top:11px">
               <span>Forma de pago</span><span>${esc(d.formaPago)}</span>
@@ -426,6 +601,12 @@ if (exigirSesion()) {
 
     panel.querySelectorAll("[data-cerrar-panel]").forEach((b) =>
       b.addEventListener("click", () => panel.close()));
+    panel.addEventListener("click", (ev) => {
+      const editar = ev.target.closest("[data-editar]");
+      if (editar) return abrirEdicion(editar.dataset.editar);
+      const descartar = ev.target.closest("[data-descartar]");
+      if (descartar) { editados.delete(descartar.dataset.descartar); repintarDireccion(descartar.dataset.descartar); }
+    });
     panel.showModal();
     // El foco al contenedor, no al primer botón: así el lector de pantalla
     // empieza por el título y nadie ve un anillo brillante sobre la ✕.

@@ -300,6 +300,9 @@ const DETALLES = {
       nombre: "Arturo García",
       lineas: ["Porto Alegre 9", "Int. Casa", "Geovillas del Sur", "Puebla, Puebla", "CP 72495", "México"],
       telefono: "222 198 7512",
+      campos: { nombre: "Arturo García", calle: "Porto Alegre 9", interior: "Casa",
+                colonia: "Geovillas del Sur", cp: "72495", ciudad: "Puebla",
+                estado: "Puebla", telefono: "2221987512" },
     },
     correccion: {
       fuente: "SEPOMEX · automática",
@@ -336,6 +339,9 @@ const DETALLES = {
       nombre: "Mariana Ordaz",
       lineas: ["Av. Juárez 1804", "Col. Centro", "Monterrey, Nuevo León", "CP 64000", "México"],
       telefono: "81 8340 2211",
+      campos: { nombre: "Mariana Ordaz", calle: "Av. Juárez 1804", interior: "",
+                colonia: "Centro", cp: "64000", ciudad: "Monterrey",
+                estado: "Nuevo León", telefono: "8183402211" },
     },
     correccion: {
       fuente: "SEPOMEX · automática",
@@ -369,6 +375,12 @@ function detalleGenerico(p) {
       nombre: p.cliente.nombre,
       lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
       telefono: null,
+      campos: {
+        nombre: p.cliente.nombre, calle: p.destino || "", interior: "", colonia: "",
+        cp: (p.ciudad.match(/\b(\d{5})\b/) || [])[1] || "",
+        ciudad: p.ciudad.split(",")[0] || "", estado: (p.ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, ""),
+        telefono: "",
+      },
     },
     correccion: null,
     facturacionIgual: true,
@@ -381,4 +393,35 @@ export const detalleDe = (folio) => {
   const p = pedidos.find((x) => x.folio === folio);
   if (!p) return null;
   return { ...p, ...(DETALLES[folio] ?? detalleGenerico(p)) };
+};
+
+
+/**
+ * Colonias por código postal. En México el CP determina colonia, ciudad y
+ * estado, así que el formulario pregunta primero el CP y ofrece las colonias
+ * que le corresponden, en vez de dejar escribir cualquier cosa. Es la misma
+ * fuente que usa la corrección automática.
+ */
+export const coloniasPorCP = {
+  "72495": { ciudad: "Puebla", estado: "Puebla",
+    colonias: ["Geovillas del Sur", "San Ramón 4a Sección", "Villa Frontera"] },
+  "64720": { ciudad: "Monterrey", estado: "Nuevo León",
+    colonias: ["Centro", "Obispado", "Mitras Centro"] },
+  "64000": { ciudad: "Monterrey", estado: "Nuevo León",
+    colonias: ["Centro"] },
+  "06700": { ciudad: "Ciudad de México", estado: "Ciudad de México",
+    colonias: ["Roma Norte", "Roma Sur", "Condesa"] },
+};
+
+/**
+ * Teléfono mexicano de diez dígitos, formateado para leerse.
+ * Monterrey, Guadalajara y la Ciudad de México usan lada de dos dígitos
+ * (81, 33, 55); el resto del país, de tres.
+ */
+export const telefonoMX = (v) => {
+  const d = String(v ?? "").replace(/\D/g, "").slice(-10);
+  if (d.length !== 10) return v ?? "";
+  return ["55", "81", "33"].includes(d.slice(0, 2))
+    ? `${d.slice(0, 2)} ${d.slice(2, 6)} ${d.slice(6)}`
+    : `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
 };
