@@ -817,6 +817,52 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 
 /* =================================================================
+ * Franja de desenlace.
+ *
+ * Los mismos datos piden tratamiento opuesto según sean un RESULTADO o
+ * una DECISIÓN:
+ *
+ *   resuelto   ya pasó, no hay nada que hacer  → se celebra y se pliega
+ *   pendiente  alguien tiene que decidir       → se despliega y se explica
+ *
+ * Antes todo se mostraba igual, con la lista de cambios tachados como
+ * elemento más grande de la tarjeta. Eso es una vista forense: sirve
+ * cuando algo falló, y estorba cuando se resolvió solo.
+ * ================================================================= */
+.franja {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border: 1px solid; border-radius: var(--r);
+}
+.franja__icono {
+  flex: none; display: grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 999px;
+}
+.franja__icono svg { width: 16px; height: 16px; }
+.franja b { display: block; font-weight: 600; }
+.franja p { margin-top: 3px; font-size: 13px; line-height: 1.5; }
+
+.franja--resuelto {
+  border-color: rgba(15, 157, 110, 0.35);
+  background:
+    radial-gradient(70% 160% at 0% 0%, rgba(15, 157, 110, 0.16), transparent 70%),
+    rgba(15, 157, 110, 0.07);
+}
+.franja--resuelto .franja__icono { background: rgba(15, 157, 110, 0.2); color: var(--accent-claro); }
+.franja--resuelto p { color: var(--muted); }
+
+.franja--pendiente {
+  border-color: rgba(248, 113, 113, 0.4); background: rgba(248, 113, 113, 0.1);
+}
+.franja--pendiente .franja__icono { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
+.franja--pendiente p { color: #fca5a5; }
+
+.franja--editada {
+  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, 0.05);
+}
+.franja--editada .franja__icono { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+.franja--editada p { color: var(--muted); }
+
+/* =================================================================
  * Formularios: rejilla y campos compuestos.
  *
  * Estas piezas existen porque se estaban improvisando con estilos en

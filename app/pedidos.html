@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=67828831">
-<script src="../assets/vigia.js?v=67828831" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=4b65c029">
+<script src="../assets/vigia.js?v=4b65c029" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -112,10 +112,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=67828831";
+import { montar, exigirSesion } from "../assets/app.js?v=4b65c029";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
-         detalleDe, coloniasPorCP, telefonoMX, ladas } from "../assets/datos.js?v=67828831";
+         detalleDe, coloniasPorCP, telefonoMX, ladas } from "../assets/datos.js?v=4b65c029";
 if (exigirSesion()) {
   montar();
 
@@ -252,85 +252,132 @@ if (exigirSesion()) {
     c.referencia ? `Ref. ${c.referencia}` : "",
   ].filter(Boolean);
 
+  const ICO = {
+    check: '<path d="m5 13 4 4L19 7"/>',
+    alerta: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
+    lapiz: '<path d="m4 20 4-1 10-10-3-3L5 16z"/><path d="m14.5 6.5 3 3"/>',
+  };
+
+  const svgIco = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+
+  const franja = (tono, icono, titulo, texto) => `
+    <div class="franja franja--${tono}">
+      <span class="franja__icono">${svgIco(icono)}</span>
+      <div><b>${titulo}</b><p>${texto}</p></div>
+    </div>`;
+
+  /* La dirección en pocas líneas: la calle con su interior, y la ciudad con
+     su código postal. Siete renglones se leen como un muro; cinco, como una
+     dirección. El país solo aparece si no es México. */
+  const direccionCompacta = (c, telefono) => {
+    const lineas = [
+      [c.calle, c.numExt].filter(Boolean).join(" ") + (c.numInt ? ` · Int. ${c.numInt}` : ""),
+      c.compania,
+      c.colonia,
+      [[c.ciudad, c.estado].filter(Boolean).join(", "), c.cp ? `CP ${c.cp}` : ""].filter(Boolean).join(" · "),
+      c.referencia ? `Ref. ${c.referencia}` : "",
+    ].filter((l) => l && l.trim());
+    return `<div class="direccion">
+      <b>${esc(nombreDe(c))}</b>
+      ${lineas.map((l) => `<span>${esc(l)}</span>`).join("")}
+      ${telefono ? `<span>Tel. ${esc(telefonoMX(telefono))}</span>` : ""}
+    </div>`;
+  };
+
+  const listaCambios = (cambios) => cambios.map((x) => `
+    <div class="cambio">
+      <span class="cambio__campo">${esc(x.campo)}</span>
+      <span class="cambio__antes">${esc(x.antes)}</span>
+      <span class="cambio__flecha" aria-hidden="true">→</span>
+      <span class="cambio__despues">${esc(x.despues)}</span>
+    </div>`).join("");
+
+  const acciones = (folio, principal = "") => `
+    <div class="grupo-botones" style="margin-top:14px">
+      ${principal}
+      <button class="boton boton--fantasma boton--chico" type="button" data-editar="${folio}">Editar dirección</button>
+    </div>`;
+
   function bloqueDireccion(d) {
     const c = d.correccion;
     const editada = editados.get(d.folio);
+    const cabeza = '<p class="bloque__titulo">Dirección de envío</p>';
 
+    /* ---- Editada a mano ---- */
     if (editada) {
       return `<div class="bloque" data-bloque-direccion>
-        <p class="bloque__titulo">Dirección de envío
-          <span class="pastilla pastilla--info">Editada</span></p>
-        <div class="bloque__caja">
-          ${direccionHTML({ nombre: editada.nombre, lineas: lineasDe(editada), telefono: editada.telefono })}
-          <p style="margin-top:14px;color:var(--muted);font-size:12px">
-            Origen: edición manual · ${fechaCorta(HOY)}
-          </p>
-          ${d.envio ? `<p class="aviso aviso--aviso" style="margin-top:12px;border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.12);color:#fde68a">
-            La guía ${esc(d.envio.guia)} ya está generada con la dirección anterior.
-            Para enviar a esta, hay que cancelarla y generar una nueva.
-          </p>` : ""}
-          <div class="grupo-botones" style="margin-top:13px">
+        ${cabeza}
+        <div class="bloque__caja" style="display:grid;gap:14px">
+          ${franja("editada", ICO.lapiz, "Dirección actualizada a mano",
+            `La guardaste el ${fechaCorta(HOY)}.` + (d.envio
+              ? ` La guía ${esc(d.envio.guia)} ya estaba generada con la anterior, así que hay que cancelarla y generar otra.`
+              : ""))}
+          ${direccionCompacta(editada, editada.telefono)}
+          <div class="grupo-botones">
             ${d.envio
               ? '<button class="boton boton--peligro boton--chico" type="button">Cancelar guía y generar otra</button>'
               : '<button class="boton boton--primario boton--chico" type="button">Generar guía</button>'}
-            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar</button>
             <button class="boton boton--sutil boton--chico" type="button" data-descartar="${d.folio}">Descartar cambios</button>
           </div>
         </div>
       </div>`;
     }
 
+    /* ---- Sin corrección ---- */
     if (!c) {
       return `<div class="bloque" data-bloque-direccion>
-        <p class="bloque__titulo">Dirección de envío</p>
+        ${cabeza}
         <div class="bloque__caja">
-          ${direccionHTML(d.direccion)}
-          <div class="grupo-botones" style="margin-top:13px">
+          ${direccionCompacta(d.direccion.campos ?? {}, d.direccion.telefono)}
+          ${acciones(d.folio)}
+        </div>
+      </div>`;
+    }
+
+    /* ---- Corregida: es un resultado, no una decisión ----
+       La dirección buena es la protagonista y el detalle de lo que cambió se
+       pliega. Quien quiera auditarlo lo abre; quien no, ve que ya está. */
+    if (c.aplicada) {
+      const n = c.cambios.length;
+      return `<div class="bloque" data-bloque-direccion>
+        ${cabeza}
+        <div class="bloque__caja" style="display:grid;gap:14px">
+          ${franja("resuelto", ICO.check, "Lista para enviar",
+            `Corregimos ${n} ${n === 1 ? "dato" : "datos"} con ${esc(c.fuente.split(" ·")[0])} y la guía se generó con esta versión.`)}
+          ${direccionCompacta(d.direccion.campos ?? {}, d.direccion.telefono)}
+          <details class="desplegable">
+            <summary>Ver qué se corrigió (${n})</summary>
+            <div class="desplegable__cuerpo">
+              ${listaCambios(c.cambios)}
+              <p style="margin-top:14px;color:var(--muted);font-size:12px">Como llegó de ${esc(d.canal)}:</p>
+              <div style="margin-top:7px">${direccionHTML(c.original)}</div>
+            </div>
+          </details>
+          <div class="grupo-botones">
             <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
+            <button class="boton boton--sutil boton--chico" type="button">Restaurar la original</button>
           </div>
         </div>
       </div>`;
     }
 
+    /* ---- Pendiente: aquí sí hay que decidir, así que se ve todo ---- */
     return `<div class="bloque" data-bloque-direccion>
-      <p class="bloque__titulo">
-        Dirección de envío
-        <span class="pastilla pastilla--${c.aplicada ? "ok" : "aviso"}">
-          ${c.aplicada ? "Corregida" : "Corrección pendiente"}
-        </span>
-      </p>
-      <div class="bloque__caja">
-        ${direccionHTML(c.aplicada ? d.direccion : c.original)}
-
-        ${c.motivo ? `<p class="aviso aviso--mal" style="margin-top:13px">${esc(c.motivo)}</p>` : ""}
-
-        <p style="margin-top:15px;color:var(--muted);font-size:12px">
-          ${c.aplicada
-            ? "Corregida automáticamente. <b style=\"color:var(--ink)\">La guía se generó con esta versión.</b>"
-            : "Corrección propuesta <b style=\"color:var(--ink)\">sin aplicar</b>. El pedido no genera guía hasta resolverla."}
-        </p>
-
-        <div style="margin-top:11px;border-top:1px solid var(--hairline);padding-top:11px">
-          ${c.cambios.map((x) => `
-            <div class="cambio">
-              <span class="cambio__campo">${esc(x.campo)}</span>
-              <span class="cambio__antes">${esc(x.antes)}</span>
-              <span class="cambio__flecha" aria-hidden="true">→</span>
-              <span class="cambio__despues">${esc(x.despues)}</span>
-            </div>`).join("")}
+      ${cabeza}
+      <div class="bloque__caja" style="display:grid;gap:14px">
+        ${franja("pendiente", ICO.alerta, "La paquetería rechazó esta dirección",
+          esc(c.motivo ?? "Hay una corrección propuesta sin aplicar."))}
+        ${direccionHTML(c.original)}
+        <div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">
+            Esto es lo que ${esc(c.fuente.split(" ·")[0])} propone cambiar:
+          </p>
+          ${listaCambios(c.cambios)}
         </div>
-
-        <p style="margin-top:12px;color:var(--muted);font-size:12px">Origen: ${esc(c.fuente)}</p>
-
-        <details class="desplegable" style="margin-top:6px">
-          <summary>Ver dirección original de ${esc(d.canal)}</summary>
-          <div class="desplegable__cuerpo">${direccionHTML(c.original)}</div>
-        </details>
-
-        <div class="grupo-botones" style="margin-top:13px">
-          ${c.aplicada
-            ? '<button class="boton boton--sutil boton--chico" type="button">Restaurar la original</button>'
-            : '<button class="boton boton--primario boton--chico" type="button">Aplicar corrección y generar guía</button>'}
+        <div class="grupo-botones">
+          <button class="boton boton--primario boton--chico" type="button">Aplicar corrección y generar guía</button>
           <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
         </div>
       </div>

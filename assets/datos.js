@@ -166,7 +166,7 @@ const pedidosBase = [
     cliente: { nombre: "Mariana Ordaz", correo: "mariana@tallerlumbre.mx", iniciales: "MO" },
     destino: "Av. Juárez 1804, Col. Centro", ciudad: "Monterrey, NL 64000",
     pago: "Pagado", envio: null,
-    error: "La paquetería rechazó el código postal: 64000 no coincide con la colonia." },
+    error: "La paquetería rechazó el código postal: no corresponde a la colonia." },
 
   /* Historial. Sin pedidos viejos, los atajos de fecha no se distinguen:
      todo cabía en los últimos siete días y "30 días" mostraba lo mismo. */
@@ -351,7 +351,7 @@ const DETALLES = {
     correccion: {
       fuente: "SEPOMEX · automática",
       aplicada: false,
-      motivo: "La paquetería rechazó el código postal: 64000 no coincide con la colonia.",
+      motivo: "El código postal 64000 no corresponde a la colonia Centro.",
       cambios: [
         { campo: "Colonia", antes: "Col. Centro", despues: "Centro" },
         { campo: "Código postal", antes: "64000", despues: "64720" },

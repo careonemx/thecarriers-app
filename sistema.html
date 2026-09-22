@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=67828831">
+<link rel="stylesheet" href="assets/app.css?v=4b65c029">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=67828831" defer></script>
+<script src="assets/vigia.js?v=4b65c029" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -396,7 +396,21 @@
     <!-- ========================== MENSAJES =========================== -->
     <section id="mensajes">
       <h2>Avisos y estados vacíos</h2>
-      <div style="display:grid;gap:10px;margin-top:14px">
+      <h3>Desenlace</h3>
+      <div style="display:grid;gap:10px">
+        <div class="franja franja--resuelto">
+          <span class="franja__icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg></span>
+          <div><b>Lista para enviar</b><p>Corregimos 5 datos con SEPOMEX y la guía se generó con esta versión.</p></div>
+        </div>
+        <div class="franja franja--pendiente">
+          <span class="franja__icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/></svg></span>
+          <div><b>La paquetería rechazó esta dirección</b><p>El código postal 64000 no corresponde a la colonia Centro.</p></div>
+        </div>
+      </div>
+      <span class="cls">.franja .franja--resuelto --pendiente --editada — el resultado se afirma y se pliega; la decisión se despliega</span>
+
+      <h3>Avisos</h3>
+      <div style="display:grid;gap:10px">
         <p class="aviso aviso--info">Prototipo de interfaz: no hay servidor.</p>
         <p class="aviso aviso--ok">Recibimos tu solicitud. Te escribimos en menos de 48 horas hábiles.</p>
         <p class="aviso aviso--mal">No pudimos enviar tu solicitud. Vuelve a intentarlo.</p>
@@ -530,6 +544,7 @@
         <div class="regla"><b>Filas de campos</b><span>Van en <code>.campos</code>, no en un <code>style</code> de la pantalla. Y con <code>align-items:start</code>: si un campo lleva ayuda debajo, su celda crece y el de al lado queda centrado en vez de alineado con él.</span></div>
         <div class="regla"><b>Lo opcional, en la etiqueta</b><span>"Compañía (opcional)", no un marcador de posición que dice "Opcional" y desaparece en cuanto alguien escribe.</span></div>
         <div class="regla"><b>Etiquetas sin modismos</b><span>Un botón es verbo y objeto: "Editar dirección", no "Editar a mano". "Ver dirección original", no "ver la dirección tal como llegó". El modismo envejece mal y no se traduce.</span></div>
+        <div class="regla"><b>Resultado o decisión</b><span>Los mismos datos piden lo contrario según el caso. Si ya se resolvió, se afirma y el detalle se pliega. Si alguien tiene que decidir, se despliega. Mostrar una lista de correcciones tachadas cuando ya está resuelto es una vista forense: sirve cuando algo falló y estorba cuando salió bien.</span></div>
         <div class="regla"><b>Cerrar por capas</b><span>El fondo y Escape cierran una capa, no todo: si hay un formulario abierto dentro del panel, primero se cierra el formulario. Salirse de golpe tira lo que alguien estaba escribiendo sin avisar.</span></div>
         <div class="regla"><b>Manejadores, una sola vez</b><span>Se registran al cargar, nunca dentro de la función que abre algo: ahí se acumula uno por apertura y al tercer clic la acción se dispara tres veces.</span></div>
         <div class="regla"><b>Editar en su lugar</b><span>Un formulario se abre dentro del bloque que edita, no en otro diálogo encima. Apilar ventanas modales esconde justo el contexto que hace falta para decidir.</span></div>
