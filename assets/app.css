@@ -954,6 +954,13 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 }
 .acciones-fila .boton { min-width: 104px; justify-content: center; white-space: nowrap; }
 
+.dia-recoleccion + .dia-recoleccion { border-top: 1px solid var(--hairline); }
+.dia-recoleccion__cabeza {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; padding: 13px 18px 10px;
+}
+.dia-recoleccion__cabeza b { font-size: 14px; }
+
 /* ---------- Ficha ----------
    Tarjeta de un registro que se administra: una dirección de origen, una
    plantilla de paquete. Nombre arriba, datos en medio, acciones al pie.

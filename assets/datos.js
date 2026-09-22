@@ -192,14 +192,81 @@ const enviosBase = [
     diferencia: "Zona extendida: 43.00 no cotizados" },
 ];
 
+/* =================================================================
+ * Recolecciones.
+ *
+ * `piezas` es lo que se programó. `recogidas` NO lo teclea nadie: sale del
+ * rastreo. Una guía que empieza a moverse es una guía que la paquetería se
+ * llevó; una que sigue sin su primer registro al día siguiente de la ventana
+ * es una que se quedó en la bodega.
+ *
+ * Esa resta es la que sirve para reclamar: "programé nueve piezas el 19 y se
+ * llevaron cero" es un hecho con fecha y folio, no una queja.
+ *
+ * Las de hoy en adelante todavía no tienen resultado y por eso `recogidas`
+ * va en null: aún no ha pasado la ventana.
+ * ================================================================= */
 export const recolecciones = [
-  { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, estado: "Confirmada", folio: "RC-8841", origen: "puebla" },
-  { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, estado: "Confirmada", folio: "RC-8842", origen: "puebla" },
-  { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, estado: "Por confirmar", folio: "RC-8845", origen: "cdmx" },
-  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, estado: "Confirmada", folio: "RC-8846", origen: "puebla" },
-  { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, estado: "Recurrente", folio: "RC-8850", origen: "puebla" },
-  { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, estado: "Por confirmar", folio: "RC-8853", origen: "cdmx" },
+  /* ---- Programadas ---- */
+  { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, recogidas: null, estado: "Confirmada", folio: "RC-8841", origen: "puebla" },
+  { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, recogidas: null, estado: "Confirmada", folio: "RC-8842", origen: "puebla" },
+  { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, recogidas: null, estado: "Por confirmar", folio: "RC-8845", origen: "cdmx" },
+  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, recogidas: null, estado: "Confirmada", folio: "RC-8846", origen: "puebla" },
+  { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, recogidas: null, estado: "Recurrente", folio: "RC-8850", origen: "puebla" },
+  { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, recogidas: null, estado: "Por confirmar", folio: "RC-8853", origen: "cdmx" },
+
+  /* ---- Pasadas ---- */
+  { fecha: "2026-09-19", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 11, recogidas: 11, estado: "Confirmada", folio: "RC-8838", origen: "puebla" },
+  { fecha: "2026-09-19", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 8, recogidas: 0, estado: "Confirmada", folio: "RC-8839", origen: "puebla" },
+  { fecha: "2026-09-18", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8834", origen: "cdmx" },
+  { fecha: "2026-09-17", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 9, recogidas: 9, estado: "Confirmada", folio: "RC-8830", origen: "puebla" },
+  { fecha: "2026-09-17", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 7, recogidas: 4, estado: "Confirmada", folio: "RC-8831", origen: "puebla" },
+  { fecha: "2026-09-16", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 6, recogidas: 6, estado: "Confirmada", folio: "RC-8827", origen: "puebla" },
+  { fecha: "2026-09-15", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 13, recogidas: 13, estado: "Recurrente", folio: "RC-8822", origen: "puebla" },
+  { fecha: "2026-09-15", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 10, recogidas: 10, estado: "Confirmada", folio: "RC-8823", origen: "puebla" },
+  { fecha: "2026-09-14", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, recogidas: 3, estado: "Confirmada", folio: "RC-8819", origen: "cdmx" },
+  { fecha: "2026-09-12", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 8, recogidas: 8, estado: "Recurrente", folio: "RC-8815", origen: "puebla" },
+  { fecha: "2026-09-11", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, recogidas: 5, estado: "Confirmada", folio: "RC-8811", origen: "puebla" },
+  { fecha: "2026-09-10", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 7, recogidas: 7, estado: "Confirmada", folio: "RC-8807", origen: "cdmx" },
+  { fecha: "2026-09-09", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 10, recogidas: 10, estado: "Recurrente", folio: "RC-8803", origen: "puebla" },
+  { fecha: "2026-09-08", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8799", origen: "puebla" },
+  { fecha: "2026-09-05", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 6, recogidas: 6, estado: "Confirmada", folio: "RC-8790", origen: "puebla" },
+  { fecha: "2026-09-04", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, recogidas: 12, estado: "Recurrente", folio: "RC-8786", origen: "puebla" },
+  { fecha: "2026-09-03", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 4, recogidas: 4, estado: "Confirmada", folio: "RC-8782", origen: "cdmx" },
+  { fecha: "2026-09-02", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 8, recogidas: 8, estado: "Confirmada", folio: "RC-8778", origen: "puebla" },
 ];
+
+/** Lo que pasó con una recolección. Null en `recogidas` = todavía no toca. */
+export function resultadoRecoleccion(r) {
+  if (r.recogidas === null) return { clave: "programada", texto: r.estado, tono: r.estado === "Por confirmar" ? "aviso" : "ok" };
+  if (r.recogidas === 0) return { clave: "fallida", texto: "No pasó", tono: "mal" };
+  if (r.recogidas < r.piezas) return { clave: "parcial", texto: `Parcial · ${r.recogidas} de ${r.piezas}`, tono: "aviso" };
+  return { clave: "completa", texto: "Completa", tono: "ok" };
+}
+
+export const recoleccionesPasadas = () => recolecciones.filter((r) => r.recogidas !== null);
+export const recoleccionesProximas = () => recolecciones.filter((r) => r.recogidas === null);
+
+/**
+ * Cumplimiento por paquetería sobre las que ya pasaron. Ordenado de peor a
+ * mejor: la lista contesta a quién hay que reclamarle, no quién va bien.
+ */
+export function cumplimientoRecolecciones(dias = null) {
+  const desde = dias === null ? null : menosDias(HOY, dias);
+  const porPaqueteria = {};
+  for (const r of recoleccionesPasadas()) {
+    if (desde && r.fecha < desde) continue;
+    const p = (porPaqueteria[r.paqueteria] ||= { paqueteria: r.paqueteria, programadas: 0, recogidas: 0, citas: 0, fallidas: 0, parciales: 0 });
+    p.programadas += r.piezas;
+    p.recogidas += r.recogidas;
+    p.citas += 1;
+    if (r.recogidas === 0) p.fallidas += 1;
+    else if (r.recogidas < r.piezas) p.parciales += 1;
+  }
+  return Object.values(porPaqueteria)
+    .map((p) => ({ ...p, pct: p.programadas ? Math.round((p.recogidas / p.programadas) * 100) : null }))
+    .sort((a, b) => a.pct - b.pct);
+}
 
 /** Cumplimiento por paquetería sobre el periodo seleccionado. */
 export const desempeno = [

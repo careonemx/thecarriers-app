@@ -6,70 +6,250 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=c2890a80">
-<script src="../assets/vigia.js?v=c2890a80" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=88b4f520">
+<script src="../assets/vigia.js?v=88b4f520" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
-  <div class="encabezado">
+
+  <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Recolecciones</h1>
-      <p>Programa, consulta y cancela recolecciones de cualquier paquetería sin entrar a su portal.</p>
+      <p>Programa y consulta recolecciones de cualquier paquetería sin entrar a su portal,
+         y comprueba si de verdad pasaron por ellas.</p>
     </div>
     <div class="encabezado__acciones">
       <button class="boton boton--primario" type="button">Programar recolección</button>
     </div>
   </div>
+
   <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
-  <div id="dias" style="display:grid;gap:14px"></div>
+
+  <section class="zona" id="reclamo"></section>
+
+  <section class="tarjeta" style="margin-bottom:16px">
+    <div class="tarjeta__cabeza" style="padding-bottom:0;border-bottom:0">
+      <div class="pestanas" role="tablist" style="border-bottom:0">
+        <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="proximas">Próximas</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="historial">Historial</button>
+      </div>
+      <div class="periodo__mando" role="group" aria-label="Periodo del historial" id="mando" hidden>
+        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="7">7 días</button>
+        <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="30">30 días</button>
+        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="">Todo</button>
+      </div>
+    </div>
+    <div id="vista"></div>
+  </section>
+
 </main>
+
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=c2890a80";
-import { recolecciones } from "../assets/datos.js?v=c2890a80";
+import { montar, exigirSesion } from "../assets/app.js?v=88b4f520";
+import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
+         resultadoRecoleccion, cumplimientoRecolecciones,
+         origenes, menosDias, HOY } from "../assets/datos.js?v=88b4f520";
 if (exigirSesion()) {
   montar();
-  const tono = { "Confirmada": "ok", "Por confirmar": "aviso", "Recurrente": "info" };
-  const piezas = recolecciones.reduce((s, r) => s + r.piezas, 0);
 
-  const metrica = (etiqueta, valor, nota) =>
-    `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
-     <p class="metrica__valor tabular">${valor}</p><p class="metrica__nota">${nota}</p></div>`;
-  document.getElementById("metricas").innerHTML =
-    metrica("Piezas programadas", piezas, "En los próximos días") +
-    metrica("Confirmadas", recolecciones.filter((r) => r.estado === "Confirmada").length, "La paquetería ya respondió") +
-    metrica("Por confirmar", recolecciones.filter((r) => r.estado === "Por confirmar").length, "Todavía sin respuesta");
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const largo = (iso) => {
+    const t = new Date(iso + "T12:00:00")
+      .toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+    return t[0].toUpperCase() + t.slice(1);
+  };
+  const corta = (iso) =>
+    new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+  const nombreOrigen = (id) => origenes.find((o) => o.id === id)?.nombre ?? "—";
 
-  const porDia = {};
-  for (const r of recolecciones) (porDia[r.fecha] ||= []).push(r);
-  const largo = (iso) =>
-    new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+  let vista = "proximas";
+  let dias = 30;
 
-  document.getElementById("dias").innerHTML = Object.entries(porDia).map(([fecha, lista]) => `
-    <section class="tarjeta">
-      <div class="tarjeta__cabeza">
-        <h2 style="text-transform:capitalize">${largo(fecha)}</h2>
-        <span class="apagado" style="font-size:12px">${lista.reduce((s, r) => s + r.piezas, 0)} piezas · ${lista.length} recolecciones</span>
-      </div>
+  const mando = document.getElementById("mando");
+  const zona = document.getElementById("vista");
+
+  /* ---------- Lo que se puede reclamar ----------
+     Se enseña solo cuando alguien está por debajo del 100%: si todas
+     cumplieron, una tabla de cumplimiento es una tabla de ceros que ocupa
+     media pantalla. */
+  function pintarReclamo() {
+    const stats = cumplimientoRecolecciones(dias);
+    const flojas = stats.filter((s) => s.pct < 100);
+    const caja = document.getElementById("reclamo");
+
+    if (!flojas.length) {
+      caja.innerHTML = `<p class="aviso aviso--ok">
+        Todas las recolecciones del periodo se cumplieron completas.</p>`;
+      return;
+    }
+
+    caja.innerHTML = `
+      <h2 class="zona__titulo">A quién reclamar</h2>
+      <div class="tarjeta">
+        <div class="tabla-caja scroll-fino">
+          <table>
+            <caption class="sr-only">Cumplimiento de recolección por paquetería.</caption>
+            <thead><tr>
+              <th scope="col">Paquetería</th><th scope="col">Cumplimiento</th>
+              <th scope="col">Piezas</th><th scope="col">Citas</th><th scope="col">Qué pasó</th>
+            </tr></thead>
+            <tbody>
+              ${stats.map((s) => `<tr>
+                <td><b>${esc(s.paqueteria)}</b></td>
+                <td>
+                  <span class="pastilla pastilla--${s.pct === 100 ? "ok" : s.pct >= 90 ? "aviso" : "mal"}">${s.pct}%</span>
+                </td>
+                <td class="tabular">${s.recogidas} de ${s.programadas}
+                  ${s.programadas - s.recogidas
+                    ? `<div class="apagado" style="margin-top:3px;font-size:12px">
+                         ${plural(s.programadas - s.recogidas, "pieza se quedó", "piezas se quedaron")}</div>` : ""}</td>
+                <td class="tabular">${s.citas}</td>
+                <td>${[s.fallidas ? plural(s.fallidas, "no pasó", "no pasaron") : "",
+                       s.parciales ? plural(s.parciales, "incompleta", "incompletas") : ""]
+                      .filter(Boolean).join(" · ") || "Todas completas"}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div class="tarjeta__pie">
+          <span>Una pieza cuenta como recogida cuando su guía registra su primer
+                movimiento. Si no se movió, no se la llevaron.</span>
+        </div>
+      </div>`;
+  }
+
+  /* ---------- Próximas: la agenda ---------- */
+  const TONO_ESTADO = { "Confirmada": "ok", "Por confirmar": "aviso", "Recurrente": "info" };
+
+  function proximasHTML() {
+    const lista = recoleccionesProximas().sort((a, b) => a.fecha.localeCompare(b.fecha));
+    if (!lista.length) {
+      return `<div class="vacio"><h3>No hay ninguna recolección programada</h3>
+        <p>Las guías creadas se quedan en tu bodega hasta que alguien pase por ellas.</p></div>`;
+    }
+    const porDia = {};
+    for (const r of lista) (porDia[r.fecha] ||= []).push(r);
+
+    return Object.entries(porDia).map(([fecha, dia]) => `
+      <div class="dia-recoleccion">
+        <div class="dia-recoleccion__cabeza">
+          <b>${largo(fecha)}${fecha === HOY ? " · hoy" : ""}</b>
+          <span class="apagado" style="font-size:12px">
+            ${dia.reduce((s, r) => s + r.piezas, 0)} piezas · ${plural(dia.length, "recolección", "recolecciones")}</span>
+        </div>
+        <div class="tabla-caja scroll-fino">
+          <table>
+            <caption class="sr-only">Recolecciones del ${largo(fecha)}</caption>
+            <thead><tr>
+              <th scope="col">Paquetería</th><th scope="col">Sale de</th><th scope="col">Ventana</th>
+              <th scope="col">Piezas</th><th scope="col">Folio</th><th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr></thead>
+            <tbody>
+              ${dia.map((r) => `<tr>
+                <td><b>${esc(r.paqueteria)}</b></td>
+                <td>${esc(nombreOrigen(r.origen))}</td>
+                <td class="tabular">${esc(r.ventana)}</td>
+                <td class="tabular">${r.piezas}</td>
+                <td class="mono apagado">${esc(r.folio)}</td>
+                <td><span class="pastilla pastilla--${TONO_ESTADO[r.estado]}">${esc(r.estado)}</span></td>
+                <td style="text-align:right">
+                  <button class="boton boton--sutil boton--chico" type="button">Cancelar</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>`).join("");
+  }
+
+  /* ---------- Historial: qué pasó de verdad ---------- */
+  function historialHTML() {
+    const desde = dias === "" ? null : menosDias(HOY, dias);
+    const lista = recoleccionesPasadas()
+      .filter((r) => !desde || r.fecha >= desde)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+    if (!lista.length) {
+      return `<div class="vacio"><h3>Sin recolecciones en este periodo</h3>
+        <p>Prueba con un rango más amplio.</p></div>`;
+    }
+
+    return `
       <div class="tabla-caja scroll-fino">
         <table>
-          <caption class="sr-only">Recolecciones del ${largo(fecha)}</caption>
+          <caption class="sr-only">Recolecciones pasadas y su resultado.</caption>
           <thead><tr>
-            <th scope="col">Paquetería</th><th scope="col">Ventana</th><th scope="col">Piezas</th>
-            <th scope="col">Folio</th><th scope="col">Estado</th><th scope="col"></th>
+            <th scope="col">Fecha</th><th scope="col">Paquetería</th><th scope="col">Sale de</th>
+            <th scope="col">Ventana</th><th scope="col">Programadas</th>
+            <th scope="col">Recogidas</th><th scope="col">Resultado</th>
           </tr></thead>
           <tbody>
-            ${lista.map((r) => `<tr>
-              <td><b>${r.paqueteria}</b></td>
-              <td class="tabular">${r.ventana}</td>
-              <td class="tabular">${r.piezas}</td>
-              <td class="mono apagado">${r.folio}</td>
-              <td><span class="pastilla pastilla--${tono[r.estado]}">${r.estado}</span></td>
-              <td><button class="boton boton--sutil" type="button">Cancelar</button></td>
-            </tr>`).join("")}
+            ${lista.map((r) => {
+              const res = resultadoRecoleccion(r);
+              return `<tr>
+                <td>${esc(corta(r.fecha))}
+                  <div class="mono apagado" style="margin-top:3px;font-size:11px">${esc(r.folio)}</div></td>
+                <td><b>${esc(r.paqueteria)}</b></td>
+                <td>${esc(nombreOrigen(r.origen))}</td>
+                <td class="tabular">${esc(r.ventana)}</td>
+                <td class="tabular">${r.piezas}</td>
+                <td class="tabular"${r.recogidas < r.piezas ? ' style="color:#fca5a5"' : ""}>${r.recogidas}</td>
+                <td><span class="pastilla pastilla--${res.tono}">${esc(res.texto)}</span></td>
+              </tr>`;
+            }).join("")}
           </tbody>
         </table>
       </div>
-    </section>`).join("");
+      <div class="tarjeta__pie">
+        <span><b>${lista.length}</b> ${lista.length === 1 ? "recolección" : "recolecciones"} ·
+          ${lista.reduce((s, r) => s + r.recogidas, 0)} de
+          ${lista.reduce((s, r) => s + r.piezas, 0)} piezas recogidas</span>
+      </div>`;
+  }
+
+  function pintar() {
+    mando.hidden = vista !== "historial";
+    document.querySelectorAll("[data-vista]").forEach((b) =>
+      b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
+    zona.innerHTML = vista === "proximas" ? proximasHTML() : historialHTML();
+
+    /* Las cifras miran siempre al pasado: lo programado todavía no dice nada
+       de nadie. */
+    const stats = cumplimientoRecolecciones(dias === "" ? null : dias);
+    const programadas = stats.reduce((s, x) => s + x.programadas, 0);
+    const recogidas = stats.reduce((s, x) => s + x.recogidas, 0);
+    const fallidas = stats.reduce((s, x) => s + x.fallidas, 0);
+    const pct = programadas ? Math.round((recogidas / programadas) * 100) : null;
+    const periodo = dias === "" ? "Desde el principio" : `En los últimos ${dias} días`;
+
+    const metrica = (etiqueta, valor, nota, tono = "") =>
+      `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
+       <p class="metrica__valor tabular"${tono}>${valor}</p><p class="metrica__nota">${nota}</p></div>`;
+
+    document.getElementById("metricas").innerHTML =
+      metrica("Se llevaron lo programado", pct === null ? "—" : `${pct}%`, periodo,
+              pct !== null && pct < 95 ? ' style="color:#fca5a5"' : "") +
+      metrica("Piezas que se quedaron", programadas - recogidas,
+              programadas - recogidas ? "Siguen en tu bodega" : "Ninguna",
+              programadas - recogidas ? ' style="color:#fca5a5"' : "") +
+      metrica("Citas que no pasaron", fallidas, fallidas ? "Nadie fue a recoger" : "Todas se cumplieron");
+
+    pintarReclamo();
+  }
+
+  document.querySelectorAll("[data-vista]").forEach((b) =>
+    b.addEventListener("click", () => { vista = b.dataset.vista; pintar(); }));
+
+  mando.querySelectorAll("[data-dias]").forEach((b) =>
+    b.addEventListener("click", () => {
+      mando.querySelectorAll("[data-dias]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      dias = b.dataset.dias === "" ? "" : +b.dataset.dias;
+      pintar();
+    }));
+
+  pintar();
 }
 </script>
 </body>
