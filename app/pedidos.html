@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=9e323744">
-<script src="../assets/vigia.js?v=9e323744" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7d976a66">
+<script src="../assets/vigia.js?v=7d976a66" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -117,12 +117,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=9e323744";
+import { montar, exigirSesion } from "../assets/app.js?v=7d976a66";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=9e323744";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=7d976a66";
 if (exigirSesion()) {
   montar();
 
@@ -492,8 +492,7 @@ if (exigirSesion()) {
         </div>
 
         <div class="campos campos--corto-largo">
-          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required',
-                  "Define la colonia, la ciudad y el estado.")}
+          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required')}
           <label class="campo" data-campo="colonia">
             <span>Colonia</span>
             <input id="dir-colonia" name="colonia" list="colonias" value="${esc(c.colonia ?? "")}" required>
@@ -501,6 +500,8 @@ if (exigirSesion()) {
             <span class="campo__error" hidden></span>
           </label>
         </div>
+
+        <p class="campos__ayuda">El código postal define la colonia, la ciudad y el estado.</p>
 
         <div class="campos campos--2">
           ${campo("estado", "Estado", c.estado, "required")}

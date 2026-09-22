@@ -787,6 +787,17 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .periodo__var--sube { color: var(--accent-claro); }
 .periodo__var--baja { color: #fca5a5; }
 
+/* Ayuda de una FILA de campos, no de uno solo.
+
+   "Define la colonia, la ciudad y el estado" habla de la relación entre el
+   código postal y los otros tres campos, así que colgada debajo del input del
+   CP —una columna de 148px— se partía en dos renglones y quedaba apretada
+   contra la fila siguiente. Abajo y a todo lo ancho se lee de corrido. */
+.campos__ayuda {
+  margin-top: -8px;
+  color: var(--muted); font-size: 12px; line-height: 1.45;
+}
+
 /* ---------- Puntos de salida ----------
    Una tarjeta por dirección. El predeterminado se marca con una barra del
    acento a la izquierda: es el que se imprime como remitente, y tiene que

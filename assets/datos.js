@@ -11,8 +11,8 @@ export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
 /**
- * Puntos de salida: de dónde sale la mercancía y a dónde llega la paquetería
- * a recogerla. Son la misma dirección vista desde los dos lados.
+ * Direcciones de origen: de dónde sale la mercancía y a dónde llega la
+ * paquetería a recogerla. Son la misma dirección vista desde los dos lados.
  *
  * Uno es el predeterminado: el que se usa al cotizar y el que se imprime como
  * remitente cuando nada dice lo contrario. Tiene que haber exactamente uno, y

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Puntos de salida · The Carriers</title>
+<title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=9e323744">
-<script src="../assets/vigia.js?v=9e323744" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7d976a66">
+<script src="../assets/vigia.js?v=7d976a66" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
 
   <div class="encabezado" style="margin-bottom:24px">
     <div>
-      <h1>Puntos de salida</h1>
+      <h1>Direcciones de Origen</h1>
       <p>De aquí salen tus pedidos y aquí llega la paquetería a recogerlos.</p>
     </div>
   </div>
@@ -26,9 +26,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=9e323744";
+import { montar, exigirSesion } from "../assets/app.js?v=7d976a66";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=9e323744";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=7d976a66";
 if (exigirSesion()) {
   montar();
 
@@ -47,7 +47,7 @@ if (exigirSesion()) {
     `CP ${c.cp}`,
   ].filter(Boolean);
 
-  /* Lo que de verdad importa de un punto de salida no es su dirección: es si
+  /* Lo que de verdad importa de una dirección de origen no es la calle: es si
      alguien va a pasar por ahí y a qué hora. Eso sale de las recolecciones
      ya programadas, no de un texto fijo. */
   const agenda = (o) => {
@@ -103,7 +103,7 @@ if (exigirSesion()) {
     lista.innerHTML = origenes.map(tarjeta).join("") + `
       <button class="salida salida--nueva" type="button" data-nuevo>
         <span class="salida--nueva__mas" aria-hidden="true">+</span>
-        <span><b>Agregar punto de salida</b>
+        <span><b>Agregar dirección de origen</b>
         <span>Otra bodega, una tienda o tu domicilio.</span></span>
       </button>`;
   }
@@ -124,11 +124,11 @@ if (exigirSesion()) {
     const c = o.campos;
     return `
       <form id="form-origen" novalidate class="campos">
-        ${campo("nombre-salida", "Nombre de este punto", o.nombre,
+        ${campo("nombre-salida", "Nombre de esta dirección", o.nombre,
                 'required placeholder="Almacén Puebla"',
                 "Solo para reconocerlo aquí. No va en la etiqueta.")}
 
-        <p class="campos__titulo">Quién entrega el paquete</p>
+        <p class="campos__titulo">Contacto</p>
 
         <div class="campos campos--2">
           ${campo("nombre", "Nombre de contacto", c.nombre, 'autocomplete="given-name" required')}
@@ -163,8 +163,7 @@ if (exigirSesion()) {
         </div>
 
         <div class="campos campos--corto-largo">
-          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required',
-                  "Define la colonia, la ciudad y el estado.")}
+          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required')}
           <label class="campo" data-campo="colonia">
             <span>Colonia</span>
             <input id="org-colonia" name="colonia" list="org-colonias" value="${esc(c.colonia ?? "")}" required>
@@ -172,6 +171,8 @@ if (exigirSesion()) {
             <span class="campo__error" hidden></span>
           </label>
         </div>
+
+        <p class="campos__ayuda">El código postal define la colonia, la ciudad y el estado.</p>
 
         <div class="campos campos--2">
           ${campo("estado", "Estado", c.estado, "required")}
@@ -198,9 +199,7 @@ if (exigirSesion()) {
             <input id="org-cierra" name="cierra" type="time" value="${esc(o.horario.cierra)}" required>
             <span class="campo__error" hidden></span></label>
         </div>
-        <p class="campo__ayuda" style="margin-top:-6px">
-          La recolección solo se puede programar dentro de esta ventana.
-        </p>
+        <p class="campos__ayuda">La recolección solo se puede programar dentro de esta ventana.</p>
       </form>`;
   }
 
@@ -210,7 +209,7 @@ if (exigirSesion()) {
     editando = o;
     panel.innerHTML = `
       <div class="panel__cabeza">
-        <div><h2 id="panel-titulo">${o.id ? "Editar punto de salida" : "Nuevo punto de salida"}</h2>
+        <div><h2 id="panel-titulo">${o.id ? "Editar dirección de origen" : "Nueva dirección de origen"}</h2>
           <p class="apagado" style="font-size:12px;margin-top:3px">
             Esta dirección se imprime como remitente en cada etiqueta.</p></div>
         <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
@@ -319,7 +318,7 @@ if (exigirSesion()) {
     if (e.target.closest("[data-borrar]")) pedirConfirmacion(o);
   });
 
-  /* Borrar un punto de salida con recolecciones programadas deja a un camión
+  /* Borrar una dirección de origen con recolecciones programadas deja a un camión
      yendo a una dirección que ya no existe. El diálogo lo dice antes, con el
      número exacto, y la acción destructiva se nombra: "Sí, eliminar". */
   const confirmar = document.getElementById("confirmar");
