@@ -16,7 +16,6 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Inicio</h1>
-      <p class="apagado" id="resumen-dia" style="margin-top:6px;font-size:13px"></p>
     </div>
   </div>
 
@@ -234,13 +233,6 @@ if (exigirSesion()) {
     romperConexion(romper);
     history.replaceState(null, "", location.pathname);
   }
-
-  const resumenHoy = resumenPeriodo(0);
-  document.getElementById("resumen-dia").textContent =
-    `Hoy: ${plural(resumenHoy.pedidos, "pedido", "pedidos")} · ` +
-    `${cuenta("pagados-sin-guia")} sin guía · ` +
-    `${cuenta("detenidos")} detenidos · ` +
-    plural(recoleccionesHoy.length, "recolección", "recolecciones");
 
   pintarAtencion();
   pintarPeriodo(7);
