@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Recuperar contraseña · The Carriers</title>
+<link rel="icon" href="assets/brand/mark-white.svg">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div class="auth">
+  <section class="auth__arte">
+    <div class="auth__brillo" aria-hidden="true"></div>
+    <img src="assets/brand/lockup-white.svg" alt="The Carriers" width="139" height="27"
+         style="position:relative;height:27px;width:auto">
+    <div class="auth__contenido">
+      <h2>Te mandamos un enlace para volver a entrar.</h2>
+      <p>Si el correo pertenece a una cuenta activa, llega en unos momentos. Revisa también la carpeta de no deseados.</p>
+    </div>
+    <p style="position:relative;color:var(--muted);font-size:13px">Acceso anticipado · México</p>
+  </section>
+
+  <section class="auth__formulario">
+    <form class="auth__caja" id="recuperar" novalidate>
+      <div>
+        <h1>Recuperar contraseña</h1>
+        <p style="margin-top:6px;color:var(--muted)">Escribe el correo con el que entras.</p>
+      </div>
+
+      <label class="campo">
+        <span>Correo de trabajo</span>
+        <input type="email" name="correo" autocomplete="username" required placeholder="tu@empresa.mx">
+      </label>
+
+      <p class="aviso aviso--mal" id="error" hidden role="alert"></p>
+
+      <button class="boton boton--primario boton--bloque" type="submit">Enviar instrucciones</button>
+      <p class="auth__pie"><a href="login.html">Volver a entrar</a></p>
+    </form>
+
+    <div class="auth__caja" id="listo" hidden>
+      <div class="aviso aviso--ok">
+        Si <b id="eco"></b> corresponde a una cuenta activa, ahí llegará el enlace para restablecer la contraseña.
+      </div>
+      <a class="boton boton--fantasma boton--bloque" href="login.html">Volver a entrar</a>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  const form = document.getElementById("recuperar");
+  const error = document.getElementById("error");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const correo = String(new FormData(form).get("correo") || "").trim();
+    if (!correo.includes("@")) {
+      error.textContent = "Escribe un correo válido.";
+      error.hidden = false;
+      return;
+    }
+    // Siempre la misma respuesta, exista o no la cuenta: decir cuáles existen
+    // le regala a cualquiera una lista de correos válidos.
+    document.getElementById("eco").textContent = correo;
+    form.hidden = true;
+    document.getElementById("listo").hidden = false;
+  });
+</script>
+</body>
+</html>

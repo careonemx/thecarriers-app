@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Primeros pasos · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="envios">
+<main class="contenido">
+  <div class="encabezado">
+    <div>
+      <h1>Conectemos tu operación</h1>
+      <p>Todavía no hay envíos que mostrar. Estos son los tres pasos que hacemos contigo durante el onboarding; no tienes que resolverlos solo.</p>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:14px;max-width:820px">
+
+    <section class="tarjeta">
+      <div class="tarjeta__cuerpo" style="display:flex;gap:16px;align-items:flex-start">
+        <span class="avatar" style="background:rgba(15,157,110,.16);color:var(--accent-claro)">1</span>
+        <div style="flex:1;min-width:0">
+          <h2 style="font-size:15px">Conectar tus canales de venta</h2>
+          <p style="margin-top:5px;color:var(--muted)">
+            Shopify, Tiendanube, Mercado Libre, Amazon, WooCommerce o tu propio sistema.
+            Los pedidos entran solos y dejas de copiar direcciones a mano.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <span class="pastilla pastilla--ok">Shopify conectado</span>
+            <span class="pastilla pastilla--neutra">Mercado Libre pendiente</span>
+          </div>
+        </div>
+        <button class="boton boton--fantasma" type="button">Continuar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <div class="tarjeta__cuerpo" style="display:flex;gap:16px;align-items:flex-start">
+        <span class="avatar">2</span>
+        <div style="flex:1;min-width:0">
+          <h2 style="font-size:15px">Dar de alta tus cuentas de paquetería</h2>
+          <p style="margin-top:5px;color:var(--muted)">
+            Usas los contratos y las tarifas que ya negociaste. No vendemos guías ni cambiamos tus acuerdos:
+            solo conectamos las cuentas que ya tienes.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <span class="pastilla pastilla--neutra">Ninguna cuenta dada de alta</span>
+          </div>
+        </div>
+        <button class="boton boton--primario" type="button">Empezar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <div class="tarjeta__cuerpo" style="display:flex;gap:16px;align-items:flex-start">
+        <span class="avatar">3</span>
+        <div style="flex:1;min-width:0">
+          <h2 style="font-size:15px">Generar tu primera guía</h2>
+          <p style="margin-top:5px;color:var(--muted)">
+            Cuando haya al menos un canal y una cuenta de paquetería, esta pantalla se convierte
+            en tu tablero de envíos.
+          </p>
+        </div>
+        <button class="boton boton--fantasma" type="button" disabled>Bloqueado</button>
+      </div>
+    </section>
+
+    <div class="aviso aviso--info">
+      ¿Prefieres que lo hagamos juntos? Agendamos una llamada y conectamos tus canales y paqueterías contigo.
+    </div>
+
+    <div>
+      <a class="boton boton--sutil" href="envios.html">Ver la pantalla con datos de ejemplo →</a>
+    </div>
+  </div>
+</main>
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+if (exigirSesion()) montar();
+</script>
+</body>
+</html>

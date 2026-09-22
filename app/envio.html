@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Envío · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="envios">
+<main class="contenido" id="pagina"></main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+import { envios, tonos, dinero, fechaCorta, diasDesde } from "../assets/datos.js";
+if (exigirSesion()) {
+  montar();
+
+  const guia = new URLSearchParams(location.search).get("guia");
+  const e = envios.find((x) => x.guia === guia);
+  const pagina = document.getElementById("pagina");
+
+  if (!e) {
+    pagina.innerHTML = `
+      <div class="tarjeta"><div class="vacio">
+        <h3>No encontramos esa guía</h3>
+        <p>La guía <span class="mono">${guia ? guia.replace(/[<>&]/g, "") : "—"}</span> no está en los datos de ejemplo.</p>
+        <div class="vacio__acciones"><a class="boton boton--primario" href="envios.html">Volver a envíos</a></div>
+      </div></div>`;
+  } else {
+    // La línea de tiempo conserva SIEMPRE el texto original de la paquetería
+    // junto al estado traducido. Es un principio del producto, no un adorno.
+    const eventos = [
+      { t: "Guía generada", c: `${fechaCorta(e.fecha)} · 09:12`, o: "label_created", estado: "hecho" },
+      { t: "Recolectado", c: `${fechaCorta(e.fecha)} · 15:40`, o: "PICKED_UP", estado: "hecho" },
+      { t: "En tránsito", c: `${fechaCorta(e.fecha)} · 22:05`, o: "IN_TRANSIT", estado: "hecho" },
+    ];
+    if (e.estado === "Detenido" || e.estado === "Con incidencia") {
+      eventos.push({ t: e.estado, c: `${fechaCorta(e.detenidoDesde)} · 11:20`, o: e.original, estado: "mal" });
+    } else if (e.estado === "Entregado") {
+      eventos.push({ t: "Entregado", c: `${fechaCorta(e.fecha)} · 13:31`, o: e.original, estado: "activo" });
+    } else {
+      eventos[eventos.length - 1].estado = "activo";
+    }
+    eventos.reverse();
+
+    const dif = e.facturado != null && e.facturado !== e.cotizado ? e.facturado - e.cotizado : 0;
+
+    pagina.innerHTML = `
+      <div class="encabezado">
+        <div>
+          <a class="boton boton--sutil" href="envios.html" style="margin-left:-15px">← Envíos</a>
+          <h1 class="mono" style="margin-top:6px">${e.guia}</h1>
+          <p>${e.paqueteria} · pedido ${e.pedido} · entró por ${e.canal}</p>
+        </div>
+        <div class="encabezado__acciones">
+          <span class="pastilla pastilla--${tonos[e.estado]}" style="align-self:center">${e.estado}</span>
+          <button class="boton boton--fantasma" type="button">Descargar guía</button>
+          ${e.motivo ? '<button class="boton boton--primario" type="button">Marcar como atendido</button>' : ""}
+        </div>
+      </div>
+
+      ${e.motivo ? `
+      <div class="aviso aviso--mal" style="margin-bottom:16px">
+        <div>
+          <b>${e.motivo}.</b> Detenido desde el ${fechaCorta(e.detenidoDesde)}, hace ${diasDesde(e.detenidoDesde)} días.
+          Atiende: ${e.responsable}
+        </div>
+      </div>` : ""}
+
+      <div class="rejilla rejilla--2">
+        <section class="tarjeta">
+          <div class="tarjeta__cabeza"><h2>Historial</h2>
+            <span class="apagado" style="font-size:12px">Con el texto original de la paquetería</span></div>
+          <div class="tarjeta__cuerpo">
+            <div class="linea">
+              ${eventos.map((v) => `
+                <div class="linea__evento ${v.estado === "activo" ? "linea__evento--activo" : ""} ${v.estado === "mal" ? "linea__evento--mal" : ""}">
+                  <span class="linea__punto"><i></i></span>
+                  <div>
+                    <b>${v.t}</b>
+                    <p class="linea__cuando">${v.c}</p>
+                    <p class="linea__original">${v.o}</p>
+                  </div>
+                </div>`).join("")}
+            </div>
+          </div>
+        </section>
+
+        <div style="display:grid;gap:14px;align-content:start">
+          <section class="tarjeta">
+            <div class="tarjeta__cabeza"><h2>Destino</h2></div>
+            <div class="tarjeta__cuerpo">
+              <dl class="definiciones">
+                <div><dt>Destinatario</dt><dd>${e.cliente}</dd></div>
+                <div><dt>Ciudad</dt><dd>${e.destino}</dd></div>
+                <div><dt>Peso</dt><dd class="tabular">${e.peso} kg</dd></div>
+                <div><dt>Canal</dt><dd>${e.canal}</dd></div>
+                <div><dt>Pedido</dt><dd class="tabular">${e.pedido}</dd></div>
+              </dl>
+            </div>
+          </section>
+
+          <section class="tarjeta">
+            <div class="tarjeta__cabeza"><h2>Costos</h2></div>
+            <div class="tarjeta__cuerpo">
+              <dl class="definiciones">
+                <div><dt>Cotizado</dt><dd class="tabular">${dinero(e.cotizado)}</dd></div>
+                <div><dt>Facturado</dt><dd class="tabular">${dinero(e.facturado)}</dd></div>
+                <div><dt>Diferencia</dt><dd class="tabular">
+                  ${dif ? `<span class="pastilla pastilla--aviso">+ ${dinero(dif)}</span>` : '<span class="apagado">Sin diferencia</span>'}
+                </dd></div>
+              </dl>
+              ${e.diferencia ? `<p class="linea__original" style="margin-top:14px">${e.diferencia}</p>` : ""}
+            </div>
+          </section>
+        </div>
+      </div>`;
+  }
+}
+</script>
+</body>
+</html>

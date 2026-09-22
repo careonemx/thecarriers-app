@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Desempeño · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="desempeno">
+<main class="contenido contenido--ancho">
+  <div class="encabezado">
+    <div>
+      <h1>Desempeño por paquetería</h1>
+      <p>Cuántos envíos llegaron a tiempo, cuántos tarde y de quién fue la causa. Sirve para decidir con quién enviar y para negociar tarifas con datos.</p>
+    </div>
+    <div class="encabezado__acciones">
+      <label class="sr-only" for="periodo">Periodo</label>
+      <select id="periodo" style="width:auto">
+        <option>Últimos 30 días</option><option>Últimos 90 días</option><option>Este año</option>
+      </select>
+    </div>
+  </div>
+  <div class="rejilla rejilla--4" style="margin-bottom:16px" id="metricas"></div>
+  <div class="rejilla rejilla--2">
+    <section class="tarjeta">
+      <div class="tarjeta__cabeza"><h2>Entregas a tiempo</h2>
+        <span class="apagado" style="font-size:12px">Porcentaje sobre envíos entregados</span></div>
+      <div class="tarjeta__cuerpo"><div class="barras" id="barras"></div></div>
+    </section>
+    <section class="tarjeta">
+      <div class="tarjeta__cabeza"><h2>Volumen</h2>
+        <span class="apagado" style="font-size:12px">Envíos por paquetería</span></div>
+      <div class="tarjeta__cuerpo"><div class="barras" id="volumen"></div></div>
+    </section>
+  </div>
+  <section class="tarjeta" style="margin-top:14px">
+    <div class="tarjeta__cabeza"><h2>Detalle</h2></div>
+    <div class="tabla-caja scroll-fino">
+      <table>
+        <caption class="sr-only">Desempeño de cada paquetería en el periodo.</caption>
+        <thead><tr>
+          <th scope="col">Paquetería</th><th scope="col">Envíos</th><th scope="col">A tiempo</th>
+          <th scope="col">Tarde</th><th scope="col">Incidencias</th><th scope="col">Causa más frecuente</th>
+        </tr></thead>
+        <tbody id="detalle"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+import { desempeno } from "../assets/datos.js";
+if (exigirSesion()) {
+  montar();
+  const total = desempeno.reduce((s, d) => s + d.envios, 0);
+  const tarde = desempeno.reduce((s, d) => s + d.tarde, 0);
+  const inc = desempeno.reduce((s, d) => s + d.incidencias, 0);
+  const medio = Math.round(desempeno.reduce((s, d) => s + d.aTiempo * d.envios, 0) / total);
+
+  const metrica = (etiqueta, valor, nota) =>
+    `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
+     <p class="metrica__valor tabular">${valor}</p><p class="metrica__nota">${nota}</p></div>`;
+  document.getElementById("metricas").innerHTML =
+    metrica("Envíos", total.toLocaleString("es-MX"), "En el periodo") +
+    metrica("A tiempo", medio + "%", "Promedio ponderado por volumen") +
+    metrica("Entregas tarde", tarde, "Fuera de la fecha comprometida") +
+    metrica("Incidencias", inc, "Envíos que se detuvieron");
+
+  // Barras en HTML, sin librería: el ancho es el dato.
+  const barra = (etiqueta, pct, texto, clase = "") => `
+    <div class="barras__fila">
+      <span>${etiqueta}</span>
+      <span class="barras__pista"><span class="barras__valor ${clase}" style="width:${pct}%"></span></span>
+      <span class="barras__num tabular">${texto}</span>
+    </div>`;
+
+  document.getElementById("barras").innerHTML = [...desempeno]
+    .sort((a, b) => b.aTiempo - a.aTiempo)
+    .map((d) => barra(d.paqueteria, d.aTiempo, d.aTiempo + "%",
+      d.aTiempo < 85 ? "barras__valor--mal" : d.aTiempo < 92 ? "barras__valor--aviso" : ""))
+    .join("");
+
+  const mayor = Math.max(...desempeno.map((d) => d.envios));
+  document.getElementById("volumen").innerHTML = [...desempeno]
+    .sort((a, b) => b.envios - a.envios)
+    .map((d) => barra(d.paqueteria, Math.round((d.envios / mayor) * 100), d.envios))
+    .join("");
+
+  document.getElementById("detalle").innerHTML = [...desempeno]
+    .sort((a, b) => b.envios - a.envios)
+    .map((d) => `<tr>
+      <td><b>${d.paqueteria}</b></td>
+      <td class="tabular">${d.envios}</td>
+      <td><span class="pastilla pastilla--${d.aTiempo >= 92 ? "ok" : d.aTiempo >= 85 ? "aviso" : "mal"}">${d.aTiempo}%</span></td>
+      <td class="tabular apagado">${d.tarde}</td>
+      <td class="tabular apagado">${d.incidencias}</td>
+      <td class="apagado">${d.causaPrincipal}</td>
+    </tr>`).join("");
+}
+</script>
+</body>
+</html>

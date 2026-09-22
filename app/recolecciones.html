@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Recolecciones · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="recolecciones">
+<main class="contenido contenido--ancho">
+  <div class="encabezado">
+    <div>
+      <h1>Recolecciones</h1>
+      <p>Programa, consulta y cancela recolecciones de cualquier paquetería sin entrar a su portal.</p>
+    </div>
+    <div class="encabezado__acciones">
+      <button class="boton boton--primario" type="button">Programar recolección</button>
+    </div>
+  </div>
+  <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
+  <div id="dias" style="display:grid;gap:14px"></div>
+</main>
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+import { recolecciones } from "../assets/datos.js";
+if (exigirSesion()) {
+  montar();
+  const tono = { "Confirmada": "ok", "Por confirmar": "aviso", "Recurrente": "info" };
+  const piezas = recolecciones.reduce((s, r) => s + r.piezas, 0);
+
+  const metrica = (etiqueta, valor, nota) =>
+    `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
+     <p class="metrica__valor tabular">${valor}</p><p class="metrica__nota">${nota}</p></div>`;
+  document.getElementById("metricas").innerHTML =
+    metrica("Piezas programadas", piezas, "En los próximos días") +
+    metrica("Confirmadas", recolecciones.filter((r) => r.estado === "Confirmada").length, "La paquetería ya respondió") +
+    metrica("Por confirmar", recolecciones.filter((r) => r.estado === "Por confirmar").length, "Todavía sin respuesta");
+
+  const porDia = {};
+  for (const r of recolecciones) (porDia[r.fecha] ||= []).push(r);
+  const largo = (iso) =>
+    new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+
+  document.getElementById("dias").innerHTML = Object.entries(porDia).map(([fecha, lista]) => `
+    <section class="tarjeta">
+      <div class="tarjeta__cabeza">
+        <h2 style="text-transform:capitalize">${largo(fecha)}</h2>
+        <span class="apagado" style="font-size:12px">${lista.reduce((s, r) => s + r.piezas, 0)} piezas · ${lista.length} recolecciones</span>
+      </div>
+      <div class="tabla-caja scroll-fino">
+        <table>
+          <caption class="sr-only">Recolecciones del ${largo(fecha)}</caption>
+          <thead><tr>
+            <th scope="col">Paquetería</th><th scope="col">Ventana</th><th scope="col">Piezas</th>
+            <th scope="col">Folio</th><th scope="col">Estado</th><th scope="col"></th>
+          </tr></thead>
+          <tbody>
+            ${lista.map((r) => `<tr>
+              <td><b>${r.paqueteria}</b></td>
+              <td class="tabular">${r.ventana}</td>
+              <td class="tabular">${r.piezas}</td>
+              <td class="mono apagado">${r.folio}</td>
+              <td><span class="pastilla pastilla--${tono[r.estado]}">${r.estado}</span></td>
+              <td><button class="boton boton--sutil" type="button">Cancelar</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>`).join("");
+}
+</script>
+</body>
+</html>
