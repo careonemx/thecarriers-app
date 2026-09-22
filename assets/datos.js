@@ -103,7 +103,7 @@ export const enlaceRastreo = (paqueteria, guia) => {
  * primera que se pueda usar es la preferida.
  */
 export const PAPELES = {
-  normal:    { etiqueta: "Se puede usar", ayuda: "Entra según su puesto en la lista." },
+  normal:    { etiqueta: "Se puede usar", ayuda: "Se usa según su puesto en la lista." },
   evitar:    { etiqueta: "Evitar",        ayuda: "Solo si no hay otra opción." },
   "no-usar": { etiqueta: "No usar",       ayuda: "Nunca, aunque sea la más barata." },
 };
@@ -167,8 +167,8 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
       return {
         elegida: barata.paqueteria,
         costo: barata.costo,
-        porque: `Sin la regla de seguridad decide el precio: ${barata.paqueteria} es más barata que ` +
-                `${preferida.paqueteria}, así que se usa esa.`,
+        porque: `Con la regla de seguridad desactivada decide el precio. ${barata.paqueteria} ` +
+                `resulta más barata que ${preferida.paqueteria}.`,
         alternativas: [{ ...preferida, costo: costoPref }, ...rivales.slice(1, 3)],
       };
     }
@@ -177,7 +177,7 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
       elegida: preferida.paqueteria,
       costo: costoPref,
       porque: r.mandaLaPreferida
-        ? `${preferida.paqueteria} es la preferida y no se cumple ninguna excepción, así que se mantiene aunque otra sea más barata.`
+        ? `${preferida.paqueteria} es la preferida y no se cumple ninguna excepción. Se mantiene aunque otra resulte más barata.`
         : `${preferida.paqueteria} es la preferida y ninguna alternativa resulta más barata.`,
       alternativas: [],
     };
@@ -203,8 +203,8 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
         ? `${preferida.paqueteria} se descarta porque ${
             zonaExtendida ? "es zona extendida y " : ""}su costo supera los $${r.cambiarSi.costoMayorA}. ` +
           `Entre las alternativas, ${elegida.paqueteria} ofrece la mejor combinación de costo y plazo.`
-        : `Ninguna paquetería está marcada como “Se puede usar”, así que se recurre a las de evitar: ` +
-          `${elegida.paqueteria} es la de mejor costo y plazo.`,
+        : `Ninguna paquetería está marcada como “Se puede usar”. Se recurre a las de evitar: ` +
+          `${elegida.paqueteria} ofrece el mejor costo y plazo.`,
     alternativas: candidatas.slice(1, 4),
   };
 }
@@ -770,6 +770,41 @@ export const conexiones = [
   { id: "dhl", tipo: "Paquetería", nombre: "DHL", detalle: "Cuenta 9540213" },
   { id: "estafeta", tipo: "Paquetería", nombre: "Estafeta", detalle: "Cuenta 0117702" },
   { id: "fedex", tipo: "Paquetería", nombre: "FedEx", detalle: "Cuenta 602113448" },
+];
+
+/**
+ * Las conexiones con lo que hace falta para administrarlas: qué son, para qué
+ * sirven y qué credenciales guardan.
+ *
+ * Van en dos listas, no en una, porque responden a dos preguntas distintas:
+ * por dónde entran los pedidos y por dónde salen. Cada una tiene su pantalla.
+ */
+export const canalesVenta = [
+  { id: "shopify", nombre: "Shopify", detalle: tienda.dominio,
+    que: "Los pedidos entran por este canal.",
+    desde: "Conectado el 14 de marzo de 2026",
+    campos: [
+      { et: "Tienda", valor: tienda.dominio },
+      { et: "Token", valor: "•••• guardado" },
+    ] },
+];
+
+/** Canales que se pueden añadir. Ninguno está conectado todavía. */
+export const CANALES_DISPONIBLES = ["Mercado Libre", "Amazon", "WooCommerce", "TiendaNube"];
+
+/**
+ * Las plataformas por las que se compran las guías. NO son paqueterías: son
+ * quien las revende, y confundirlas hacía que Skydropx apareciera al lado de
+ * DHL como si fueran lo mismo.
+ */
+export const cuentasEnvio = [
+  { id: "t1", nombre: "T1 Envíos", detalle: "Cuenta 128616096",
+    que: "Las guías de todas las paqueterías se compran a través de esta cuenta.",
+    desde: "Conectada el 2 de abril de 2026",
+    campos: [
+      { et: "Cuenta", valor: "128616096" },
+      { et: "Token", valor: "•••• se renueva automáticamente" },
+    ] },
 ];
 
 const CLAVE_CAIDA = "tc:conexion-caida";

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Canales de venta · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=066fff98">
+<script src="../assets/vigia.js?v=066fff98" defer></script>
+</head>
+<body data-seccion="canales">
+<main class="contenido contenido--ancho">
+
+  <div class="encabezado" style="margin-bottom:24px">
+    <div>
+      <h1>Canales de venta</h1>
+      <p>Por dónde entran los pedidos. Cada canal conectado los trae solo, sin capturarlos a mano.</p>
+    </div>
+  </div>
+
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
+  <div class="fichas fichas--conexiones" id="lista"></div>
+
+  <section class="zona zona--analitica" style="margin-top:26px">
+    <h2 class="zona__titulo">Se pueden conectar</h2>
+    <p class="apagado" style="font-size:13px;margin-bottom:12px">
+      Cada canal que conectes trae sus pedidos a la misma lista. No hay que cambiar de pantalla
+      para atenderlos.</p>
+    <div class="fichas fichas--conexiones" id="disponibles"></div>
+  </section>
+
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=066fff98";
+import { canalesVenta, CANALES_DISPONIBLES, conexionesCaidas } from "../assets/datos.js?v=066fff98";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  const aviso = document.getElementById("guardado");
+  let quitando;
+  function avisar(texto) {
+    clearTimeout(quitando);
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 3500);
+  }
+
+  /* Lo primero que se quiere saber de una conexión es si funciona, no cuál es
+     su token. Las credenciales van plegadas dentro de su propia tarjeta: quien
+     las necesita sabe abrirlas, y así la misma cuenta no aparece dos veces en
+     la pantalla. */
+  const caidas = conexionesCaidas().map((c) => c.id);
+
+  document.getElementById("lista").innerHTML = canalesVenta.map((c) => {
+    const rota = caidas.includes(c.id);
+    return `
+    <article class="ficha">
+      <div class="ficha__cabeza">
+        <div>
+          <h2>${esc(c.nombre)}</h2>
+          <p class="ficha__sub">${esc(c.detalle)}</p>
+        </div>
+        <span class="pastilla pastilla--${rota ? "alerta" : "ok"}">${
+          rota ? "Sin sincronizar" : "Conectado"}</span>
+      </div>
+      <p class="ficha__nota">${esc(c.que)}</p>
+      <p class="ficha__nota">${esc(c.desde)}</p>
+
+      <details class="avanzado avanzado--ficha">
+        <summary>Credenciales</summary>
+        <div class="campos">
+          ${c.campos.map((f) => `
+            <label class="campo"><span>${esc(f.et)}</span>
+              <input value="${esc(f.valor)}" readonly></label>`).join("")}
+        </div>
+      </details>
+
+      <div class="ficha__pie">
+        <button class="boton boton--sutil boton--chico" type="button">Revisar conexión</button>
+        <span class="ficha__pie-sep"></span>
+        <button class="boton boton--peligro boton--chico" type="button"
+          data-quitar="${esc(c.nombre)}">Desconectar</button>
+      </div>
+    </article>`;
+  }).join("");
+
+  /* Los canales que faltan se enseñan como tarjetas apagadas y no como una
+     lista de texto: así se ve de un vistazo qué hay conectado y qué no, sin
+     tener que compararlo con nada. */
+  document.getElementById("disponibles").innerHTML = CANALES_DISPONIBLES.map((n) => `
+    <article class="ficha ficha--apagada">
+      <div class="ficha__cabeza">
+        <div><h2>${esc(n)}</h2></div>
+        <span class="pastilla">Sin conectar</span>
+      </div>
+      <div class="ficha__pie">
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-conectar="${esc(n)}">Conectar</button>
+      </div>
+    </article>`).join("");
+
+  document.body.addEventListener("click", (e) => {
+    const nuevo = e.target.closest("[data-conectar]");
+    const fuera = e.target.closest("[data-quitar]");
+    if (nuevo) avisar(`Aquí se abriría el permiso de ${nuevo.dataset.conectar}.`);
+    else if (fuera) avisar(`Aquí se confirmaría desconectar ${fuera.dataset.quitar}.`);
+  });
+}
+</script>
+</body>
+</html>

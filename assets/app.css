@@ -1179,6 +1179,24 @@ tr.fila--principal td:first-child::before {
 }
 .ficha__pie-sep { flex: 1; }
 
+/* Una conexión que todavía no existe se ve, pero no compite con las que sí:
+   sin ella la lista de lo conectado y la de lo conectable pesarían igual. */
+.ficha--apagada { background: transparent; border-style: dashed; }
+.ficha--apagada h2 { color: var(--muted); }
+
+/* La ficha entera como enlace: el destino es la tarjeta, no una palabra
+   dentro de ella. */
+.ficha--enlace {
+  color: inherit; text-decoration: none;
+  transition: border-color .15s var(--ease-signal), background .15s var(--ease-signal);
+}
+.ficha--enlace:hover { border-color: var(--hairline-fuerte); background: var(--navy-800, var(--navy-900)); }
+.ficha--enlace:hover .ficha__ir { transform: translateX(3px); }
+.ficha__ir {
+  color: var(--muted); font-size: 16px;
+  transition: transform .15s var(--ease-signal);
+}
+
 
 /* ---------- Barra de selección múltiple ----------
    Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando

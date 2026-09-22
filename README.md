@@ -30,7 +30,9 @@ app/pedidos.html           la lista, con filtros, lote y detalle
 app/origenes.html          direcciones de origen: de dónde sale y dónde recogen
 app/plantillas.html        plantillas de paquete y el peso que de verdad se cobra
 app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
-app/configuracion.html     conexiones, reglas de paquetería y automatización
+app/canales.html           canales de venta conectados y por conectar
+app/paqueterias.html       cuenta de envío y orden de preferencia de paqueterías
+app/configuracion.html     qué ocurre solo al entrar un pedido pagado
 app/pendiente.html         nota para las pantallas del MVP sin vestir
 
 app/envios.html            la tabla principal, con filtros y métricas

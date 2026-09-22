@@ -10,7 +10,7 @@
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=68cf173a";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=066fff98";
 
 const CLAVE = "tc_sesion";
 
@@ -26,6 +26,8 @@ const icono = {
   origenes: '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   plantillas: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/><path d="M12.5 13h5"/>',
   correcciones: '<path d="m4 20 4-1 10-10-3-3L5 16z"/><path d="m14.5 6.5 3 3"/>',
+  canales: '<path d="M4 6h16v5H4z"/><path d="M6 11v7h12v-7"/><path d="M9.5 18v-4h5v4"/>',
+  paqueterias: '<path d="M3 8.5 12 4l9 4.5V16l-9 4.5L3 16z"/><path d="m3 8.5 9 4.5 9-4.5M12 13v7.5"/>',
   ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
   envios: '<path d="M3 5h18v14H3z"/><path d="M3 10h18M9 10v9"/>',
   excepciones: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
@@ -84,6 +86,12 @@ const GRUPOS = [
   {
     titulo: "Ajustes",
     items: [
+      /* Las conexiones se separan por la pregunta que contestan: por dónde
+         entran los pedidos y por dónde salen. Juntas, en un cajón llamado
+         "Conexiones", obligaban a leer la lista entera para saber cuál era
+         cuál. */
+      { id: "canales", texto: "Canales de venta", href: "canales.html" },
+      { id: "paqueterias", texto: "Paqueterías", href: "paqueterias.html" },
       { id: "origenes", texto: "Direcciones de Origen", href: "origenes.html" },
       { id: "plantillas", texto: "Plantillas", href: "plantillas.html" },
       { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },

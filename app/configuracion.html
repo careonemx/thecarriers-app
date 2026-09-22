@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=68cf173a">
-<script src="../assets/vigia.js?v=68cf173a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=066fff98">
+<script src="../assets/vigia.js?v=066fff98" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -15,61 +15,12 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Configuración</h1>
-      <p>Por dónde entran tus pedidos, con qué paquetería salen y qué decide el sistema por ti.</p>
+      <p>Qué hace el sistema por su cuenta, sin que nadie entre a Pedidos.</p>
     </div>
   </div>
 
   <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
 
-  <!-- 1 · Canales de venta: por dónde entran los pedidos -->
-  <section class="zona">
-    <h2 class="zona__titulo">Canales de venta</h2>
-    <div class="fichas fichas--conexiones" id="canales"></div>
-  </section>
-
-  <!-- 2 · Paqueterías: por dónde salen, y con qué criterio se eligen -->
-  <section class="zona">
-    <h2 class="zona__titulo">Paqueterías</h2>
-    <div class="fichas fichas--conexiones" id="transportistas"></div>
-
-    <div class="tarjeta" style="margin-top:14px">
-      <div class="tarjeta__cabeza">
-        <div>
-          <h2>Tu orden de preferencia</h2>
-          <p class="apagado" style="font-size:12px;margin-top:3px">
-            Se intenta de arriba abajo: la primera que se pueda usar es la preferida.
-            <span class="solo-raton">Arrastra una paquetería para cambiar su puesto,
-              o muévela con las flechas.</span><span
-              class="solo-tacto">Cambia su puesto con las flechas.</span></p>
-        </div>
-      </div>
-
-      <div class="orden__cabecera" aria-hidden="true">
-        <span></span><span></span>
-        <span>Paquetería</span>
-        <span>Papel</span>
-        <span>Por qué está en ese puesto</span>
-        <span></span>
-      </div>
-      <div class="orden" id="orden"></div>
-    </div>
-  </section>
-
-  <section class="zona">
-    <div class="rejilla rejilla--2" style="align-items:start">
-      <div class="tarjeta">
-        <div class="tarjeta__cabeza"><h2>Cuándo dejar la preferida</h2></div>
-        <div class="tarjeta__cuerpo campos" id="excepciones"></div>
-      </div>
-
-      <div class="tarjeta">
-        <div class="tarjeta__cabeza"><h2>Pruébalo</h2></div>
-        <div class="tarjeta__cuerpo campos" id="probador"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3 · Qué ocurre sin que nadie intervenga -->
   <section class="zona">
     <h2 class="zona__titulo">Cuando entra un pedido pagado</h2>
     <div class="tarjeta">
@@ -77,12 +28,16 @@
     </div>
   </section>
 
+  <section class="zona zona--analitica">
+    <h2 class="zona__titulo">Lo demás se ajusta en su pantalla</h2>
+    <div class="fichas fichas--conexiones" id="atajos"></div>
+  </section>
+
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=68cf173a";
-import { reglasPaqueteria, PAPELES, decidirPaqueteria,
-         origenes, plantillas, tienda, dinero } from "../assets/datos.js?v=68cf173a";
+import { montar, exigirSesion } from "../assets/app.js?v=066fff98";
+import { origenes, plantillas } from "../assets/datos.js?v=066fff98";
 if (exigirSesion()) {
   montar();
 
@@ -98,335 +53,14 @@ if (exigirSesion()) {
     quitando = setTimeout(() => { aviso.hidden = true; }, 3500);
   }
 
-  /* ---------- 1 y 2 · Conexiones ----------
-     Cada conexión aparece UNA vez y lleva sus credenciales plegadas dentro.
-     Antes vivían en un bloque técnico al final, así que Shopify salía dos
-     veces —arriba como estado, abajo como token— y no quedaba claro cuál de
-     las dos mandaba. Lo que se ve de entrada es si funciona; quien necesita
-     la clave la abre en la misma tarjeta.
-
-     Y se separan en dos módulos porque son dos preguntas distintas: por dónde
-     entran los pedidos y por dónde salen. */
-  function ficha(c) {
-    return `
-    <article class="ficha">
-      <div class="ficha__cabeza">
-        <div>
-          <h2>${esc(c.nombre)}</h2>
-          <p class="ficha__sub">${esc(c.detalle)}</p>
-        </div>
-        <span class="pastilla pastilla--ok">Conectada</span>
-      </div>
-      <p class="ficha__nota">${esc(c.que)}</p>
-
-      <details class="avanzado avanzado--ficha">
-        <summary>Credenciales</summary>
-        <div class="campos">
-          ${c.campos.map((f) => `
-            <label class="campo"><span>${esc(f.et)}</span>
-              <input value="${esc(f.valor)}" readonly>
-              ${f.ayuda ? `<span class="campo__ayuda">${esc(f.ayuda)}</span>` : ""}
-            </label>`).join("")}
-        </div>
-      </details>
-
-      <div class="ficha__pie">
-        <button class="boton boton--sutil boton--chico" type="button">${esc(c.accion)}</button>
-      </div>
-    </article>`;
-  }
-
-  document.getElementById("canales").innerHTML = ficha({
-    nombre: "Shopify", detalle: tienda.dominio,
-    que: "De aquí entran los pedidos.",
-    accion: "Desconectar",
-    campos: [
-      { et: "Tienda", valor: tienda.dominio },
-      { et: "Token", valor: "•••• guardado" },
-    ],
-  });
-
-  document.getElementById("transportistas").innerHTML = ficha({
-    nombre: "T1 Envíos", detalle: "Cuenta 128616096",
-    que: "Por aquí se compran las guías de todas las paqueterías de abajo.",
-    accion: "Revisar conexión",
-    campos: [
-      { et: "Cuenta", valor: "128616096" },
-      { et: "Token", valor: "•••• se renueva automáticamente" },
-    ],
-  });
-
-  /* ---------- El orden ----------
-     Cada fila lleva su papel y su nota. La nota es lo que le explica a quien
-     llegue después por qué UPS no sube al segundo puesto aunque sea más
-     barata; sin ella, alguien "arregla" el orden y deshace un criterio que
-     costó meses de incidencias. Por eso la columna lleva rótulo: un campo de
-     texto sin nombre parece un comentario suelto. */
-  const orden = document.getElementById("orden");
-
-  const ASA = `<svg viewBox="0 0 10 16" width="10" height="16" fill="currentColor">
-    <circle cx="2.2" cy="3" r="1.25"/><circle cx="7.8" cy="3" r="1.25"/>
-    <circle cx="2.2" cy="8" r="1.25"/><circle cx="7.8" cy="8" r="1.25"/>
-    <circle cx="2.2" cy="13" r="1.25"/><circle cx="7.8" cy="13" r="1.25"/></svg>`;
-
-  /* Ser la preferida no se marca: se deduce del puesto. Si se pudiera elegir
-     además como etiqueta, subir una paquetería al primer lugar no cambiaría
-     nada y el arrastre sería decorativo. */
-  const preferidaAhora = () => reglasPaqueteria.orden.find((o) => o.papel === "normal");
-
-  /* Mover una fila puede cambiar quién es la preferida, y la regla de
-     seguridad la nombra por su nombre. Las tres se repintan juntas para que
-     ninguna se quede hablando de la anterior. */
-  function repintarReglas() {
-    pintarOrden();
-    pintarExcepciones();
-    pintarProbador();
-  }
-
-  function pintarOrden() {
-    const manda = preferidaAhora();
-    orden.innerHTML = reglasPaqueteria.orden.map((o, i) => `
-      <div class="orden__fila orden__fila--${o.papel}${o === manda ? " orden__fila--manda" : ""}"
-           data-i="${i}">
-        <span class="orden__asa" data-asa draggable="true" aria-hidden="true"
-              title="Arrastra para cambiar el puesto">${ASA}</span>
-        <span class="orden__puesto">${i + 1}</span>
-
-        <div class="orden__quien">
-          <b>${esc(o.paqueteria)}${o === manda
-            ? ' <span class="pastilla pastilla--ok">Preferida</span>' : ""}</b>
-          <span class="apagado">${o === manda
-            ? "Primera de la lista que se puede usar."
-            : esc(PAPELES[o.papel].ayuda)}</span>
-        </div>
-
-        <label class="campo orden__papel">
-          <span class="orden__et">Papel</span>
-          <select data-papel>
-            ${Object.entries(PAPELES).map(([k, v]) =>
-              `<option value="${k}"${k === o.papel ? " selected" : ""}>${v.etiqueta}</option>`).join("")}
-          </select>
-        </label>
-
-        <label class="campo orden__porque">
-          <span class="orden__et">Por qué está en ese puesto</span>
-          <textarea data-porque rows="2" placeholder="Sin nota">${esc(o.porque)}</textarea>
-        </label>
-
-        <div class="orden__mover">
-          <button class="boton boton--sutil boton--chico" type="button" data-subir
-            ${i === 0 ? "disabled" : ""} aria-label="Subir ${esc(o.paqueteria)}">↑</button>
-          <button class="boton boton--sutil boton--chico" type="button" data-bajar
-            ${i === reglasPaqueteria.orden.length - 1 ? "disabled" : ""}
-            aria-label="Bajar ${esc(o.paqueteria)}">↓</button>
-        </div>
-      </div>`).join("");
-    orden.querySelectorAll("[data-porque]").forEach(ajustarAlto);
-  }
-
-  /* La nota es lo que sostiene la regla; si se corta a media frase deja de
-     sostener nada. Crece con el texto en lugar de esconderlo. */
-  function ajustarAlto(t) {
-    t.style.height = "auto";
-    t.style.height = `${t.scrollHeight}px`;
-  }
-
-  /* Una sola función mueve, venga del arrastre o de las flechas: así las dos
-     maneras no pueden divergir. `hasta` es el hueco ANTES de sacar la fila,
-     por eso se corrige al bajar. */
-  function mover(desde, hasta) {
-    const lista = reglasPaqueteria.orden;
-    if (hasta > desde) hasta -= 1;
-    hasta = Math.max(0, Math.min(lista.length - 1, hasta));
-    if (hasta === desde) return;
-    const [fila] = lista.splice(desde, 1);
-    lista.splice(hasta, 0, fila);
-    repintarReglas();
-    avisar(`Guardado. ${fila.paqueteria} queda en el puesto ${hasta + 1}.`);
-  }
-
-  orden.addEventListener("click", (e) => {
-    const fila = e.target.closest("[data-i]");
-    if (!fila) return;
-    const i = +fila.dataset.i;
-    if (e.target.closest("[data-subir]")) mover(i, i - 1);
-    else if (e.target.closest("[data-bajar]")) mover(i, i + 2);
-  });
-
-  orden.addEventListener("change", (e) => {
-    const fila = e.target.closest("[data-i]");
-    if (!fila || !e.target.matches("[data-papel]")) return;
-    const o = reglasPaqueteria.orden[+fila.dataset.i];
-    o.papel = e.target.value;
-    repintarReglas();
-    avisar(`Guardado. ${o.paqueteria} pasa a “${PAPELES[o.papel].etiqueta}”.`);
-  });
-
-  orden.addEventListener("input", (e) => {
-    const fila = e.target.closest("[data-i]");
-    if (fila && e.target.matches("[data-porque]")) {
-      reglasPaqueteria.orden[+fila.dataset.i].porque = e.target.value;
-      ajustarAlto(e.target);
-    }
-  });
-
-  /* ---------- Arrastrar para reordenar ----------
-     Solo el asa arranca el arrastre. Si la fila entera fuera arrastrable,
-     seleccionar texto dentro de la nota movería la paquetería.
-
-     El arrastre nativo no existe en pantallas táctiles, así que el asa se
-     oculta ahí y quedan las flechas, que son además el camino del teclado:
-     nada se puede hacer solo con ratón. */
-  let viaja = null;
-
-  const limpiarMarcas = () => orden.querySelectorAll(".orden__fila").forEach((f) =>
-    f.classList.remove("orden__fila--antes", "orden__fila--despues"));
-
-  orden.addEventListener("dragstart", (e) => {
-    const asa = e.target.closest("[data-asa]");
-    if (!asa) { e.preventDefault(); return; }
-    const fila = asa.closest("[data-i]");
-    viaja = +fila.dataset.i;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(viaja));
-    e.dataTransfer.setDragImage(fila, 24, fila.offsetHeight / 2);
-    requestAnimationFrame(() => fila.classList.add("orden__fila--viaja"));
-  });
-
-  /* El destino se marca con una línea entre filas, no pintando la de debajo:
-     lo que se decide es en qué hueco cae, no sobre quién. */
-  orden.addEventListener("dragover", (e) => {
-    if (viaja === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const fila = e.target.closest("[data-i]");
-    if (!fila) return;
-    limpiarMarcas();
-    const caja = fila.getBoundingClientRect();
-    fila.classList.add(e.clientY > caja.top + caja.height / 2
-      ? "orden__fila--despues" : "orden__fila--antes");
-  });
-
-  orden.addEventListener("drop", (e) => {
-    if (viaja === null) return;
-    e.preventDefault();
-    const fila = e.target.closest("[data-i]");
-    if (fila) {
-      const caja = fila.getBoundingClientRect();
-      mover(viaja, +fila.dataset.i + (e.clientY > caja.top + caja.height / 2 ? 1 : 0));
-    }
-    viaja = null;
-    limpiarMarcas();
-  });
-
-  orden.addEventListener("dragend", () => {
-    viaja = null;
-    limpiarMarcas();
-    orden.querySelectorAll(".orden__fila--viaja").forEach((f) =>
-      f.classList.remove("orden__fila--viaja"));
-  });
-
-  /* ---------- Cuándo dejar la preferida ---------- */
-  function pintarExcepciones() {
-    const r = reglasPaqueteria;
-    const hay = preferidaAhora();
-    const pref = hay?.paqueteria ?? "la preferida";
-    document.getElementById("excepciones").innerHTML = `
-      <p style="font-size:13px;line-height:1.55">${hay
-        ? `Se usa <b>${esc(pref)}</b> salvo que ocurra lo siguiente.`
-        : `Ninguna paquetería está marcada como <b>Se puede usar</b>, así que no hay
-           preferida y cada envío se resuelve entre las de evitar.`}</p>
-
-      <label class="campo">
-        <span>Cuando su costo supere</span>
-        <input id="umbral" type="number" min="0" step="10" value="${r.cambiarSi.costoMayorA}"
-               inputmode="numeric">
-        <span class="campo__ayuda">En pesos. Por debajo de esa cifra no se cambia.</span>
-      </label>
-
-      <label class="marca-campo">
-        <input type="checkbox" id="zona" ${r.cambiarSi.zonaExtendida ? "checked" : ""}>
-        <span>Y además es zona extendida
-          <span class="apagado" style="display:block;font-size:12px">
-            Si lo desmarcas, basta con que el costo supere el límite.</span></span>
-      </label>
-
-      <p class="campos__titulo" style="margin-top:4px">Regla de seguridad</p>
-      <label class="marca-campo">
-        <input type="checkbox" id="manda" ${r.mandaLaPreferida ? "checked" : ""}>
-        <span>Mantener ${esc(pref)} aunque otra sea más barata
-          <span class="apagado" style="display:block;font-size:12px">
-            Sin esto, el sistema elegiría siempre la más barata y contradiría tu criterio.</span></span>
-      </label>`;
-
-    document.getElementById("umbral").addEventListener("input", (e) => {
-      r.cambiarSi.costoMayorA = +e.target.value || 0;
-      pintarProbador();
-    });
-    document.getElementById("zona").addEventListener("change", (e) => {
-      r.cambiarSi.zonaExtendida = e.target.checked;
-      pintarProbador();
-      avisar("Guardado.");
-    });
-    document.getElementById("manda").addEventListener("change", (e) => {
-      r.mandaLaPreferida = e.target.checked;
-      pintarProbador();
-      avisar(e.target.checked
-        ? "Guardado. La preferida tiene prioridad sobre el precio."
-        : "Guardado. Ahora se elige la más barata.");
-    });
-  }
-
-  /* ---------- Pruébalo ----------
-     Unas reglas que no se pueden probar no se usan: nadie cambia algo que
-     decide por él sin ver antes qué decide. */
-  let caso = { peso: 2, costoPreferida: 180, zonaExtendida: false };
-
-  function pintarProbador() {
-    const d = decidirPaqueteria(caso);
-    document.getElementById("probador").innerHTML = `
-      <p style="font-size:13px">Un pedido de ejemplo, para ver qué paquetería saldría.</p>
-
-      <div class="campos campos--2">
-        <label class="campo"><span>Peso (kg)</span>
-          <input id="p-peso" type="number" min="0.1" step="0.5" value="${caso.peso}"></label>
-        <label class="campo"><span>Costo de la preferida</span>
-          <input id="p-costo" type="number" min="0" step="10" value="${caso.costoPreferida}"></label>
-      </div>
-
-      <label class="marca-campo">
-        <input type="checkbox" id="p-zona" ${caso.zonaExtendida ? "checked" : ""}>
-        <span>Es zona extendida</span>
-      </label>
-
-      <div class="veredicto">
-        <span class="veredicto__etiqueta">Se generaría con</span>
-        <b class="veredicto__quien">${esc(d.elegida ?? "ninguna")}</b>
-        ${d.costo !== null ? `<span class="veredicto__costo">${esc(dinero(d.costo))}</span>` : ""}
-        <p>${esc(d.porque)}</p>
-        ${d.alternativas.length
-          ? `<p class="apagado" style="font-size:12px;margin-top:6px">Siguientes opciones:
-               ${d.alternativas.map((a) => `${esc(a.paqueteria)} ${esc(dinero(a.costo))}`).join(" · ")}</p>`
-          : ""}
-      </div>`;
-
-    const leer = () => {
-      caso = {
-        peso: +document.getElementById("p-peso").value || 1,
-        costoPreferida: +document.getElementById("p-costo").value || 0,
-        zonaExtendida: document.getElementById("p-zona").checked,
-      };
-      pintarProbador();
-    };
-    ["p-peso", "p-costo"].forEach((id) =>
-      document.getElementById(id).addEventListener("input", leer));
-    document.getElementById("p-zona").addEventListener("change", leer);
-  }
-
   /* ---------- Cuando entra un pedido pagado ----------
-     La validación de direcciones no es un canal ni una paquetería: es un paso
-     de lo que ocurre al entrar el pedido, y aquí es donde se entiende para
-     qué sirve. Su clave va plegada junto a ella, como en las conexiones. */
+     Es el único ajuste que no pertenece a una cuenta concreta: describe la
+     cadena que corre sola —revisar la dirección, pedir la guía, con qué
+     remitente y con qué medidas—, y por eso se lee en orden.
+
+     La validación de direcciones vive aquí y no en una lista de conexiones:
+     es un paso de esa cadena, y aquí es donde se entiende para qué sirve. Su
+     clave va plegada junto a ella. */
   document.getElementById("automatico").innerHTML = `
     <label class="marca-campo">
       <input type="checkbox" id="auto-validar" checked>
@@ -441,7 +75,7 @@ if (exigirSesion()) {
       <div class="campos">
         <label class="campo"><span>Clave</span>
           <input value="•••• guardada" readonly>
-          <span class="campo__ayuda">Es tuya, así que el gasto va a tu cuenta.</span></label>
+          <span class="campo__ayuda">La clave es tuya y el gasto se carga a tu cuenta.</span></label>
       </div>
     </details>
 
@@ -449,7 +83,8 @@ if (exigirSesion()) {
       <input type="checkbox" id="auto-guia">
       <span>Generar la guía automáticamente
         <span class="apagado" style="display:block;font-size:12px">
-          En cuanto el pedido se marque como pagado, sin que nadie entre a Pedidos.</span></span>
+          En cuanto el pedido se marque como pagado, sin que nadie entre a Pedidos.
+          La paquetería sale de tu orden de preferencia.</span></span>
     </label>
 
     <div class="campos campos--2">
@@ -463,7 +98,7 @@ if (exigirSesion()) {
         <select id="auto-plantilla">
           ${plantillas.map((p) => `<option${p.predeterminada ? " selected" : ""}>${esc(p.nombre)}</option>`).join("")}
         </select>
-        <span class="campo__ayuda">Peso y medidas cuando el pedido no los trae.</span>
+        <span class="campo__ayuda">Peso y medidas cuando el pedido no los incluye.</span>
       </label>
     </div>`;
 
@@ -477,9 +112,26 @@ if (exigirSesion()) {
       ? "Guardado. Cada dirección se revisa antes de pedir la guía."
       : "Guardado. Las direcciones ya no se revisan."));
 
-  pintarOrden();
-  pintarExcepciones();
-  pintarProbador();
+  /* Cada ajuste vive en la pantalla del objeto que ajusta. Estas tarjetas no
+     duplican nada: dicen dónde está cada cosa para quien llegue aquí buscando
+     lo que antes estaba junto. */
+  const ATAJOS = [
+    { nombre: "Canales de venta", href: "canales.html",
+      que: "Por dónde entran los pedidos." },
+    { nombre: "Paqueterías", href: "paqueterias.html",
+      que: "Por dónde salen y con qué criterio se elige una u otra." },
+    { nombre: "Direcciones de Origen", href: "origenes.html",
+      que: "De dónde salen los paquetes y dónde los recogen." },
+    { nombre: "Plantillas", href: "plantillas.html",
+      que: "Peso y medidas de las cajas que usas." },
+  ];
+
+  document.getElementById("atajos").innerHTML = ATAJOS.map((a) => `
+    <a class="ficha ficha--enlace" href="${a.href}">
+      <div class="ficha__cabeza"><div><h2>${esc(a.nombre)}</h2></div>
+        <span class="ficha__ir" aria-hidden="true">&rarr;</span></div>
+      <p class="ficha__nota">${esc(a.que)}</p>
+    </a>`).join("");
 }
 </script>
 </body>
