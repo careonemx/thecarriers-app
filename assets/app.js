@@ -11,8 +11,7 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         correccionesPendientes,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=0d936824";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=c3c10d21";
 
 const CLAVE = "tc_sesion";
 
@@ -85,6 +84,10 @@ const GRUPOS = [
     items: [
       { id: "desempeno", texto: "Desempeño", href: "desempeno.html" },
       { id: "cobros", texto: "Cobros", href: "cobros.html" },
+      /* La bitácora de correcciones no es un ajuste: no se configura nada en
+         ella. Es información, y se mira por lo mismo que Cobros: para
+         reclamar con pruebas y para ver si algo se está torciendo. */
+      { id: "correcciones", texto: "Correcciones", href: "correcciones.html" },
     ],
   },
   {
@@ -98,8 +101,6 @@ const GRUPOS = [
       { id: "paqueterias", texto: "Paqueterías", href: "paqueterias.html" },
       { id: "origenes", texto: "Direcciones de Origen", href: "origenes.html" },
       { id: "plantillas", texto: "Plantillas", href: "plantillas.html" },
-      { id: "correcciones", texto: "Correcciones", href: "correcciones.html",
-        cuenta: correccionesPendientes().length },
       { id: "ajustes", texto: "Configuración", href: "configuracion.html" },
     ],
   },

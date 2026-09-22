@@ -1328,16 +1328,6 @@ tr.fila--principal td:first-child::before {
    columna aparte obliga a buscarlo de vuelta en el texto. */
 .caso__malo { color: #fbbf24; }
 
-/* El desplegable de la colonia lleva nombres largos: sin un mínimo se queda
-   con lo que sobra y corta "Ampliación Granada" a la mitad. */
-#tabla-cola select { min-width: 190px; }
-
-.pestana__n {
-  margin-left: 6px; padding: 0 6px; border-radius: 999px;
-  background: rgba(251, 191, 36, .16); color: #fde68a;
-  font-size: 11px; font-variant-numeric: tabular-nums;
-}
-.pestana__n:empty { display: none; }
 
 /* ---------- Consumo del plan ----------
    La pregunta es "¿me alcanza?". Lo que se lee primero es lo que QUEDA; el
@@ -1876,10 +1866,9 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
      Sin un ancho mínimo, "15 piezas sin recoger" salía en cuatro renglones de
      una palabra cada uno. */
   .tabla-caja table { min-width: 560px; }
-  /* Siete columnas, una de ellas un desplegable de 190px: con el mínimo
-     general las notas se rompen en dos palabras por renglón. Mejor
-     desplazarse a lo ancho que leer una escalera. */
-  #tabla-cola { min-width: 1020px; }
+  /* La bitácora lleva una frase de motivo en cada fila: con el mínimo general
+     se rompe en dos palabras por renglón. Mejor desplazarse a lo ancho. */
+  #tabla-corr { min-width: 760px; }
   .periodo__cabeza { gap: 12px; }
   .periodo__mando { margin-left: 0; width: 100%; }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }

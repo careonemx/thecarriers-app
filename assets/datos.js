@@ -11,92 +11,68 @@ export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
 /* =================================================================
- * Correcciones de dirección.
+ * Bitácora de correcciones de dirección.
  *
- * Lo que separa una corrección de una conjetura NO es quién la hizo, es en
- * qué se apoya.
+ * Todo lo que está aquí YA se aplicó. Lo que falta por decidir no vive en
+ * esta lista: es un pedido con la dirección sin resolver, y se trabaja en
+ * Pedidos, que es donde además se genera la guía.
  *
- *   El código postal manda. Si el CP dice que la colonia es Juárez y en el
- *   pedido viene "Cuauhtémoc", el catálogo tiene razón y no hace falta que
- *   nadie lo mire: se aplica y queda en el historial.
+ * Existe por dos motivos que no son "ver el trabajo hecho": cuando un paquete
+ * llega mal y el cliente dice "yo escribí X", hace falta la prueba de qué se
+ * cambió; y alguien tiene que poder ver que la IA está inventando colonias
+ * antes de que sean cincuenta.
  *
- *   Si en el campo colonia viene "casa", ningún catálogo puede decidir. Poner
- *   ahí la única colonia del CP es una apuesta, y una apuesta la firma una
- *   persona. Esas son las que esperan.
- *
- * `apoyo` es esa diferencia, y por eso es un dato y no una etiqueta de
- * confianza: "el CP 06600 solo tiene una colonia" se puede comprobar; un
- * 87 % no.
- *
- * `guia` dice si el envío ya salió. No siempre se llega a tiempo, y fingir
- * que una corrección arregla una etiqueta ya impresa sería mentir: ahí lo que
- * queda es corregir para la próxima y tener con qué reclamar.
+ * `apoyo` es lo que separa una corrección de una conjetura, y por eso es un
+ * dato y no una etiqueta de confianza: "el CP 06600 solo tiene una colonia"
+ * se puede comprobar, un 87 % solo se puede creer. Sin apoyo, lo decidió una
+ * persona.
  * ================================================================= */
 
 export const correcciones = [
   { id: "c-1006", folio: "#1006", fecha: "2026-09-21", cliente: "Mariana Ruiz",
-    cp: "72495", ciudad: "Puebla, PUE", calle: "Port Agrere 9",
-    campo: "colonia", llego: "casa", propone: "Geovillas del Sur",
-    apoyo: null, opciones: ["Geovillas del Sur", "Villa Frontera", "San Baltazar Campeche"],
-    guia: null, estado: "espera" },
+    cp: "72495", campo: "colonia", llego: "casa", quedo: "Geovillas del Sur",
+    apoyo: null },
 
   { id: "c-1013", folio: "#1013", fecha: "2026-09-20", cliente: "Laura Méndez",
-    cp: "06600", ciudad: "Ciudad de México, CDMX", calle: "Río Lerma 232",
-    campo: "colonia", llego: "1", propone: "Juárez",
-    apoyo: null, opciones: ["Juárez"],
-    guia: null, estado: "espera" },
+    cp: "06600", campo: "colonia", llego: "1", quedo: "Juárez",
+    apoyo: null },
 
   { id: "c-1018", folio: "#1018", fecha: "2026-09-18", cliente: "Comercializadora Vega",
-    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Moliere 450",
-    campo: "colonia", llego: "trabajo", propone: "Ampliación Granada",
-    apoyo: null, opciones: ["Ampliación Granada", "Granada"],
-    guia: "794611552340", estado: "espera" },
+    cp: "11529", campo: "colonia", llego: "trabajo", quedo: "Ampliación Granada",
+    apoyo: null },
 
   { id: "c-1015", folio: "#1015", fecha: "2026-09-17", cliente: "Iván Salas",
-    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Lago Zurich 96",
-    campo: "municipio", llego: "Ciudad de México", propone: "Miguel Hidalgo",
-    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.", opciones: null,
-    guia: "794611552118", estado: "aplicada" },
+    cp: "11529", campo: "municipio", llego: "Ciudad de México", quedo: "Miguel Hidalgo",
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo." },
 
   { id: "c-1017", folio: "#1017", fecha: "2026-09-16", cliente: "Rocío Ibarra",
-    cp: "06600", ciudad: "Ciudad de México, CDMX", calle: "Havre 30",
-    campo: "municipio", llego: "Ciudad de México", propone: "Cuauhtémoc",
-    apoyo: "El CP 06600 pertenece a Cuauhtémoc.", opciones: null,
-    guia: "794611551907", estado: "aplicada" },
+    cp: "06600", campo: "municipio", llego: "Ciudad de México", quedo: "Cuauhtémoc",
+    apoyo: "El CP 06600 pertenece a Cuauhtémoc." },
 
   { id: "c-1011", folio: "#1011", fecha: "2026-09-15", cliente: "Diego Fuentes",
-    cp: "11529", ciudad: "Ciudad de México, CDMX", calle: "Emerson 148",
-    campo: "municipio", llego: "Ciudad de México", propone: "Miguel Hidalgo",
-    apoyo: "El CP 11529 pertenece a Miguel Hidalgo.", opciones: null,
-    guia: "794611551644", estado: "aplicada" },
+    cp: "11529", campo: "municipio", llego: "Ciudad de México", quedo: "Miguel Hidalgo",
+    apoyo: "El CP 11529 pertenece a Miguel Hidalgo." },
 
   { id: "c-1009", folio: "#1009", fecha: "2026-09-14", cliente: "Paulina Cortés",
-    cp: "44600", ciudad: "Guadalajara, JAL", calle: "Av. Vallarta 1300",
-    campo: "estado", llego: "Guadalajara", propone: "Jalisco",
-    apoyo: "Guadalajara es un municipio de Jalisco, no un estado.", opciones: null,
-    guia: "794611551302", estado: "aplicada" },
+    cp: "44600", campo: "estado", llego: "Guadalajara", quedo: "Jalisco",
+    apoyo: "Guadalajara es un municipio de Jalisco, no un estado." },
 
   { id: "c-1008", folio: "#1008", fecha: "2026-09-12", cliente: "Héctor Nava",
-    cp: "64000", ciudad: "Monterrey, NL", calle: "Padre Mier 350",
-    campo: "colonia", llego: "Centro MTY", propone: "Centro",
-    apoyo: "El CP 64000 solo tiene la colonia Centro.", opciones: null,
-    guia: "794611551088", estado: "aplicada" },
+    cp: "64000", campo: "colonia", llego: "Centro MTY", quedo: "Centro",
+    apoyo: "El CP 64000 solo tiene la colonia Centro." },
 ];
 
-/** Las que esperan a una persona: la IA propuso algo sin nada en qué apoyarse. */
-export const correccionesPendientes = () =>
-  correcciones.filter((c) => c.estado === "espera");
-
-/** El historial, del cambio más reciente al más viejo. */
+/** De lo más reciente a lo más viejo: al historial se entra por lo último. */
 export const correccionesHechas = () =>
-  correcciones.filter((c) => c.estado !== "espera")
-    .slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  correcciones.slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
 
 /** Quién decidió el cambio, en palabras y no en jerga de la API. */
 export const QUIEN_CORRIGIO = {
   catalogo: "Catálogo postal",
   persona: "Una persona",
 };
+
+/* Sin apoyo que enseñar, el cambio no lo pudo decidir un catálogo. */
 export const quienCorrigio = (c) => c.apoyo ? "catalogo" : "persona";
 
 export const CAMPO_DIRECCION = { colonia: "Colonia", municipio: "Municipio", estado: "Estado" };
@@ -710,13 +686,25 @@ const pedidosBase = [
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: null,
-    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle." },
+    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle.",
+    correccionPropuesta: [
+      { campo: "Calle", antes: "Port Agrere 9", despues: "Porto Alegre 9" },
+      { campo: "Colonia", antes: "Sin colonia", despues: "Geovillas del Sur" },
+      { campo: "Interior", antes: "casa (dentro de la calle)", despues: "Int. Casa" },
+    ],
+  },
 
   { folio: "#1003", fecha: "2026-09-17", total: 10, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: null,
-    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle." },
+    requiereCorreccion: "Sin colonia y el número interior va dentro de la calle.",
+    correccionPropuesta: [
+      { campo: "Calle", antes: "Port Agrere 9", despues: "Porto Alegre 9" },
+      { campo: "Colonia", antes: "Sin colonia", despues: "Geovillas del Sur" },
+      { campo: "Interior", antes: "casa (dentro de la calle)", despues: "Int. Casa" },
+    ],
+  },
 
   // Un pedido al que le falla la generación de la guía. El MVP todavía no
   // tiene este estado y es el que más duele: el pedido parece pendiente,
@@ -928,14 +916,6 @@ export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
 const necesitaRecoleccion = (p) =>
   !!p.envio && !p.recoleccion && ["Creada", "Generada", "Recolección pendiente"].includes(p.envio.estado);
 
-/**
- * Los pendientes que se trabajan DESDE la lista de pedidos.
- *
- * "Direcciones por corregir" ya no está aquí: se trabaja en Correcciones, que
- * es la única pantalla donde se puede elegir la colonia. Como filtro de esta
- * tabla era la misma cola sin la decisión, así que se podía llegar a ella y
- * no poder hacer nada.
- */
 export const PENDIENTES = {
   "pagados-sin-guia": {
     grupo: "hacer", etiqueta: "Pagados sin guía",
@@ -952,6 +932,10 @@ export const PENDIENTES = {
   "error-guia": {
     grupo: "problema", etiqueta: "Guías que no se pudieron generar",
     pasa: (p) => !!p.error,
+  },
+  "por-corregir": {
+    grupo: "problema", etiqueta: "Direcciones por corregir",
+    pasa: (p) => !!p.requiereCorreccion,
   },
 };
 
@@ -1271,8 +1255,36 @@ const DETALLES = {
   },
 };
 
+/** La dirección tal y como llegó, deducida de lo poco que trae el pedido. */
+function direccionGenerica(p) {
+  return {
+    nombre: p.cliente.nombre,
+    lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
+    telefono: null,
+    campos: p.campos ?? (() => {
+      const partes = p.cliente.nombre.split(" ");
+      const calle = (p.destino || "").replace(/\s+(\d+)$/, "");
+      const numExt = ((p.destino || "").match(/(\d+)\s*$/) || [])[1] || "";
+      return {
+        nombre: partes[0] || "", apellido: partes.slice(1).join(" "),
+        correo: p.cliente.correo, lada: "+52", telefono: "", compania: "",
+        calle, numExt, numInt: "",
+        cp: (p.ciudad.match(/\b(\d{5})\b/) || [])[1] || "",
+        colonia: "",
+        estado: (p.ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, ""),
+        ciudad: p.ciudad.split(",")[0] || "",
+        referencia: "",
+      };
+    })(),
+  };
+}
+
 /** Relleno para los pedidos sin detalle propio: completo, pero sin inventar. */
 function detalleGenerico(p) {
+  /* Se arma una vez y se usa dos: la dirección actual y, cuando hay una
+     corrección sin aplicar, la "original" que el panel enseña al lado de los
+     cambios propuestos. Son la misma mientras nadie aplique nada. */
+  const direccion = direccionGenerica(p);
   return {
     telefono: null,
     subtotal: p.total, impuestos: +(p.total * 0.16 / 1.16).toFixed(2), impuestosIncluidos: true,
@@ -1280,27 +1292,17 @@ function detalleGenerico(p) {
     pagoOriginal: p.pago === "Pagado" ? "paid" : "pending",
     pedidosPrevios: 0, gastadoPrevio: 0,
     articulos: [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }],
-    direccion: {
-      nombre: p.cliente.nombre,
-      lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
-      telefono: null,
-      campos: p.campos ?? (() => {
-        const partes = p.cliente.nombre.split(" ");
-        const calle = (p.destino || "").replace(/\s+(\d+)$/, "");
-        const numExt = ((p.destino || "").match(/(\d+)\s*$/) || [])[1] || "";
-        return {
-          nombre: partes[0] || "", apellido: partes.slice(1).join(" "),
-          correo: p.cliente.correo, lada: "+52", telefono: "", compania: "",
-          calle, numExt, numInt: "",
-          cp: (p.ciudad.match(/\b(\d{5})\b/) || [])[1] || "",
-          colonia: "",
-          estado: (p.ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, ""),
-          ciudad: p.ciudad.split(",")[0] || "",
-          referencia: "",
-        };
-      })(),
-    },
-    correccion: null,
+    direccion,
+    /* Si el pedido dice que su dirección no está lista, el panel tiene que
+       enseñar qué se propone cambiar. Sin esto, la lista mandaba a un panel
+       donde no había nada que corregir y la guía se generaba igual. */
+    correccion: p.requiereCorreccion ? {
+      fuente: "SEPOMEX · automática",
+      aplicada: false,
+      motivo: p.requiereCorreccion,
+      original: direccion,
+      cambios: p.correccionPropuesta ?? [],
+    } : null,
     facturacionIgual: true,
     costoGuia: p.envio?.costo ?? null,
     pesoEstimado: 1.5,
