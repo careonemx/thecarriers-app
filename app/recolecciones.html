@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=88b4f520">
-<script src="../assets/vigia.js?v=88b4f520" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=be8ca86a">
+<script src="../assets/vigia.js?v=be8ca86a" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -15,8 +15,8 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Recolecciones</h1>
-      <p>Programa y consulta recolecciones de cualquier paquetería sin entrar a su portal,
-         y comprueba si de verdad pasaron por ellas.</p>
+      <p>Programa recolecciones de cualquier paquetería sin entrar a su portal
+         y verifica su cumplimiento.</p>
     </div>
     <div class="encabezado__acciones">
       <button class="boton boton--primario" type="button">Programar recolección</button>
@@ -30,7 +30,7 @@
   <section class="tarjeta" style="margin-bottom:16px">
     <div class="tarjeta__cabeza" style="padding-bottom:0;border-bottom:0">
       <div class="pestanas" role="tablist" style="border-bottom:0">
-        <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="proximas">Próximas</button>
+        <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="proximas">Programadas</button>
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="historial">Historial</button>
       </div>
       <div class="periodo__mando" role="group" aria-label="Periodo del historial" id="mando" hidden>
@@ -39,16 +39,50 @@
         <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="">Todo</button>
       </div>
     </div>
+    <div class="filtros">
+      <div class="buscador">
+        <label class="sr-only" for="q-reco">Buscar</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q-reco" autocomplete="off" placeholder="Folio, paquetería u origen">
+      </div>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <label class="sr-only" for="desde">Desde</label>
+      <input type="date" id="desde" aria-label="Desde">
+      <span class="filtros__etiqueta">al</span>
+      <label class="sr-only" for="hasta">Hasta</label>
+      <input type="date" id="hasta" aria-label="Hasta">
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <label class="sr-only" for="f-paq">Paquetería</label>
+      <select id="f-paq"><option value="">Toda paquetería</option></select>
+      <label class="sr-only" for="f-org">Origen</label>
+      <select id="f-org"><option value="">Todo origen</option></select>
+      <label class="sr-only" for="f-ven">Ventana</label>
+      <select id="f-ven"><option value="">Toda ventana</option></select>
+      <label class="sr-only" for="f-res">Resultado</label>
+      <select id="f-res" hidden>
+        <option value="">Todo resultado</option>
+        <option value="completa">Completas</option>
+        <option value="parcial">Incompletas</option>
+        <option value="fallida">Sin cumplir</option>
+      </select>
+
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
+        Quitar filtros</button>
+    </div>
+
     <div id="vista"></div>
   </section>
 
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=88b4f520";
+import { montar, exigirSesion } from "../assets/app.js?v=be8ca86a";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
-         origenes, menosDias, HOY } from "../assets/datos.js?v=88b4f520";
+         origenes, menosDias, HOY } from "../assets/datos.js?v=be8ca86a";
 if (exigirSesion()) {
   montar();
 
@@ -66,9 +100,45 @@ if (exigirSesion()) {
 
   let vista = "proximas";
   let dias = 30;
+  let pagina = 1;
+  let porPagina = 10;
 
   const mando = document.getElementById("mando");
   const zona = document.getElementById("vista");
+  const desde = document.getElementById("desde");
+  const hasta = document.getElementById("hasta");
+  const buscar = document.getElementById("q-reco");
+  const fPaq = document.getElementById("f-paq");
+  const fOrg = document.getElementById("f-org");
+  const fVen = document.getElementById("f-ven");
+  const fRes = document.getElementById("f-res");
+  const limpiar = document.getElementById("limpiar-filtros");
+
+  /* Los desplegables se llenan con lo que hay, no con una lista fija: una
+     opción que nunca devuelve nada es una opción que estorba. */
+  for (const [sel, saca] of [[fPaq, (r) => r.paqueteria],
+                             [fOrg, (r) => nombreOrigen(r.origen)],
+                             [fVen, (r) => r.ventana]]) {
+    [...new Set(recolecciones.map(saca))].sort()
+      .forEach((v) => sel.add(new Option(v, v)));
+  }
+
+  const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() ||
+                             fPaq.value || fOrg.value || fVen.value || fRes.value);
+
+  function pasa(r) {
+    if (desde.value && r.fecha < desde.value) return false;
+    if (hasta.value && r.fecha > hasta.value) return false;
+    if (fPaq.value && r.paqueteria !== fPaq.value) return false;
+    if (fOrg.value && nombreOrigen(r.origen) !== fOrg.value) return false;
+    if (fVen.value && r.ventana !== fVen.value) return false;
+    if (fRes.value && resultadoRecoleccion(r).clave !== fRes.value) return false;
+    const q = sinAcentos(buscar.value.trim());
+    if (q && !sinAcentos([r.folio, r.paqueteria, nombreOrigen(r.origen), r.ventana].join(" ")).includes(q)) return false;
+    return true;
+  }
 
   /* ---------- Lo que se puede reclamar ----------
      Se enseña solo cuando alguien está por debajo del 100%: si todas
@@ -81,19 +151,19 @@ if (exigirSesion()) {
 
     if (!flojas.length) {
       caja.innerHTML = `<p class="aviso aviso--ok">
-        Todas las recolecciones del periodo se cumplieron completas.</p>`;
+        Todas las recolecciones del periodo se cumplieron sin incidencias.</p>`;
       return;
     }
 
     caja.innerHTML = `
-      <h2 class="zona__titulo">A quién reclamar</h2>
+      <h2 class="zona__titulo">Cumplimiento por paquetería</h2>
       <div class="tarjeta">
         <div class="tabla-caja scroll-fino">
           <table>
             <caption class="sr-only">Cumplimiento de recolección por paquetería.</caption>
             <thead><tr>
               <th scope="col">Paquetería</th><th scope="col">Cumplimiento</th>
-              <th scope="col">Piezas</th><th scope="col">Citas</th><th scope="col">Qué pasó</th>
+              <th scope="col">Piezas</th><th scope="col">Recolecciones</th><th scope="col">Incidencias</th>
             </tr></thead>
             <tbody>
               ${stats.map((s) => `<tr>
@@ -104,18 +174,18 @@ if (exigirSesion()) {
                 <td class="tabular">${s.recogidas} de ${s.programadas}
                   ${s.programadas - s.recogidas
                     ? `<div class="apagado" style="margin-top:3px;font-size:12px">
-                         ${plural(s.programadas - s.recogidas, "pieza se quedó", "piezas se quedaron")}</div>` : ""}</td>
+                         ${plural(s.programadas - s.recogidas, "pieza sin recoger", "piezas sin recoger")}</div>` : ""}</td>
                 <td class="tabular">${s.citas}</td>
-                <td>${[s.fallidas ? plural(s.fallidas, "no pasó", "no pasaron") : "",
+                <td>${[s.fallidas ? `${s.fallidas} sin cumplir` : "",
                        s.parciales ? plural(s.parciales, "incompleta", "incompletas") : ""]
-                      .filter(Boolean).join(" · ") || "Todas completas"}</td>
+                      .filter(Boolean).join(" · ") || "Sin incidencias"}</td>
               </tr>`).join("")}
             </tbody>
           </table>
         </div>
         <div class="tarjeta__pie">
-          <span>Una pieza cuenta como recogida cuando su guía registra su primer
-                movimiento. Si no se movió, no se la llevaron.</span>
+          <span>Una pieza se cuenta como recogida cuando su guía registra el primer
+                movimiento en la paquetería.</span>
         </div>
       </div>`;
   }
@@ -124,10 +194,10 @@ if (exigirSesion()) {
   const TONO_ESTADO = { "Confirmada": "ok", "Por confirmar": "aviso", "Recurrente": "info" };
 
   function proximasHTML() {
-    const lista = recoleccionesProximas().sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const lista = recoleccionesProximas().filter(pasa).sort((a, b) => a.fecha.localeCompare(b.fecha));
     if (!lista.length) {
-      return `<div class="vacio"><h3>No hay ninguna recolección programada</h3>
-        <p>Las guías creadas se quedan en tu bodega hasta que alguien pase por ellas.</p></div>`;
+      return `<div class="vacio"><h3>No hay recolecciones programadas</h3>
+        <p>Las guías generadas permanecen en el origen hasta que se programe una recolección.</p></div>`;
     }
     const porDia = {};
     for (const r of lista) (porDia[r.fecha] ||= []).push(r);
@@ -135,7 +205,7 @@ if (exigirSesion()) {
     return Object.entries(porDia).map(([fecha, dia]) => `
       <div class="dia-recoleccion">
         <div class="dia-recoleccion__cabeza">
-          <b>${largo(fecha)}${fecha === HOY ? " · hoy" : ""}</b>
+          <b>${largo(fecha)}${fecha === HOY ? " · Hoy" : ""}</b>
           <span class="apagado" style="font-size:12px">
             ${dia.reduce((s, r) => s + r.piezas, 0)} piezas · ${plural(dia.length, "recolección", "recolecciones")}</span>
         </div>
@@ -143,7 +213,7 @@ if (exigirSesion()) {
           <table>
             <caption class="sr-only">Recolecciones del ${largo(fecha)}</caption>
             <thead><tr>
-              <th scope="col">Paquetería</th><th scope="col">Sale de</th><th scope="col">Ventana</th>
+              <th scope="col">Paquetería</th><th scope="col">Origen</th><th scope="col">Ventana</th>
               <th scope="col">Piezas</th><th scope="col">Folio</th><th scope="col">Estado</th>
               <th scope="col"><span class="sr-only">Acciones</span></th>
             </tr></thead>
@@ -166,27 +236,32 @@ if (exigirSesion()) {
 
   /* ---------- Historial: qué pasó de verdad ---------- */
   function historialHTML() {
-    const desde = dias === "" ? null : menosDias(HOY, dias);
+    const limite = dias === "" ? null : menosDias(HOY, dias);
     const lista = recoleccionesPasadas()
-      .filter((r) => !desde || r.fecha >= desde)
+      .filter((r) => (!limite || r.fecha >= limite) && pasa(r))
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
 
     if (!lista.length) {
-      return `<div class="vacio"><h3>Sin recolecciones en este periodo</h3>
-        <p>Prueba con un rango más amplio.</p></div>`;
+      return `<div class="vacio"><h3>No hay recolecciones en este periodo</h3>
+        <p>Amplía el rango de fechas o quita los filtros.</p></div>`;
     }
+
+    const paginas = Math.max(1, Math.ceil(lista.length / porPagina));
+    pagina = Math.min(pagina, paginas);
+    const ini = (pagina - 1) * porPagina;
+    const enPagina = lista.slice(ini, ini + porPagina);
 
     return `
       <div class="tabla-caja scroll-fino">
         <table>
           <caption class="sr-only">Recolecciones pasadas y su resultado.</caption>
           <thead><tr>
-            <th scope="col">Fecha</th><th scope="col">Paquetería</th><th scope="col">Sale de</th>
+            <th scope="col">Fecha</th><th scope="col">Paquetería</th><th scope="col">Origen</th>
             <th scope="col">Ventana</th><th scope="col">Programadas</th>
             <th scope="col">Recogidas</th><th scope="col">Resultado</th>
           </tr></thead>
           <tbody>
-            ${lista.map((r) => {
+            ${enPagina.map((r) => {
               const res = resultadoRecoleccion(r);
               return `<tr>
                 <td>${esc(corta(r.fecha))}
@@ -203,14 +278,32 @@ if (exigirSesion()) {
         </table>
       </div>
       <div class="tarjeta__pie">
-        <span><b>${lista.length}</b> ${lista.length === 1 ? "recolección" : "recolecciones"} ·
+        <span>Mostrando <b>${ini + 1}–${ini + enPagina.length}</b> de <b>${lista.length}</b> ·
           ${lista.reduce((s, r) => s + r.recogidas, 0)} de
           ${lista.reduce((s, r) => s + r.piezas, 0)} piezas recogidas</span>
+        <label class="filtros__etiqueta" for="por-pagina-reco">
+          <select id="por-pagina-reco" style="width:auto;margin-left:8px">
+            ${[10, 25, 50].map((n) =>
+              `<option value="${n}"${n === porPagina ? " selected" : ""}>${n} por página</option>`).join("")}
+          </select>
+        </label>
+        <span class="filtros__sep"></span>
+        <div class="paginacion"${paginas === 1 ? " hidden" : ""}>
+          <button type="button" data-ir="${pagina - 1}"${pagina === 1 ? " disabled" : ""}>‹</button>
+          ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+            `<button type="button" data-ir="${n}"${n === pagina ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
+          <button type="button" data-ir="${pagina + 1}"${pagina === paginas ? " disabled" : ""}>›</button>
+        </div>
       </div>`;
   }
 
   function pintar() {
     mando.hidden = vista !== "historial";
+    /* El resultado solo existe en el historial: una recolección que todavía
+       no ocurre no tiene ninguno. */
+    fRes.hidden = vista !== "historial";
+    if (vista !== "historial") fRes.value = "";
+    limpiar.hidden = !hayFiltro();
     document.querySelectorAll("[data-vista]").forEach((b) =>
       b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
     zona.innerHTML = vista === "proximas" ? proximasHTML() : historialHTML();
@@ -222,19 +315,20 @@ if (exigirSesion()) {
     const recogidas = stats.reduce((s, x) => s + x.recogidas, 0);
     const fallidas = stats.reduce((s, x) => s + x.fallidas, 0);
     const pct = programadas ? Math.round((recogidas / programadas) * 100) : null;
-    const periodo = dias === "" ? "Desde el principio" : `En los últimos ${dias} días`;
+    const periodo = dias === "" ? "Todo el historial" : `Últimos ${dias} días`;
 
     const metrica = (etiqueta, valor, nota, tono = "") =>
       `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
        <p class="metrica__valor tabular"${tono}>${valor}</p><p class="metrica__nota">${nota}</p></div>`;
 
     document.getElementById("metricas").innerHTML =
-      metrica("Se llevaron lo programado", pct === null ? "—" : `${pct}%`, periodo,
+      metrica("Cumplimiento", pct === null ? "—" : `${pct}%`, periodo,
               pct !== null && pct < 95 ? ' style="color:#fca5a5"' : "") +
-      metrica("Piezas que se quedaron", programadas - recogidas,
-              programadas - recogidas ? "Siguen en tu bodega" : "Ninguna",
+      metrica("Piezas sin recoger", programadas - recogidas,
+              programadas - recogidas ? "Permanecen en el origen" : "Ninguna",
               programadas - recogidas ? ' style="color:#fca5a5"' : "") +
-      metrica("Citas que no pasaron", fallidas, fallidas ? "Nadie fue a recoger" : "Todas se cumplieron");
+      metrica("Recolecciones sin cumplir", fallidas,
+              fallidas ? "La paquetería no se presentó" : "Sin incidencias");
 
     pintarReclamo();
   }
@@ -242,10 +336,31 @@ if (exigirSesion()) {
   document.querySelectorAll("[data-vista]").forEach((b) =>
     b.addEventListener("click", () => { vista = b.dataset.vista; pintar(); }));
 
+  const alFiltrar = () => { pagina = 1; pintar(); };
+  [desde, hasta, fPaq, fOrg, fVen, fRes].forEach((c) => c.addEventListener("change", alFiltrar));
+  buscar.addEventListener("input", alFiltrar);
+  limpiar.addEventListener("click", () => {
+    desde.value = hasta.value = "";
+    buscar.value = fPaq.value = fOrg.value = fVen.value = fRes.value = "";
+    alFiltrar();
+  });
+
+  zona.addEventListener("click", (e) => {
+    const ir = e.target.closest("[data-ir]");
+    if (ir && !ir.disabled) { pagina = +ir.dataset.ir; pintar(); }
+  });
+  zona.addEventListener("change", (e) => {
+    if (!e.target.matches("#por-pagina-reco")) return;
+    porPagina = +e.target.value;
+    pagina = 1;
+    pintar();
+  });
+
   mando.querySelectorAll("[data-dias]").forEach((b) =>
     b.addEventListener("click", () => {
       mando.querySelectorAll("[data-dias]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
       dias = b.dataset.dias === "" ? "" : +b.dataset.dias;
+      pagina = 1;
       pintar();
     }));
 

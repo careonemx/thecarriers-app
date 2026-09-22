@@ -239,8 +239,8 @@ export const recolecciones = [
 /** Lo que pasó con una recolección. Null en `recogidas` = todavía no toca. */
 export function resultadoRecoleccion(r) {
   if (r.recogidas === null) return { clave: "programada", texto: r.estado, tono: r.estado === "Por confirmar" ? "aviso" : "ok" };
-  if (r.recogidas === 0) return { clave: "fallida", texto: "No pasó", tono: "mal" };
-  if (r.recogidas < r.piezas) return { clave: "parcial", texto: `Parcial · ${r.recogidas} de ${r.piezas}`, tono: "aviso" };
+  if (r.recogidas === 0) return { clave: "fallida", texto: "No se presentó", tono: "mal" };
+  if (r.recogidas < r.piezas) return { clave: "parcial", texto: `Incompleta · ${r.recogidas} de ${r.piezas}`, tono: "aviso" };
   return { clave: "completa", texto: "Completa", tono: "ok" };
 }
 
