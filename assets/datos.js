@@ -66,6 +66,21 @@ export const consumoPct = () => {
   return Math.min(100, Math.round((suscripcion.usados / p.envios) * 100));
 };
 
+/** Envíos que quedan del plan. */
+export const planQuedan = () => {
+  const p = planActual();
+  return p.envios === null ? null : Math.max(0, p.envios - suscripcion.usados);
+};
+
+/**
+ * Si conviene avisar de que el plan se acaba.
+ *
+ * El 85 % no es un número mágico: es el punto en el que todavía queda margen
+ * para decidir. Avisar al 100 % es avisar cuando ya no se puede hacer nada, y
+ * avisar al 50 % convierte el aviso en ruido que se aprende a ignorar.
+ */
+export const planApurado = () => consumoPct() !== null && consumoPct() >= 85;
+
 /**
  * Direcciones de origen: de dónde sale la mercancía y a dónde llega la
  * paquetería a recogerla. Son la misma dirección vista desde los dos lados.

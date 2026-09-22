@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=688d08c5">
-<script src="../assets/vigia.js?v=688d08c5" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=3f1c6892">
+<script src="../assets/vigia.js?v=3f1c6892" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
@@ -39,11 +39,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=688d08c5";
+import { montar, exigirSesion } from "../assets/app.js?v=3f1c6892";
 import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
          resumenPeriodo, comparativaPeriodo,
          conexionesCaidas, reconectar, romperConexion,
-         dineroMXN } from "../assets/datos.js?v=688d08c5";
+         planApurado, planQuedan, planActual, suscripcion,
+         dineroMXN } from "../assets/datos.js?v=3f1c6892";
 if (exigirSesion()) {
   montar();
 
@@ -136,11 +137,29 @@ if (exigirSesion()) {
     </div>`).join("");
   }
 
+  /* Al plan no se llega buscándolo: se llega cuando importa. Un medidor que
+     vive escondido en un menú se mira el día que ya no queda nada, así que el
+     aviso sale aquí, junto a las conexiones caídas, porque es la misma clase
+     de problema: algo que no es un pedido y que va a frenar el trabajo. */
+  function franjaPlan() {
+    if (!planApurado()) return "";
+    const plan = planActual();
+    const quedan = planQuedan();
+    return `<div class="franja-conexion">
+      <b>${quedan === 0
+        ? `Se acabaron los envíos de ${esc(plan.nombre)}`
+        : `Te quedan ${quedan} ${quedan === 1 ? "envío" : "envíos"} de ${esc(plan.nombre)}`}</b>
+      <span>El contador vuelve a cero el ${esc(suscripcion.renueva)}.</span>
+      <span class="franja-conexion__sep"></span>
+      <a class="boton boton--primario boton--chico" href="plan.html">Ver planes</a>
+    </div>`;
+  }
+
   const atencion = document.getElementById("atencion");
 
   function pintarAtencion() {
     const pendientes = Object.keys(PENDIENTES).reduce((s, k) => s + cuenta(k), 0);
-    const conexion = franjaConexion();
+    const conexion = franjaConexion() + franjaPlan();
 
     /* Con todo en cero, las dos zonas se colapsan en una línea. "Tu operación"
        se queda: no depende de que haya pendientes. */

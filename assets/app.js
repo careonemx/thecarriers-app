@@ -9,8 +9,8 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=688d08c5";
+import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=3f1c6892";
 
 const CLAVE = "tc_sesion";
 
@@ -155,10 +155,18 @@ function superior(titulo) {
          "Cerrar sesión" estaba abajo en la barra lateral; aparecer en los dos
          sitios sería la misma duplicación que ya quitamos de las conexiones. -->
     <div class="cuenta">
-      <button class="avatar avatar--boton" type="button" data-abrir-cuenta
+      <!-- El avatar solo, un círculo con dos letras, no se distingue de las
+           insignias de al lado, que no hacen nada. La flecha dice que abre
+           algo; el punto aparece cuando hay algo dentro que mirar. -->
+      <button class="cuenta__abrir" type="button" data-abrir-cuenta
         aria-haspopup="menu" aria-expanded="false" aria-controls="menu-cuenta">
-        <span class="sr-only">Tu cuenta, ${usuario.nombre}</span>
-        <span aria-hidden="true">${usuario.iniciales}</span>
+        <span class="sr-only">Tu cuenta, ${usuario.nombre}${
+          planApurado() ? ". Te quedan pocos envíos del plan" : ""}</span>
+        <span class="avatar" aria-hidden="true">${usuario.iniciales}</span>
+        ${planApurado() ? '<span class="cuenta__punto" aria-hidden="true"></span>' : ""}
+        <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+          class="cuenta__flecha" aria-hidden="true"><path d="m1 1 4 4 4-4"/></svg>
       </button>
 
       <div class="cuenta__menu" id="menu-cuenta" role="menu" hidden>
@@ -168,6 +176,8 @@ function superior(titulo) {
         </div>
         <a class="cuenta__opcion" role="menuitem" href="plan.html">
           ${svg(icono.plan)}<span>Plan y uso</span>
+          ${planApurado()
+            ? `<span class="cuenta__cuenta">${planQuedan()} envíos</span>` : ""}
         </a>
         <a class="cuenta__opcion" role="menuitem" href="../login.html" data-salir>
           ${svg(icono.salir)}<span>Cerrar sesión</span>
