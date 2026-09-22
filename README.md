@@ -28,6 +28,7 @@ recuperar.html             recuperar contraseña
 app/inicio.html            la entrada: qué atender hoy y a dónde ir
 app/pedidos.html           la lista, con filtros, lote y detalle
 app/origenes.html          direcciones de origen: de dónde sale y dónde recogen
+app/plantillas.html        plantillas de paquete y el peso que de verdad se cobra
 app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
 app/pendiente.html         nota para las pantallas del MVP sin vestir
 

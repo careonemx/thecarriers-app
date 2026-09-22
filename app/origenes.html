@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=b76b4168">
-<script src="../assets/vigia.js?v=b76b4168" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=205815f7">
+<script src="../assets/vigia.js?v=205815f7" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  <div class="salidas-barra" id="barra" hidden>
+  <div class="fichas-barra" id="barra" hidden>
     <div class="campo-buscar" style="flex:1;max-width:420px">
       <div class="buscador">
         <label class="sr-only" for="buscar-origen">Buscar una dirección</label>
@@ -32,7 +32,7 @@
                placeholder="Buscar por nombre, calle, colonia o CP">
       </div>
     </div>
-    <span class="salidas-barra__sep"></span>
+    <span class="fichas-barra__sep"></span>
     <span class="apagado" style="font-size:12px" id="cuenta-origen"></span>
     <div class="conmutador" role="group" aria-label="Forma de ver la lista">
       <button type="button" data-modo="tarjetas" aria-pressed="true">Tarjetas</button>
@@ -47,9 +47,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=b76b4168";
+import { montar, exigirSesion } from "../assets/app.js?v=205815f7";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=b76b4168";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=205815f7";
 if (exigirSesion()) {
   montar();
 
@@ -90,27 +90,27 @@ if (exigirSesion()) {
     const c = o.campos;
     const a = agenda(o);
     return `
-      <article class="salida${o.predeterminado ? " salida--principal" : ""}" data-id="${esc(o.id)}">
-        <div class="salida__cabeza">
+      <article class="ficha${o.predeterminado ? " ficha--principal" : ""}" data-id="${esc(o.id)}">
+        <div class="ficha__cabeza">
           <div>
             <h2>${esc(o.nombre)}</h2>
-            <p class="salida__contacto">${esc(c.nombre)} ${esc(c.apellido)} <span class="salida__tel">· ${esc(telefonoMX(c.telefono))}</span></p>
+            <p class="ficha__sub">${esc(c.nombre)} ${esc(c.apellido)} <span class="ficha__nowrap">· ${esc(telefonoMX(c.telefono))}</span></p>
           </div>
           ${o.predeterminado ? '<span class="pastilla pastilla--ok">Predeterminado</span>' : ""}
         </div>
 
-        <address class="salida__direccion">${enUnaLinea(c).map(esc).join("<br>")}</address>
+        <address class="ficha__cuerpo">${enUnaLinea(c).map(esc).join("<br>")}</address>
 
-        <dl class="salida__datos">
+        <dl class="ficha__datos">
           <div><dt>Entrega a la paquetería</dt><dd>${esc(o.horario.abre)} a ${esc(o.horario.cierra)}</dd></div>
           <div><dt>Recolección</dt><dd><span class="pastilla pastilla--${a.tono}">${esc(a.corto)}</span></dd></div>
         </dl>
-        ${a.detalle ? `<p class="salida__nota">${esc(a.detalle)}</p>` : ""}
+        ${a.detalle ? `<p class="ficha__nota">${esc(a.detalle)}</p>` : ""}
 
-        <div class="salida__pie">
+        <div class="ficha__pie">
           <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar dirección</button>
           ${o.predeterminado ? "" : '<button class="boton boton--sutil boton--chico" type="button" data-predeterminar>Hacer predeterminado</button>'}
-          <span class="salida__pie-sep"></span>
+          <span class="ficha__pie-sep"></span>
           <button class="boton boton--sutil boton--chico" type="button" data-borrar
             ${o.predeterminado ? 'disabled title="El predeterminado no se puede eliminar: primero nombra otro."' : ""}>
             Eliminar
@@ -208,7 +208,7 @@ if (exigirSesion()) {
     </section>`;
 
   const tarjetasHTML = (items) => `
-    <div class="salidas">
+    <div class="fichas">
       ${items.map(tarjeta).join("")}
     </div>`;
 
@@ -327,7 +327,7 @@ if (exigirSesion()) {
     const c = o.campos;
     return `
       <form id="form-origen" novalidate class="campos">
-        ${campo("nombre-salida", "Nombre de esta dirección", o.nombre,
+        ${campo("nombre-ficha", "Nombre de esta dirección", o.nombre,
                 'required placeholder="Almacén Puebla"',
                 "Solo para reconocerlo aquí. No va en la etiqueta.")}
 
@@ -458,7 +458,7 @@ if (exigirSesion()) {
     const v = (n) => f.querySelector(`[name="${n}"]`).value.trim();
 
     let falla = null;
-    for (const [n, etiqueta] of [["nombre-salida", "el nombre del punto"], ["nombre", "el nombre"],
+    for (const [n, etiqueta] of [["nombre-ficha", "el nombre del punto"], ["nombre", "el nombre"],
       ["apellido", "el apellido"], ["calle", "la calle"], ["numExt", "el número exterior"],
       ["cp", "el código postal"], ["colonia", "la colonia"], ["estado", "el estado"], ["ciudad", "la ciudad"]]) {
       const campo = f.querySelector(`[data-campo="${n}"]`);
@@ -479,7 +479,7 @@ if (exigirSesion()) {
 
     const destino = editando.id ? origenes.find((o) => o.id === editando.id) : null;
     const datos = {
-      nombre: v("nombre-salida"),
+      nombre: v("nombre-ficha"),
       horario: { abre: v("abre"), cierra: v("cierra") },
       campos: {
         nombre: v("nombre"), apellido: v("apellido"), correo: v("correo"),

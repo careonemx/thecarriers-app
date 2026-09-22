@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=b76b4168";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=205815f7";
 
 const CLAVE = "tc_sesion";
 
@@ -80,7 +80,7 @@ const GRUPOS = [
     titulo: "Ajustes",
     items: [
       { id: "origenes", texto: "Direcciones de Origen", href: "origenes.html" },
-      { id: "plantillas", texto: "Plantillas", href: "pendiente.html?p=Plantillas", pendiente: true },
+      { id: "plantillas", texto: "Plantillas", href: "plantillas.html" },
       { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },
       { id: "ajustes", texto: "Configuración", href: "pendiente.html?p=Configuración", pendiente: true },
     ],

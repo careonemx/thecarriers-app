@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=b76b4168">
+<link rel="stylesheet" href="assets/app.css?v=205815f7">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=b76b4168" defer></script>
+<script src="assets/vigia.js?v=205815f7" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -677,6 +677,10 @@
         <div class="regla"><b>La cabecera se sujeta a su caja</b><span>Una tabla larga necesita que SU contenedor se desplace. Si el que se desplaza es la página, <code>top: 0</code> no sujeta nada y los rótulos se pierden a la tercera fila.</span></div>
         <div class="regla"><b>El vacío es una pantalla, no un hueco</b><span>Sin ninguna dirección de origen no se puede cotizar ni generar guías. Eso se dice, en vez de dejar una cuadrícula con un solo recuadro punteado.</span></div>
         <div class="regla"><b>El cero también se prueba</b><span>Con la lista vacía, una constante de módulo que la leía reventaba al cargar <code>datos.js</code> —que importa TODA la aplicación— y no se pintaba ni el menú. Un dato que puede no existir se protege donde se evalúa.</span></div>
+        <div class="regla"><b>Enseñar la consecuencia, no el dato</b><span>Una plantilla no vale por guardar cinco números: vale por decir cuál de ellos se va a cobrar. Las paqueterías facturan el mayor entre el peso real y el volumétrico —(L×A×H)÷5000—, y de ahí salen los sobrepesos que nadie entiende al conciliar.</span></div>
+        <div class="regla"><b>El resultado, mientras se escribe</b><span>No al guardar. Si el número que importa se calcula a partir de lo que se captura, se muestra al teclear: así se puede corregir la caja antes de crearla, no después de la primera factura.</span></div>
+        <div class="regla"><b>Cotizar con lo que se cobra</b><span>El precio estimado sale del peso facturable, no del real. Cotizar con el real cuando la caja se cobra por volumen da una cifra que no existe.</span></div>
+        <div class="regla"><b>Nombres que no se repiten</b><span>Dos plantillas con el mismo nombre no se distinguen en el desplegable donde se van a usar. Se comparan sin acentos ni mayúsculas.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

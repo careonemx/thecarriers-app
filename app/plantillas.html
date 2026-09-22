@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Plantillas · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=205815f7">
+<script src="../assets/vigia.js?v=205815f7" defer></script>
+</head>
+<body data-seccion="plantillas">
+<main class="contenido contenido--ancho">
+
+  <div class="encabezado" style="margin-bottom:24px">
+    <div>
+      <h1>Plantillas de paquete</h1>
+      <p>Medidas y peso que se repiten, para no capturarlos en cada guía.</p>
+    </div>
+    <div class="encabezado__acciones" id="acciones">
+      <button class="boton boton--primario" type="button" data-nuevo>Agregar plantilla</button>
+    </div>
+  </div>
+
+  <div class="fichas-barra" id="barra" hidden>
+    <div class="campo-buscar" style="flex:1;max-width:420px">
+      <div class="buscador">
+        <label class="sr-only" for="buscar-plantilla">Buscar una plantilla</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="buscar-plantilla" autocomplete="off" placeholder="Buscar por nombre">
+      </div>
+    </div>
+    <span class="fichas-barra__sep"></span>
+    <span class="apagado" style="font-size:12px" id="cuenta-plantilla"></span>
+    <div class="conmutador" role="group" aria-label="Forma de ver la lista">
+      <button type="button" data-modo="tarjetas" aria-pressed="true">Tarjetas</button>
+      <button type="button" data-modo="lista" aria-pressed="false">Lista</button>
+    </div>
+  </div>
+
+  <div id="vista"></div>
+
+  <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
+  <dialog class="dialogo" id="confirmar" aria-labelledby="confirmar-titulo"></dialog>
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=205815f7";
+import { plantillas, pesoCobrado, pesoVolumetrico, FACTOR_VOLUMETRICO,
+         cotizar, dinero } from "../assets/datos.js?v=205815f7";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const kg = (n) => `${(+n).toLocaleString("es-MX", { maximumFractionDigits: 2 })} kg`;
+  const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+  const UMBRAL_LISTA = 6;
+  const CLAVE_MODO = "tc:plantillas-modo";
+
+  let modo = (() => {
+    try { return localStorage.getItem(CLAVE_MODO) || (plantillas.length > UMBRAL_LISTA ? "lista" : "tarjetas"); }
+    catch { return plantillas.length > UMBRAL_LISTA ? "lista" : "tarjetas"; }
+  })();
+  let busca = "";
+  let pagina = 1;
+  let porPagina = 10;
+
+  const barra = document.getElementById("barra");
+  const vista = document.getElementById("vista");
+  const entrada = document.getElementById("buscar-plantilla");
+  const panel = document.getElementById("panel");
+
+  const coincide = (p) => !busca || sinAcentos(p.nombre).includes(busca);
+  const medidas = (p) => `${p.largo} × ${p.ancho} × ${p.alto} cm`;
+
+  /* Lo más barato con el peso que REALMENTE se cobra. Cotizar con el peso
+     real cuando la caja se cobra por volumen da un precio que no existe. */
+  const desde = (c) => {
+    const o = cotizar(c.cobrado)[0];
+    return o ? `${o.paqueteria} ${o.servicio} desde ${dinero(o.precio)}` : "";
+  };
+
+  function tarjeta(p) {
+    const c = pesoCobrado(p);
+    return `
+      <article class="ficha${p.predeterminada ? " ficha--principal" : ""}" data-id="${esc(p.id)}">
+        <div class="ficha__cabeza">
+          <div>
+            <h2>${esc(p.nombre)}</h2>
+            <p class="ficha__sub">${medidas(p)}</p>
+          </div>
+          ${p.predeterminada ? '<span class="pastilla pastilla--ok">Predeterminada</span>' : ""}
+        </div>
+
+        <dl class="ficha__datos">
+          <div><dt>Peso real</dt><dd class="tabular">${kg(c.real)}</dd></div>
+          <div><dt>Peso volumétrico</dt><dd class="tabular">${kg(c.volumetrico)}</dd></div>
+          <div><dt>Se cobra</dt>
+            <dd class="tabular"${c.porVolumen ? ' style="color:#fde68a"' : ""}>${kg(c.cobrado)}</dd></div>
+        </dl>
+
+        ${c.porVolumen
+          ? `<p class="ficha__nota">Se cobra por volumen: ${kg(c.volumetrico)} en vez de ${kg(c.real)}.</p>`
+          : `<p class="ficha__nota">Se cobra por peso real.</p>`}
+        <p class="ficha__nota">${esc(desde(c))}</p>
+
+        <div class="ficha__pie">
+          <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar plantilla</button>
+          ${p.predeterminada ? "" : '<button class="boton boton--sutil boton--chico" type="button" data-predeterminar>Hacer predeterminada</button>'}
+          <span class="ficha__pie-sep"></span>
+          <button class="boton boton--sutil boton--chico" type="button" data-borrar
+            ${p.predeterminada ? 'disabled title="La predeterminada no se puede eliminar: primero nombra otra."' : ""}>Eliminar</button>
+        </div>
+      </article>`;
+  }
+
+  function filaLista(p) {
+    const c = pesoCobrado(p);
+    return `
+      <tr data-id="${esc(p.id)}"${p.predeterminada ? ' class="fila--principal"' : ""}>
+        <td>
+          <label class="marca-campo" title="Usar como plantilla predeterminada">
+            <input type="radio" name="predeterminada" ${p.predeterminada ? "checked" : ""}
+              aria-label="Hacer predeterminada ${esc(p.nombre)}" data-predeterminar>
+          </label>
+        </td>
+        <td><b>${esc(p.nombre)}</b>
+          ${p.predeterminada ? ' <span class="pastilla pastilla--ok">Predeterminada</span>' : ""}
+          <div class="apagado" style="margin-top:3px;font-size:12px">${medidas(p)}</div></td>
+        <td class="tabular">${kg(c.real)}</td>
+        <td class="tabular">${kg(c.volumetrico)}</td>
+        <td>
+          <span class="pastilla pastilla--${c.porVolumen ? "aviso" : "neutra"}">${kg(c.cobrado)}</span>
+          <div class="apagado" style="margin-top:3px;font-size:12px">${c.porVolumen ? "por volumen" : "por peso real"}</div>
+        </td>
+        <td>
+          <div class="grupo-botones" style="gap:6px;flex-wrap:nowrap;justify-content:flex-end">
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar</button>
+            <button class="boton boton--sutil boton--chico" type="button" data-borrar
+              ${p.predeterminada ? 'disabled title="La predeterminada no se puede eliminar: primero nombra otra."' : ""}>Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  const listaHTML = (items) => `
+    <section class="tarjeta">
+      <div class="tabla-caja scroll-fino">
+        <table>
+          <caption class="sr-only">Plantillas de paquete registradas.</caption>
+          <thead><tr>
+            <th scope="col" style="width:40px"><span class="sr-only">Predeterminada</span></th>
+            <th scope="col">Plantilla</th><th scope="col">Peso real</th>
+            <th scope="col">Volumétrico</th><th scope="col">Se cobra</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr></thead>
+          <tbody>${items.map(filaLista).join("")}</tbody>
+        </table>
+      </div>
+    </section>`;
+
+  const tarjetasHTML = (items) => `<div class="fichas">${items.map(tarjeta).join("")}</div>`;
+
+  const vacioHTML = () => `
+    <div class="vacio">
+      <h3>Todavía no hay ninguna plantilla</h3>
+      <p>Una plantilla guarda el peso y las medidas de una caja que usas seguido,
+         para no volver a capturarlas en cada guía. Y te dice por cuánto te va a
+         cobrar la paquetería antes de generarla.</p>
+      <div class="vacio__acciones">
+        <button class="boton boton--primario" type="button" data-nuevo>Agregar la primera plantilla</button>
+      </div>
+    </div>`;
+
+  const sinResultadosHTML = () => `
+    <div class="vacio">
+      <h3>Ninguna plantilla se llama “${esc(busca)}”</h3>
+      <div class="vacio__acciones">
+        <button class="boton boton--sutil" type="button" data-limpiar-busqueda>Quitar la búsqueda</button>
+      </div>
+    </div>`;
+
+  const pieHTML = (total, ini, mostrados, paginas) => `
+    <div class="tarjeta__pie">
+      <span>Mostrando <b>${ini + 1}–${ini + mostrados}</b> de <b>${total}</b></span>
+      <label class="filtros__etiqueta" for="por-pagina-plantillas">
+        <select id="por-pagina-plantillas" style="width:auto;margin-left:8px">
+          ${[10, 25, 50].map((n) =>
+            `<option value="${n}"${n === porPagina ? " selected" : ""}>${n} por página</option>`).join("")}
+        </select>
+      </label>
+      <span class="filtros__sep"></span>
+      <div class="paginacion"${paginas === 1 ? " hidden" : ""}>
+        <button type="button" data-ir="${pagina - 1}"${pagina === 1 ? " disabled" : ""}>‹</button>
+        ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+          `<button type="button" data-ir="${n}"${n === pagina ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
+        <button type="button" data-ir="${pagina + 1}"${pagina === paginas ? " disabled" : ""}>›</button>
+      </div>
+    </div>`;
+
+  function pintar() {
+    const vacia = plantillas.length === 0;
+    barra.hidden = vacia;
+    barra.querySelector(".campo-buscar").hidden = plantillas.length <= UMBRAL_LISTA;
+    document.getElementById("acciones").hidden = vacia;
+    barra.querySelectorAll("[data-modo]").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.modo === modo)));
+
+    if (vacia) { vista.innerHTML = vacioHTML(); return; }
+
+    const items = plantillas.filter(coincide);
+    document.getElementById("cuenta-plantilla").textContent = busca
+      ? `${items.length} de ${plantillas.length}`
+      : `${items.length} ${items.length === 1 ? "plantilla" : "plantillas"}`;
+
+    if (items.length === 0) { vista.innerHTML = sinResultadosHTML(); return; }
+
+    const paginas = Math.max(1, Math.ceil(items.length / porPagina));
+    pagina = Math.min(pagina, paginas);
+    const ini = (pagina - 1) * porPagina;
+    const enPagina = items.slice(ini, ini + porPagina);
+    const cuerpo = modo === "lista" ? listaHTML(enPagina) : tarjetasHTML(enPagina);
+    const pie = pieHTML(items.length, ini, enPagina.length, paginas);
+
+    vista.innerHTML = modo === "lista"
+      ? cuerpo.replace("</section>", `${pie}</section>`)
+      : `${cuerpo}<section class="tarjeta tarjeta--solo-pie">${pie}</section>`;
+  }
+
+  /* ---------- El formulario ----------
+     Lo que se captura son cinco números, y el que importa no es ninguno de
+     ellos: es cuál se va a cobrar. Por eso el resultado se calcula mientras
+     se escribe, en vez de aparecer cuando ya se guardó. */
+  const campo = (id, etiqueta, valor, extra = "") => `
+    <label class="campo" data-campo="${id}">
+      <span>${etiqueta}</span>
+      <input id="pl-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
+      <span class="campo__error" hidden></span>
+    </label>`;
+
+  const num = (id, etiqueta, valor) =>
+    campo(id, etiqueta, valor, 'type="number" min="0" step="0.1" inputmode="decimal" required');
+
+  function formulario(p) {
+    return `
+      <form id="form-plantilla" novalidate class="campos">
+        ${campo("nombre", "Nombre de la plantilla", p.nombre, 'required placeholder="Caja chica"')}
+
+        <p class="campos__titulo">Medidas de la caja</p>
+
+        <div class="campos campos--3">
+          ${num("largo", "Largo (cm)", p.largo)}
+          ${num("ancho", "Ancho (cm)", p.ancho)}
+          ${num("alto", "Alto (cm)", p.alto)}
+        </div>
+
+        ${num("peso", "Peso real (kg)", p.peso)}
+
+        <div class="aviso aviso--info aviso--bloque" id="pl-resultado"></div>
+      </form>`;
+  }
+
+  /* El aviso que se recalcula al teclear. Dice el número que va a aparecer en
+     la factura, que casi nunca es el que se acaba de escribir. */
+  function recalcular() {
+    const v = (n) => +panel.querySelector(`#pl-${n}`).value || 0;
+    const caja = { peso: v("peso"), largo: v("largo"), ancho: v("ancho"), alto: v("alto") };
+    const caj = document.getElementById("pl-resultado");
+    if (!caja.largo || !caja.ancho || !caja.alto) {
+      caj.innerHTML = "<b>Captura las tres medidas</b><p>Con ellas se calcula el peso volumétrico, que es por el que se cobra cuando supera al real.</p>";
+      return;
+    }
+    const c = pesoCobrado(caja);
+    caj.className = `aviso aviso--bloque ${c.porVolumen ? "aviso--alerta" : "aviso--ok"}`;
+    caj.innerHTML = `
+      <b>Se cobra ${kg(c.cobrado)}${c.porVolumen ? ", por volumen" : ", por peso real"}</b>
+      <p>Volumétrico ${kg(c.volumetrico)} · Real ${kg(c.real)}.
+        ${c.porVolumen
+          ? `La caja ocupa más de lo que pesa, así que se paga por el espacio. Bajar el alto a
+             ${Math.max(1, Math.floor((caja.peso * FACTOR_VOLUMETRICO) / (caja.largo * caja.ancho)))} cm
+             igualaría los dos.`
+          : "El volumen no supera al peso: no hay sobrecosto por espacio."}</p>
+      <p>${esc(desde(c))}</p>`;
+  }
+
+  let editando = null;
+
+  function abrir(p) {
+    editando = p;
+    panel.innerHTML = `
+      <div class="panel__cabeza">
+        <div><h2 id="panel-titulo">${p.id ? "Editar plantilla" : "Nueva plantilla"}</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Se podrá elegir al generar una guía.</p></div>
+        <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
+      </div>
+      <div class="panel__cuerpo scroll-fino">${formulario(p)}</div>
+      <div class="panel__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-panel>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-guardar>Guardar</button>
+      </div>`;
+    panel.querySelector("#form-plantilla").addEventListener("input", recalcular);
+    recalcular();
+    panel.showModal();
+  }
+
+  function guardar() {
+    const f = panel.querySelector("#form-plantilla");
+    const v = (n) => f.querySelector(`[name="${n}"]`).value.trim();
+
+    let falla = null;
+    const marcar = (n, mal, mensaje) => {
+      const campo = f.querySelector(`[data-campo="${n}"]`);
+      const error = campo.querySelector(".campo__error");
+      error.textContent = mal ? mensaje : "";
+      error.hidden = !mal;
+      campo.querySelector("input").setAttribute("aria-invalid", String(mal));
+      if (mal && !falla) falla = campo;
+    };
+
+    marcar("nombre", !v("nombre"), "Falta el nombre.");
+    for (const [n, etiqueta] of [["largo", "el largo"], ["ancho", "el ancho"],
+                                 ["alto", "el alto"], ["peso", "el peso"]]) {
+      marcar(n, !(+v(n) > 0), `${etiqueta[0].toUpperCase() + etiqueta.slice(1)} tiene que ser mayor que cero.`);
+    }
+    /* Dos plantillas con el mismo nombre no se distinguen en el desplegable
+       de "Generar guía", que es donde se van a usar. */
+    const repetida = plantillas.some((x) =>
+      x !== plantillas.find((y) => y.id === editando.id) &&
+      sinAcentos(x.nombre) === sinAcentos(v("nombre")));
+    if (repetida) marcar("nombre", true, "Ya existe una plantilla con ese nombre.");
+
+    if (falla) { falla.querySelector("input").focus(); return; }
+
+    const datos = { nombre: v("nombre"), peso: +v("peso"),
+                    largo: +v("largo"), ancho: +v("ancho"), alto: +v("alto") };
+    const destino = editando.id ? plantillas.find((x) => x.id === editando.id) : null;
+    if (destino) Object.assign(destino, datos);
+    else plantillas.push({ id: `p${Date.now()}`, predeterminada: plantillas.length === 0, ...datos });
+
+    panel.close();
+    pintar();
+  }
+
+  const vacio = () => ({ id: null, nombre: "", predeterminada: false, peso: "", largo: "", ancho: "", alto: "" });
+
+  /* ---------- Eventos ---------- */
+  entrada.addEventListener("input", () => {
+    busca = sinAcentos(entrada.value.trim());
+    pagina = 1;
+    pintar();
+  });
+
+  barra.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-modo]");
+    if (!b || b.dataset.modo === modo) return;
+    modo = b.dataset.modo;
+    try { localStorage.setItem(CLAVE_MODO, modo); } catch { /* modo privado */ }
+    pintar();
+  });
+
+  document.querySelector("#acciones [data-nuevo]").addEventListener("click", () => abrir(vacio()));
+
+  vista.addEventListener("click", (e) => {
+    if (e.target.closest("[data-nuevo]")) return abrir(vacio());
+    if (e.target.closest("[data-limpiar-busqueda]")) {
+      entrada.value = ""; busca = ""; pintar(); entrada.focus();
+      return;
+    }
+    const ir = e.target.closest("[data-ir]");
+    if (ir && !ir.disabled) { pagina = +ir.dataset.ir; pintar(); return; }
+
+    const fila = e.target.closest("[data-id]");
+    if (!fila) return;
+    const p = plantillas.find((x) => x.id === fila.dataset.id);
+    if (!p) return;
+
+    if (e.target.closest("[data-editar]")) return abrir(p);
+    if (e.target.closest("[data-borrar]")) return pedirConfirmacion(p);
+    if (e.target.closest("button[data-predeterminar]")) {
+      plantillas.forEach((x) => { x.predeterminada = x === p; });
+      pintar();
+    }
+  });
+
+  vista.addEventListener("change", (e) => {
+    if (e.target.matches("#por-pagina-plantillas")) {
+      porPagina = +e.target.value; pagina = 1; return pintar();
+    }
+    if (!e.target.matches("input[data-predeterminar]")) return;
+    const p = plantillas.find((x) => x.id === e.target.closest("[data-id]").dataset.id);
+    plantillas.forEach((x) => { x.predeterminada = x === p; });
+    pintar();
+  });
+
+  const confirmar = document.getElementById("confirmar");
+
+  function pedirConfirmacion(p) {
+    confirmar.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="confirmar-titulo">¿Eliminar ${esc(p.nombre)}?</h2></div>
+      <div class="dialogo__cuerpo">
+        <p>Dejará de aparecer al generar una guía. Las guías que ya se crearon con
+           estas medidas no cambian.</p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-no>Conservarla</button>
+        <button class="boton boton--peligro" type="button" data-si>Sí, eliminar</button>
+      </div>`;
+    confirmar.showModal();
+    confirmar.onclick = (ev) => {
+      if (ev.target === confirmar || ev.target.closest("[data-no]")) return confirmar.close();
+      if (!ev.target.closest("[data-si]")) return;
+      plantillas.splice(plantillas.indexOf(p), 1);
+      if (!plantillas.some((x) => x.predeterminada) && plantillas[0]) plantillas[0].predeterminada = true;
+      confirmar.close();
+      pintar();
+    };
+  }
+
+  panel.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-panel]")) return panel.close();
+    if (e.target.closest("[data-guardar]")) return guardar();
+    if (e.target === panel) panel.close();
+  });
+
+  pintar();
+}
+</script>
+</body>
+</html>

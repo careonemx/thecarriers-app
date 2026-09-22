@@ -58,6 +58,41 @@ export const origenes = [
   },
 ];
 
+/* =================================================================
+ * Plantillas de paquete.
+ *
+ * Existen para no volver a capturar peso y medidas en cada guía. Pero su
+ * valor real es otro: enseñar POR CUÁNTO van a cobrar.
+ *
+ * Las paqueterías cobran por el mayor entre el peso real y el peso
+ * volumétrico —(largo × ancho × alto) ÷ 5000 en México—, y de ahí salen los
+ * sobrepesos que nadie entiende al conciliar. Una caja grande y liviana se
+ * cobra como si pesara veinte kilos. La plantilla lo dice antes de que
+ * llegue la factura.
+ * ================================================================= */
+
+/** Divisor volumétrico. Es el que usan DHL, FedEx, Estafeta y UPS en México. */
+export const FACTOR_VOLUMETRICO = 5000;
+
+export const pesoVolumetrico = (largo, ancho, alto) =>
+  Math.round(((largo * ancho * alto) / FACTOR_VOLUMETRICO) * 100) / 100;
+
+/** El que se paga: el mayor de los dos, no el real. */
+export function pesoCobrado(p) {
+  const vol = pesoVolumetrico(p.largo, p.ancho, p.alto);
+  return { real: p.peso, volumetrico: vol, cobrado: Math.max(p.peso, vol), porVolumen: vol > p.peso };
+}
+
+export const plantillas = [
+  { id: "sobre", nombre: "Sobre", predeterminada: false, peso: 0.5, largo: 30, ancho: 22, alto: 2 },
+  { id: "caja-chica", nombre: "Caja chica", predeterminada: true, peso: 1.5, largo: 25, ancho: 20, alto: 15 },
+  { id: "caja-mediana", nombre: "Caja mediana", predeterminada: false, peso: 4, largo: 40, ancho: 30, alto: 25 },
+  { id: "caja-grande", nombre: "Caja grande", predeterminada: false, peso: 9, largo: 60, ancho: 45, alto: 40 },
+];
+
+export const plantillaPredeterminada = () =>
+  plantillas.find((p) => p.predeterminada) ?? plantillas[0] ?? null;
+
 /** El que se usa cuando nada dice lo contrario. Null si no hay ninguno. */
 export const origenPredeterminado = () =>
   origenes.find((o) => o.predeterminado) ?? origenes[0] ?? null;
