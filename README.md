@@ -25,8 +25,8 @@ sistema.html               el sistema de diseño, renderizado
 login.html                 entrar
 recuperar.html             recuperar contraseña
 
-app/pedidos.html           la pantalla de entrada: franja "Hoy" y la lista
-app/inicio.html            redirección: Inicio dejó de ser una pantalla
+app/inicio.html            la entrada: qué atender hoy y a dónde ir
+app/pedidos.html           la lista, con filtros, lote y detalle
 app/etiqueta.html          las etiquetas, a tamaño físico e imprimibles
 app/pendiente.html         nota para las pantallas del MVP sin vestir
 

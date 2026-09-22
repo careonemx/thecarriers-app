@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=1effd3ee">
-<script src="../assets/vigia.js?v=1effd3ee" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=29d276ec">
+<script src="../assets/vigia.js?v=29d276ec" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -23,8 +23,6 @@
       </button>
     </div>
   </div>
-
-  <section class="hoy" id="hoy" aria-label="Pendientes de hoy"></section>
 
   <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
 
@@ -119,14 +117,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=1effd3ee";
+import { montar, exigirSesion } from "../assets/app.js?v=29d276ec";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
-         PENDIENTES, recoleccionesHoy, detenidoMasAntiguo,
-         conexionesCaidas, reconectar, romperConexion, minutosDesdeSync,
-         origen,
+         PENDIENTES, origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=1effd3ee";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=29d276ec";
 if (exigirSesion()) {
   montar();
 
@@ -1277,7 +1273,6 @@ if (exigirSesion()) {
     document.querySelector("[data-sin-resultados]").hidden = coinciden.length > 0;
     limpiar.hidden = !hayFiltro();
     pintarFoco();
-    pintarHoy();
     revisarSeleccion();
   }
 
@@ -1394,19 +1389,6 @@ if (exigirSesion()) {
      una columna angosta. El bloque que las agrupa —"Por hacer", "Problemas"—
      da el contexto que la etiqueta no tiene que cargar. */
   const fichaFoco = document.getElementById("ficha-foco");
-  const hoy = document.getElementById("hoy");
-
-  const PLAN = {
-    hacer: { titulo: "Por hacer", cifras: ["pagados-sin-guia", "sin-recoleccion"] },
-    problema: { titulo: "Problemas", cifras: ["detenidos", "error-guia", "por-corregir"] },
-  };
-  const CORTO = {
-    "pagados-sin-guia": "Pagados sin guía",
-    "sin-recoleccion": "Sin recolección",
-    "detenidos": "Detenidos",
-    "error-guia": "Guías fallidas",
-    "por-corregir": "Por corregir",
-  };
 
   function pintarFoco() {
     fichaFoco.hidden = !foco;
@@ -1417,78 +1399,6 @@ if (exigirSesion()) {
     }
   }
   fichaFoco.addEventListener("click", () => { foco = null; aplicar(); });
-
-  const cifra = (clave, n) => `
-    <button class="cifra${n === 0 ? " cifra--cero" : ""}${
-      n > 0 && PENDIENTES[clave].grupo === "problema" ? " cifra--urge" : ""}"
-      type="button" data-pendiente="${clave}"${n === 0 ? " disabled" : ""}>
-      <b class="cifra__n">${n}</b>
-      <span class="cifra__et">${CORTO[clave]}</span>
-    </button>`;
-
-  function bloqueConexion() {
-    const caidas = conexionesCaidas();
-    if (!caidas.length) return "";
-    return `<div class="hoy__bloque">
-      <p class="hoy__titulo">Conexiones</p>
-      ${caidas.map((c) => `<div class="hoy__conexion">
-        <b>${c.nombre} · ${c.motivo} desde ${c.desde}</b>
-        <span>${c.detalle}</span>
-        <div><button class="boton boton--primario boton--chico" type="button"
-          data-reconectar="${c.id}">Reconectar</button></div>
-      </div>`).join("")}
-    </div>`;
-  }
-
-  function pintarHoy() {
-    const visibles = [...porFolio.values()].filter(pasaBase);
-    const n = Object.fromEntries(Object.keys(PENDIENTES).map((k) => [k, contarPendiente(k)]));
-    const total = Object.values(n).reduce((a, b) => a + b, 0);
-    const conexion = bloqueConexion();
-
-    /* Nada pendiente: una línea y la tabla sube. Pero si una conexión está
-       caída sigue apareciendo su bloque: es lo único que se puede hacer. */
-    if (total === 0) {
-      hoy.className = conexion ? "hoy" : "hoy hoy--vacia";
-      hoy.innerHTML = `<div class="hoy__bloque">
-        <b>Nada pendiente.</b>
-        <span>Última sincronización hace ${minutosDesdeSync} min.</span>
-      </div>${conexion}`;
-      return;
-    }
-
-    const viejo = detenidoMasAntiguo(visibles.map((it) => it.p));
-    const proxima = recoleccionesHoy[0];
-
-    hoy.className = "hoy";
-    hoy.innerHTML = `
-      <div class="hoy__bloque">
-        <p class="hoy__titulo">${PLAN.hacer.titulo}</p>
-        <div class="hoy__cifras">
-          ${PLAN.hacer.cifras.map((k) => cifra(k, n[k])).join("")}
-          <button class="cifra${recoleccionesHoy.length ? "" : " cifra--cero"}" type="button"
-            data-ir="recolecciones.html"${recoleccionesHoy.length ? "" : " disabled"}>
-            <b class="cifra__n">${recoleccionesHoy.length}</b>
-            <span class="cifra__et">Recolecciones hoy</span>
-          </button>
-        </div>
-        <div class="hoy__pie">
-          ${proxima ? `<span>Próxima: ${proxima.paqueteria} · ${proxima.ventana} · ${proxima.piezas} piezas</span>` : ""}
-          <span>Última sincronización hace ${minutosDesdeSync} min</span>
-        </div>
-      </div>
-
-      <div class="hoy__bloque">
-        <p class="hoy__titulo">${PLAN.problema.titulo}</p>
-        <div class="hoy__cifras">
-          ${PLAN.problema.cifras.map((k) => cifra(k, n[k])).join("")}
-        </div>
-        <div class="hoy__pie">
-          ${viejo ? `<span>El detenido más antiguo lleva ${viejo.dias} ${viejo.dias === 1 ? "día" : "días"}.</span>` : ""}
-        </div>
-      </div>
-      ${conexion}`;
-  }
 
   /* Enfocar: la pestaña vuelve a "Todos" porque si no, una pestaña activa
      podría esconder justo lo que el número prometió. */
@@ -1510,41 +1420,18 @@ if (exigirSesion()) {
     if (seleccionar) {
       filas.forEach((f) => { const c = f.querySelector(".sel"); if (c) c.checked = !f.hidden; });
       revisarSeleccion();
-      hoy.scrollIntoView({ block: "start", behavior: "smooth" });
     }
   }
 
-  hoy.addEventListener("click", (e) => {
-    const ir = e.target.closest("[data-ir]");
-    if (ir) { location.href = ir.dataset.ir; return; }
-
-    const re = e.target.closest("[data-reconectar]");
-    if (re) { reconectar(); pintarHoy(); return; }
-
-    const b = e.target.closest("[data-pendiente]");
-    if (!b || b.disabled) return;
-    const clave = b.dataset.pendiente;
-
-    if (clave === "detenidos") { location.href = "excepciones.html"; return; }
-
-    /* Recolección no es solo un filtro: el número promete abrir el flujo, así
-       que lo abre, ya con esas guías dentro. */
-    if (clave === "sin-recoleccion") {
-      enfocar(clave, { seleccionar: true });
-      abrirLote("recoleccion");
-      return;
-    }
-
-    enfocar(clave, { seleccionar: clave === "pagados-sin-guia" });
-  });
-
-  /* Gancho para probar el bloque de conexiones sin tener que romper nada:
-     ?conexion=shopify lo levanta, "Reconectar" lo baja. Se limpia la URL para
-     que una recarga no lo vuelva a encender. */
-  const romper = new URLSearchParams(location.search).get("conexion");
-  if (romper) {
-    romperConexion(romper);
-    history.replaceState(null, "", location.pathname + location.search.replace(/[?&]conexion=[^&]*/, "").replace(/^&/, "?"));
+  /* Acceso directo desde Inicio: ?pendiente=<clave> deja la lista filtrada, y
+     las acciones que se resuelven en lote llegan además con todo seleccionado
+     y su barra arriba. Es lo que hace que una cifra de Inicio sea un atajo y
+     no solo un enlace a la misma tabla de siempre. */
+  const AL_ENTRAR_SELECCIONAN = new Set(["pagados-sin-guia", "sin-recoleccion"]);
+  const pendienteURL = new URLSearchParams(location.search).get("pendiente");
+  if (pendienteURL && PENDIENTES[pendienteURL]) {
+    enfocar(pendienteURL, { seleccionar: AL_ENTRAR_SELECCIONAN.has(pendienteURL) });
+    if (pendienteURL === "sin-recoleccion") abrirLote("recoleccion");
   }
 
   const abrirAlEntrar = new URLSearchParams(location.search).get("pedido");

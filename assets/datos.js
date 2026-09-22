@@ -471,6 +471,66 @@ export function reconectar() {
   try { sessionStorage.removeItem(CLAVE_CAIDA); } catch { /* modo privado */ }
 }
 
+/**
+ * Antigüedad del caso más viejo de cada pendiente, en días.
+ *
+ * La fecha de la que se mide NO es la misma para todos, y esa es la parte que
+ * importa: un envío puede llevar dos semanas en ruta y estar detenido desde
+ * ayer, así que para lo detenido se mide desde el último evento que reportó
+ * la paquetería, no desde que se creó la guía ni desde que entró el pedido.
+ *
+ * Para lo que todavía no llegó a ninguna paquetería —pagados sin guía, por
+ * corregir, fallidos— no existe evento del transportista: el último hecho real
+ * es que el pedido entró, y desde ahí se cuenta.
+ */
+const FECHA_ANTIGUEDAD = {
+  "detenidos": (p) => p.envio?.detenidoDesde,
+  "sin-recoleccion": (p) => p.envio?.fecha || p.fecha,
+};
+
+export function antiguedadDe(clave) {
+  const sacarFecha = FECHA_ANTIGUEDAD[clave] ?? ((p) => p.fecha);
+  const fechas = pedidos.filter(PENDIENTES[clave].pasa).map(sacarFecha).filter(Boolean);
+  if (!fechas.length) return null;
+  const vieja = fechas.sort()[0];
+  return { fecha: vieja, dias: diasDesde(vieja) };
+}
+
+/**
+ * Cumplimiento por envío entregado.
+ *
+ * Es determinista a partir del número de guía: el prototipo se enseña y se
+ * discute, y un porcentaje que cambia en cada recarga no se puede comentar.
+ */
+const llegoATiempo = (guia) =>
+  [...String(guia)].reduce((n, ch) => (n * 31 + ch.codePointAt(0)) % 1000, 7) % 6 !== 0;
+
+/**
+ * Las cifras del periodo. Informativas: no llevan a ninguna acción, y por eso
+ * van al final y en chico.
+ *
+ * "Costo total de guías" es lo que se le pagó a las paqueterías. Sustituye a
+ * "Ingresos", que era una cifra de ventas y no decía nada de la operación.
+ */
+export function resumenPeriodo(dias) {
+  const desde = dias === null ? null : menosDias(HOY, dias);
+  const enRango = pedidos.filter((p) => !desde || p.fecha >= desde);
+  const conGuiaEnRango = enRango.filter((p) => p.envio);
+  const entregados = conGuiaEnRango.filter((p) => p.envio.estado === "Entregado");
+  const aTiempo = entregados.filter((p) => llegoATiempo(p.envio.guia)).length;
+  return {
+    pedidos: enRango.length,
+    guias: conGuiaEnRango.length,
+    aTiempoPct: entregados.length ? Math.round((aTiempo / entregados.length) * 100) : null,
+    costo: conGuiaEnRango.reduce((s, p) => s + (p.envio.costo ?? 0), 0),
+  };
+}
+
+/** Las guías creadas hoy. Es lo que se imprime al final de la jornada. */
+export const guiasDelDia = () => pedidos
+  .filter((p) => p.envio && (p.envio.fecha || p.fecha) === HOY)
+  .map((p) => p.envio.guia);
+
 /** Minutos desde la última sincronización. Fijo: no hay con qué sincronizar. */
 export const minutosDesdeSync = 4;
 

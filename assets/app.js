@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=1effd3ee";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=29d276ec";
 
 const CLAVE = "tc_sesion";
 
@@ -20,6 +20,7 @@ export const sesion = {
 };
 
 const icono = {
+  inicio: '<path d="M4 10 12 4l8 6"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
   pedidos: '<path d="M5 7h14l-1 13H6z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
   origenes: '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   plantillas: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/><path d="M12.5 13h5"/>',
@@ -60,8 +61,9 @@ const GRUPOS = [
   {
     titulo: "Operación",
     items: [
-      /* Sin "Inicio": lo pendiente vive en la franja de Pedidos, que es donde
-         se resuelve. Una pantalla aparte obligaba a saltar de ida y vuelta. */
+      /* Inicio informa y da atajos; Pedidos es donde se trabaja. Las cifras
+         de Inicio entran aquí con `?pendiente=`, ya filtradas. */
+      { id: "inicio", texto: "Inicio", href: "inicio.html" },
       { id: "pedidos", texto: "Pedidos", href: "pedidos.html", cuenta: sinGuia.length },
       { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
       { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
@@ -101,7 +103,7 @@ function lateral(activa) {
   return `
   <aside class="lateral" id="lateral">
     <div class="lateral__marca">
-      <a href="pedidos.html" aria-label="The Carriers, inicio">
+      <a href="inicio.html" aria-label="The Carriers, inicio">
         <img src="../assets/brand/lockup-white.svg" alt="The Carriers" width="113" height="22">
       </a>
       <button class="boton boton--sutil lateral__cerrar" type="button" data-cerrar-menu aria-label="Cerrar menú">

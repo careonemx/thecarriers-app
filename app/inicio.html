@@ -2,23 +2,229 @@
 <html lang="es-MX">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Pedidos · The Carriers</title>
-<!-- Inicio dejó de ser una pantalla. Lo pendiente hoy aparece en una franja
-     arriba de la tabla de Pedidos, que es donde se resuelve: tenerlo en otra
-     vista obligaba a leerlo en un lado y actuar en otro. Esta redirección
-     queda para que los enlaces viejos no se rompan. -->
-<meta http-equiv="refresh" content="0; url=pedidos.html">
-<link rel="canonical" href="pedidos.html">
-<link rel="stylesheet" href="../assets/app.css?v=1effd3ee">
-<script src="../assets/vigia.js?v=1effd3ee"></script>
+<title>Inicio · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=29d276ec">
+<script src="../assets/vigia.js?v=29d276ec" defer></script>
 </head>
-<body>
-  <main class="contenido" style="max-width:420px;margin:0 auto">
-    <p style="margin-top:80px;text-align:center">
-      Lo pendiente ahora está arriba de Pedidos.
-      <a href="pedidos.html" style="color:var(--accent-claro)">Ir ahí</a>.
-    </p>
-  </main>
+<body data-seccion="inicio">
+<main class="contenido contenido--ancho">
+
+  <!-- 1 · Encabezado -->
+  <div class="encabezado" style="margin-bottom:16px">
+    <div>
+      <h1>Inicio</h1>
+      <p class="apagado" id="resumen-dia" style="margin-top:6px;font-size:13px"></p>
+    </div>
+    <div class="encabezado__acciones">
+      <span class="apagado" style="font-size:12px" id="sync"></span>
+      <button class="boton boton--sutil" type="button" id="sincronizar">Sincronizar</button>
+    </div>
+  </div>
+
+  <!-- 2 y 3 · Por hacer hoy / Problemas. 4 · Conexiones, solo si algo falla -->
+  <div id="atencion"></div>
+
+  <!-- 5 · Accesos directos -->
+  <section class="zona">
+    <h2 class="zona__titulo">Accesos directos</h2>
+    <div class="atajos" id="atajos"></div>
+  </section>
+
+  <!-- 6 · El periodo -->
+  <section class="zona">
+    <div class="periodo__cabeza">
+      <h2 class="zona__titulo">El periodo</h2>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="0">Hoy</button>
+      <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="7">7 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="30">30 días</button>
+    </div>
+    <dl class="periodo" id="periodo"></dl>
+  </section>
+
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=29d276ec";
+import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe, resumenPeriodo,
+         conexionesCaidas, reconectar, romperConexion,
+         minutosDesdeSync, dineroMXN } from "../assets/datos.js?v=29d276ec";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  const dias = (n) => `${n} ${n === 1 ? "día" : "días"}`;
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  /* Inicio informa y reparte; Pedidos y Excepciones son donde se actúa.
+     Ninguna cifra de aquí modifica nada: cada tarjeta es un enlace que deja la
+     vista de destino ya filtrada —y, cuando la acción se resuelve en lote, ya
+     seleccionada— mediante `?pendiente=`.
+
+     Los números salen de `PENDIENTES`, el mismo objeto con el que la tabla de
+     Pedidos filtra. Si Inicio contara por su cuenta, un día diría tres y al
+     llegar habría dos, y a partir de ahí no se puede confiar en ninguno. */
+  const cuenta = (clave) => pedidos.filter(PENDIENTES[clave].pasa).length;
+  const irA = (clave) => clave === "detenidos" ? "excepciones.html" : `pedidos.html?pendiente=${clave}`;
+
+  /* Etiquetas de cinco palabras como mucho: van debajo de un número grande y
+     dentro de una columna angosta. El título de la zona da el contexto que la
+     etiqueta no tiene que cargar. */
+  const TARJETAS = {
+    hacer: [
+      { clave: "pagados-sin-guia", et: "Pagados sin guía", antiguedad: true },
+      { clave: "sin-recoleccion", et: "Guías sin recolección" },
+      { clave: "recolecciones-hoy", et: "Recolecciones de hoy" },
+    ],
+    problema: [
+      { clave: "detenidos", et: "Detenidos en paquetería", antiguedad: true },
+      { clave: "error-guia", et: "Guías no generadas", antiguedad: true },
+      { clave: "por-corregir", et: "Direcciones por corregir" },
+    ],
+  };
+
+  function tarjeta({ clave, et, antiguedad }, tono) {
+    /* Recolecciones de hoy no es un pendiente de la lista de pedidos: es una
+       agenda, y su nota es la ventana más próxima, no una antigüedad. */
+    if (clave === "recolecciones-hoy") {
+      const n = recoleccionesHoy.length;
+      const r = recoleccionesHoy[0];
+      return pintar({
+        n, et,
+        nota: r ? `${esc(r.paqueteria)} · ${esc(r.ventana)} · ${plural(r.piezas, "pieza", "piezas")}` : "",
+        href: n ? "recolecciones.html" : null, tono,
+      });
+    }
+    const n = cuenta(clave);
+    const viejo = antiguedad && n ? antiguedadDe(clave) : null;
+    return pintar({
+      n, et,
+      nota: viejo ? `el más antiguo lleva ${dias(viejo.dias)}` : "",
+      href: n ? irA(clave) : null, tono,
+    });
+  }
+
+  /* En cero deja de ser enlace: un atajo que no lleva a ningún lado es una
+     promesa rota, y un <a> no se puede deshabilitar. */
+  function pintar({ n, et, nota, href, tono }) {
+    const clases = ["tarjeta-cifra", n === 0 ? "tarjeta-cifra--cero" : `tarjeta-cifra--${tono}`].join(" ");
+    const cuerpo = `<span class="tarjeta-cifra__n">${n}</span>
+      <span class="tarjeta-cifra__et">${esc(et)}</span>
+      ${nota ? `<span class="tarjeta-cifra__nota">${nota}</span>` : ""}`;
+    return href
+      ? `<a class="${clases}" href="${href}">${cuerpo}</a>`
+      : `<div class="${clases}">${cuerpo}</div>`;
+  }
+
+  function franjaConexion() {
+    const caidas = conexionesCaidas();
+    if (!caidas.length) return "";
+    return caidas.map((c) => `<div class="franja-conexion">
+      <b>${esc(c.nombre)} · ${esc(c.motivo)} desde ${esc(c.desde)}</b>
+      <span>${esc(c.detalle)}</span>
+      <span class="franja-conexion__sep"></span>
+      <button class="boton boton--primario boton--chico" type="button"
+        data-reconectar="${esc(c.id)}">Reconectar</button>
+    </div>`).join("");
+  }
+
+  const atencion = document.getElementById("atencion");
+
+  function pintarAtencion() {
+    const pendientes = Object.keys(PENDIENTES).reduce((s, k) => s + cuenta(k), 0);
+    const conexion = franjaConexion();
+
+    /* Con todo en cero, las dos zonas se colapsan en una línea. Accesos
+       directos y periodo se quedan: no dependen de que haya pendientes. */
+    if (pendientes === 0 && recoleccionesHoy.length === 0) {
+      atencion.innerHTML = `<p class="nada-pendiente"><b>Nada pendiente.</b>
+        <span>Última sincronización hace ${minutosDesdeSync} min.</span></p>${conexion}`;
+      return;
+    }
+
+    /* Problemas se ordena por el caso más viejo: lo que lleva más tiempo
+       parado es lo que el cliente ya está esperando. */
+    const problemas = [...TARJETAS.problema].sort((a, b) =>
+      (antiguedadDe(b.clave)?.dias ?? -1) - (antiguedadDe(a.clave)?.dias ?? -1));
+
+    atencion.innerHTML = `
+      <section class="zona">
+        <h2 class="zona__titulo">Por hacer hoy</h2>
+        <div class="tarjetas">${TARJETAS.hacer.map((t) => tarjeta(t, "pendiente")).join("")}</div>
+      </section>
+      <section class="zona">
+        <h2 class="zona__titulo">Problemas</h2>
+        <div class="tarjetas">${problemas.map((t) => tarjeta(t, "alerta")).join("")}</div>
+      </section>
+      ${conexion}`;
+  }
+
+  /* Accesos directos: sin descripciones. Los dos primeros llevan a la vista ya
+     filtrada y seleccionada, que es lo que los hace atajos y no enlaces. */
+  document.getElementById("atajos").innerHTML = [
+    ["Generar guías", "pedidos.html?pendiente=pagados-sin-guia"],
+    ["Programar recolección", "pedidos.html?pendiente=sin-recoleccion"],
+    ["Ver excepciones", "excepciones.html"],
+    ["Ver cobros del periodo", "cobros.html"],
+    ["Conectar canal o paquetería", "pendiente.html?p=Configuración"],
+  ].map(([t, h]) => `<a class="boton boton--sutil boton--chico" href="${h}">${t}</a>`).join("");
+
+  /* El periodo: informativo. Por eso es una lista de definición y no botones. */
+  const periodo = document.getElementById("periodo");
+  const fichas = [...document.querySelectorAll("[data-dias]")];
+
+  function pintarPeriodo(n) {
+    const r = resumenPeriodo(n);
+    periodo.innerHTML = [
+      ["Pedidos recibidos", r.pedidos],
+      ["Guías generadas", r.guias],
+      ["Entregados a tiempo", r.aTiempoPct === null ? "—" : `${r.aTiempoPct}%`],
+      ["Costo total de guías", dineroMXN(r.costo)],
+    ].map(([et, v]) => `<div class="periodo__dato"><dt>${et}</dt><dd>${v}</dd></div>`).join("");
+  }
+
+  fichas.forEach((f) => f.addEventListener("click", () => {
+    fichas.forEach((o) => o.setAttribute("aria-pressed", String(o === f)));
+    pintarPeriodo(+f.dataset.dias);
+  }));
+
+  atencion.addEventListener("click", (e) => {
+    if (e.target.closest("[data-reconectar]")) { reconectar(); pintarAtencion(); }
+  });
+
+  /* Gancho para ver la franja de conexiones sin romper nada de verdad:
+     ?conexion=shopify la levanta y "Reconectar" la baja. La URL se limpia para
+     que una recarga no la vuelva a encender. */
+  const romper = new URLSearchParams(location.search).get("conexion");
+  if (romper) {
+    romperConexion(romper);
+    history.replaceState(null, "", location.pathname);
+  }
+
+  const resumenHoy = resumenPeriodo(0);
+  document.getElementById("resumen-dia").textContent =
+    `Hoy: ${plural(resumenHoy.pedidos, "pedido", "pedidos")} · ` +
+    `${cuenta("pagados-sin-guia")} sin guía · ` +
+    `${cuenta("detenidos")} detenidos · ` +
+    plural(recoleccionesHoy.length, "recolección", "recolecciones");
+
+  document.getElementById("sync").textContent = `Última sincronización hace ${minutosDesdeSync} min`;
+
+  document.getElementById("sincronizar").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    const texto = b.innerHTML;
+    b.setAttribute("aria-busy", "true");
+    b.innerHTML = '<span class="girador"></span>Trabajando…';
+    setTimeout(() => { b.removeAttribute("aria-busy"); b.innerHTML = texto; }, 1400);
+  });
+
+  pintarAtencion();
+  pintarPeriodo(7);
+}
+</script>
 </body>
 </html>
