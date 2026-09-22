@@ -6,14 +6,14 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=29d276ec">
-<script src="../assets/vigia.js?v=29d276ec" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=4b543af8">
+<script src="../assets/vigia.js?v=4b543af8" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
 
-  <!-- 1 · Encabezado -->
-  <div class="encabezado" style="margin-bottom:16px">
+  <!-- 1 · Encabezado: el resumen del día y el estado de la sincronización -->
+  <div class="encabezado" style="margin-bottom:22px">
     <div>
       <h1>Inicio</h1>
       <p class="apagado" id="resumen-dia" style="margin-top:6px;font-size:13px"></p>
@@ -24,22 +24,18 @@
     </div>
   </div>
 
-  <!-- 2 y 3 · Por hacer hoy / Problemas. 4 · Conexiones, solo si algo falla -->
+  <!-- 2 · Requiere tu atención · 3 · Por hacer hoy · 4 · Conexiones si falla -->
   <div id="atencion"></div>
 
-  <!-- 5 · Accesos directos -->
-  <section class="zona">
-    <h2 class="zona__titulo">Accesos directos</h2>
-    <div class="atajos" id="atajos"></div>
-  </section>
-
-  <!-- 6 · El periodo -->
+  <!-- 5 · Tu operación -->
   <section class="zona">
     <div class="periodo__cabeza">
-      <h2 class="zona__titulo">El periodo</h2>
-      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="0">Hoy</button>
-      <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="7">7 días</button>
-      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="30">30 días</button>
+      <h2 class="zona__titulo" id="rotulo-periodo">Tu operación</h2>
+      <div class="periodo__mando" role="group" aria-labelledby="rotulo-periodo">
+        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="0">Hoy</button>
+        <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="7">7 días</button>
+        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="30">30 días</button>
+      </div>
     </div>
     <dl class="periodo" id="periodo"></dl>
   </section>
@@ -47,10 +43,11 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=29d276ec";
-import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe, resumenPeriodo,
+import { montar, exigirSesion } from "../assets/app.js?v=4b543af8";
+import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
+         resumenPeriodo, comparativaPeriodo,
          conexionesCaidas, reconectar, romperConexion,
-         minutosDesdeSync, dineroMXN } from "../assets/datos.js?v=29d276ec";
+         minutosDesdeSync, dineroMXN } from "../assets/datos.js?v=4b543af8";
 if (exigirSesion()) {
   montar();
 
@@ -60,63 +57,74 @@ if (exigirSesion()) {
   const dias = (n) => `${n} ${n === 1 ? "día" : "días"}`;
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
-  /* Inicio informa y reparte; Pedidos y Excepciones son donde se actúa.
-     Ninguna cifra de aquí modifica nada: cada tarjeta es un enlace que deja la
-     vista de destino ya filtrada —y, cuando la acción se resuelve en lote, ya
-     seleccionada— mediante `?pendiente=`.
+  /* Inicio contesta tres preguntas, en este orden: qué está mal, qué hay que
+     hacer hoy, y cómo va la operación. Por eso "Requiere tu atención" es lo
+     primero y las cifras de análisis quedan al final, más chicas.
+
+     Aquí no se opera: cada tarjeta es un enlace que deja la pantalla de
+     destino ya filtrada y, cuando la acción se resuelve en lote, ya
+     seleccionada, mediante `?pendiente=`.
 
      Los números salen de `PENDIENTES`, el mismo objeto con el que la tabla de
-     Pedidos filtra. Si Inicio contara por su cuenta, un día diría tres y al
-     llegar habría dos, y a partir de ahí no se puede confiar en ninguno. */
+     Pedidos filtra. Con un predicado para contar y otro para filtrar, un día
+     la cifra dice tres y al llegar hay dos. */
   const cuenta = (clave) => pedidos.filter(PENDIENTES[clave].pasa).length;
   const irA = (clave) => clave === "detenidos" ? "excepciones.html" : `pedidos.html?pendiente=${clave}`;
 
-  /* Etiquetas de cinco palabras como mucho: van debajo de un número grande y
-     dentro de una columna angosta. El título de la zona da el contexto que la
-     etiqueta no tiene que cargar. */
+  /* La etiqueta dice QUÉ es; la acción dice QUÉ se puede hacer. Separarlas
+     evita el rótulo largo que no cabe debajo de un número grande. */
   const TARJETAS = {
-    hacer: [
-      { clave: "pagados-sin-guia", et: "Pagados sin guía", antiguedad: true },
-      { clave: "sin-recoleccion", et: "Guías sin recolección" },
-      { clave: "recolecciones-hoy", et: "Recolecciones de hoy" },
+    atencion: [
+      { clave: "error-guia", et: (n) => n === 1 ? "Guía no generada" : "Guías no generadas",
+        accion: "Revisar guía", antiguedad: true },
+      { clave: "detenidos", et: () => "Detenidos en paquetería",
+        accion: "Ver detenidos", antiguedad: true },
+      { clave: "por-corregir", et: () => "Direcciones por corregir",
+        accion: "Corregir direcciones" },
     ],
-    problema: [
-      { clave: "detenidos", et: "Detenidos en paquetería", antiguedad: true },
-      { clave: "error-guia", et: "Guías no generadas", antiguedad: true },
-      { clave: "por-corregir", et: "Direcciones por corregir" },
+    hacer: [
+      { clave: "pagados-sin-guia", et: () => "Pagados sin guía",
+        accion: "Generar guía", antiguedad: true },
+      { clave: "sin-recoleccion", et: () => "Guías sin recolección",
+        accion: "Programar recolección" },
+      { clave: "recolecciones-hoy", et: () => "Recolecciones de hoy",
+        accion: "Ver recolecciones" },
     ],
   };
 
-  function tarjeta({ clave, et, antiguedad }, tono) {
+  function tarjeta(def, tono) {
     /* Recolecciones de hoy no es un pendiente de la lista de pedidos: es una
        agenda, y su nota es la ventana más próxima, no una antigüedad. */
-    if (clave === "recolecciones-hoy") {
+    if (def.clave === "recolecciones-hoy") {
       const n = recoleccionesHoy.length;
       const r = recoleccionesHoy[0];
       return pintar({
-        n, et,
+        n, et: def.et(n), accion: def.accion,
         nota: r ? `${esc(r.paqueteria)} · ${esc(r.ventana)} · ${plural(r.piezas, "pieza", "piezas")}` : "",
         href: n ? "recolecciones.html" : null, tono,
       });
     }
-    const n = cuenta(clave);
-    const viejo = antiguedad && n ? antiguedadDe(clave) : null;
+    const n = cuenta(def.clave);
+    const viejo = def.antiguedad && n ? antiguedadDe(def.clave) : null;
     return pintar({
-      n, et,
+      n, et: def.et(n), accion: def.accion,
       nota: viejo ? `el más antiguo lleva ${dias(viejo.dias)}` : "",
-      href: n ? irA(clave) : null, tono,
+      href: n ? irA(def.clave) : null, tono,
     });
   }
 
-  /* En cero deja de ser enlace: un atajo que no lleva a ningún lado es una
-     promesa rota, y un <a> no se puede deshabilitar. */
-  function pintar({ n, et, nota, href, tono }) {
+  /* En cero deja de ser enlace y pierde su acción: no hay nada que revisar.
+     Se pinta como <div> porque un <a> no se puede deshabilitar y uno sin
+     destino sigue recibiendo foco del teclado. */
+  function pintar({ n, et, nota, accion, href, tono }) {
     const clases = ["tarjeta-cifra", n === 0 ? "tarjeta-cifra--cero" : `tarjeta-cifra--${tono}`].join(" ");
     const cuerpo = `<span class="tarjeta-cifra__n">${n}</span>
       <span class="tarjeta-cifra__et">${esc(et)}</span>
       ${nota ? `<span class="tarjeta-cifra__nota">${nota}</span>` : ""}`;
     return href
-      ? `<a class="${clases}" href="${href}">${cuerpo}</a>`
+      ? `<a class="${clases}" href="${href}">${cuerpo}
+           <span class="tarjeta-cifra__ir">${esc(accion)} <i aria-hidden="true">→</i></span>
+         </a>`
       : `<div class="${clases}">${cuerpo}</div>`;
   }
 
@@ -138,53 +146,56 @@ if (exigirSesion()) {
     const pendientes = Object.keys(PENDIENTES).reduce((s, k) => s + cuenta(k), 0);
     const conexion = franjaConexion();
 
-    /* Con todo en cero, las dos zonas se colapsan en una línea. Accesos
-       directos y periodo se quedan: no dependen de que haya pendientes. */
+    /* Con todo en cero, las dos zonas se colapsan en una línea. "Tu operación"
+       se queda: no depende de que haya pendientes. */
     if (pendientes === 0 && recoleccionesHoy.length === 0) {
       atencion.innerHTML = `<p class="nada-pendiente"><b>Nada pendiente.</b>
         <span>Última sincronización hace ${minutosDesdeSync} min.</span></p>${conexion}`;
       return;
     }
 
-    /* Problemas se ordena por el caso más viejo: lo que lleva más tiempo
-       parado es lo que el cliente ya está esperando. */
-    const problemas = [...TARJETAS.problema].sort((a, b) =>
+    /* Dentro de "Requiere tu atención" manda el caso más viejo: lo que lleva
+       más tiempo parado es lo que el cliente ya está esperando. */
+    const urgentes = [...TARJETAS.atencion].sort((a, b) =>
       (antiguedadDe(b.clave)?.dias ?? -1) - (antiguedadDe(a.clave)?.dias ?? -1));
 
     atencion.innerHTML = `
       <section class="zona">
-        <h2 class="zona__titulo">Por hacer hoy</h2>
-        <div class="tarjetas">${TARJETAS.hacer.map((t) => tarjeta(t, "pendiente")).join("")}</div>
+        <h2 class="zona__titulo">Requiere tu atención</h2>
+        <div class="tarjetas">${urgentes.map((t) => tarjeta(t, "alerta")).join("")}</div>
       </section>
       <section class="zona">
-        <h2 class="zona__titulo">Problemas</h2>
-        <div class="tarjetas">${problemas.map((t) => tarjeta(t, "alerta")).join("")}</div>
+        <h2 class="zona__titulo">Por hacer hoy</h2>
+        <div class="tarjetas">${TARJETAS.hacer.map((t) => tarjeta(t, "pendiente")).join("")}</div>
       </section>
       ${conexion}`;
   }
 
-  /* Accesos directos: sin descripciones. Los dos primeros llevan a la vista ya
-     filtrada y seleccionada, que es lo que los hace atajos y no enlaces. */
-  document.getElementById("atajos").innerHTML = [
-    ["Generar guías", "pedidos.html?pendiente=pagados-sin-guia"],
-    ["Programar recolección", "pedidos.html?pendiente=sin-recoleccion"],
-    ["Ver excepciones", "excepciones.html"],
-    ["Ver cobros del periodo", "cobros.html"],
-    ["Conectar canal o paquetería", "pendiente.html?p=Configuración"],
-  ].map(([t, h]) => `<a class="boton boton--sutil boton--chico" href="${h}">${t}</a>`).join("");
-
-  /* El periodo: informativo. Por eso es una lista de definición y no botones. */
+  /* ---------- Tu operación ---------- */
   const periodo = document.getElementById("periodo");
   const fichas = [...document.querySelectorAll("[data-dias]")];
 
+  /* La variación solo se pinta si el periodo anterior tiene datos. Con los
+     datos de ejemplo actuales casi nunca los tiene, y entonces no aparece
+     nada: un "↑ 0%" contra una ventana vacía sería un número inventado. */
+  function variacion(valor, sufijo = "%") {
+    if (valor === null || valor === undefined) return "";
+    const signo = valor > 0 ? "↑" : valor < 0 ? "↓" : "→";
+    const clase = valor > 0 ? "periodo__var--sube" : valor < 0 ? "periodo__var--baja" : "";
+    return `<span class="periodo__var ${clase}">${signo} ${Math.abs(valor)}${sufijo} vs periodo anterior</span>`;
+  }
+
   function pintarPeriodo(n) {
     const r = resumenPeriodo(n);
+    const v = comparativaPeriodo(n);
     periodo.innerHTML = [
-      ["Pedidos recibidos", r.pedidos],
-      ["Guías generadas", r.guias],
-      ["Entregados a tiempo", r.aTiempoPct === null ? "—" : `${r.aTiempoPct}%`],
-      ["Costo total de guías", dineroMXN(r.costo)],
-    ].map(([et, v]) => `<div class="periodo__dato"><dt>${et}</dt><dd>${v}</dd></div>`).join("");
+      ["Pedidos recibidos", r.pedidos, v && variacion(v.pedidos)],
+      ["Guías generadas", r.guias, v && variacion(v.guias)],
+      ["Entregados a tiempo", r.aTiempoPct === null ? "—" : `${r.aTiempoPct}%`,
+        v && variacion(v.aTiempoPct, " pts")],
+      ["Costo total de guías", dineroMXN(r.costo), v && variacion(v.costo)],
+    ].map(([et, valor, cambio]) =>
+      `<div class="periodo__dato"><dt>${et}</dt><dd>${valor}${cambio || ""}</dd></div>`).join("");
   }
 
   fichas.forEach((f) => f.addEventListener("click", () => {
@@ -212,14 +223,30 @@ if (exigirSesion()) {
     `${cuenta("detenidos")} detenidos · ` +
     plural(recoleccionesHoy.length, "recolección", "recolecciones");
 
-  document.getElementById("sync").textContent = `Última sincronización hace ${minutosDesdeSync} min`;
+  const sello = document.getElementById("sync");
+  sello.textContent = `Última sincronización hace ${minutosDesdeSync} min`;
 
-  document.getElementById("sincronizar").addEventListener("click", (e) => {
-    const b = e.currentTarget;
-    const texto = b.innerHTML;
-    b.setAttribute("aria-busy", "true");
-    b.innerHTML = '<span class="girador"></span>Trabajando…';
-    setTimeout(() => { b.removeAttribute("aria-busy"); b.innerHTML = texto; }, 1400);
+  /* La confirmación vive en el propio botón: un aviso flotante para algo que
+     se pidió desde aquí obliga a buscarlo en otro sitio de la pantalla.
+     `aria-live` lo anuncia sin robar el foco. */
+  const boton = document.getElementById("sincronizar");
+  boton.setAttribute("aria-live", "polite");
+  let volviendo;
+
+  boton.addEventListener("click", () => {
+    if (boton.hasAttribute("aria-busy")) return;
+    clearTimeout(volviendo);
+    boton.setAttribute("aria-busy", "true");
+    boton.disabled = true;
+    boton.innerHTML = '<span class="girador"></span>Sincronizando…';
+
+    setTimeout(() => {
+      boton.removeAttribute("aria-busy");
+      boton.disabled = false;
+      boton.innerHTML = 'Actualizado ahora <span aria-hidden="true">✓</span>';
+      sello.textContent = "Última sincronización hace un momento";
+      volviendo = setTimeout(() => { boton.textContent = "Sincronizar"; }, 2400);
+    }, 1100);
   });
 
   pintarAtencion();

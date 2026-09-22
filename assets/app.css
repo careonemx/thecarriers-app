@@ -652,27 +652,31 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 .conmutador button[aria-pressed="true"] { background: rgba(255,255,255,.09); color: var(--ink); }
 
 /* ---------- Inicio ----------
-   Seis zonas, de lo que exige una acción a lo que solo informa. Las dos
-   primeras son tarjetas-cifra: la tarjeta entera es el enlace, porque un
-   número de 27px con una etiqueta debajo es un blanco más grande y más obvio
-   que un botón escondido en una esquina.
+   Tres niveles de peso, no tres diseños: lo que exige atención, lo que toca
+   hacer hoy y lo que solo informa. La diferencia la llevan el tamaño de la
+   cifra, el color del borde y la densidad, no componentes distintos.
 
-   Sin iconos: el tono lo lleva el borde y el color de la cifra. Un icono en
-   cada tarjeta añade seis formas que hay que descifrar antes de leer. */
-.zona { margin-bottom: 14px; }
+   Sin iconos: un icono por tarjeta añade seis formas que hay que descifrar
+   antes de poder leer el número. */
+.zona { margin-bottom: 26px; }
+.zona:last-child { margin-bottom: 0; }
 .zona__titulo {
-  margin-bottom: 9px;
+  margin-bottom: 10px;
   color: var(--muted); font-size: 11px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase;
 }
 .tarjetas { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 
+/* La tarjeta entera es el enlace. Un número grande con su etiqueta es un
+   blanco mucho más obvio que un botón escondido en una esquina, y además
+   evita tener dos destinos distintos dentro de la misma caja. */
 .tarjeta-cifra {
-  display: grid; align-content: start; gap: 3px;
-  padding: 13px 16px 14px;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 14px 16px 13px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
   background: var(--navy-900); color: inherit; text-decoration: none;
-  transition: border-color .2s var(--curva), background .2s var(--curva);
+  transition: border-color .16s var(--curva), background .16s var(--curva),
+              transform .16s var(--curva);
 }
 .tarjeta-cifra__n {
   font-size: 27px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
@@ -681,20 +685,54 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 .tarjeta-cifra__et { font-size: 13px; }
 .tarjeta-cifra__nota { font-size: 11px; color: var(--muted); }
 
-a.tarjeta-cifra:hover { border-color: var(--hairline-fuerte); background: var(--navy); }
+/* La acción va como texto, no como botón: dentro de una tarjeta que ya es
+   pulsable, un botón compite con ella y hace dudar de dónde hay que dar clic. */
+.tarjeta-cifra__ir {
+  margin-top: auto; padding-top: 9px; border-top: 1px solid var(--hairline);
+  display: flex; align-items: center; gap: 6px;
+  color: var(--muted); font-size: 12px; font-weight: 500;
+  transition: color .16s var(--curva);
+}
+.tarjeta-cifra__ir i {
+  font-style: normal; transition: transform .16s var(--curva);
+}
 
-/* Tonos. Pendiente es trabajo normal; alerta es algo que ya se salió de
-   cauce. En cero, la cifra se apaga y la tarjeta deja de ser enlace. */
-.tarjeta-cifra--alerta { border-color: rgba(248,113,113,.28); }
-.tarjeta-cifra--alerta .tarjeta-cifra__n { color: #fca5a5; }
+a.tarjeta-cifra:hover {
+  border-color: var(--hairline-fuerte); background: var(--navy);
+  transform: translateY(-1px);
+}
+a.tarjeta-cifra:hover .tarjeta-cifra__ir { color: var(--ink); }
+a.tarjeta-cifra:hover .tarjeta-cifra__ir i { transform: translateX(2px); }
+a.tarjeta-cifra:active { transform: none; }
+
+/* El foco tiene que verse igual de claro que el hover: se navega con teclado. */
+a.tarjeta-cifra:focus-visible .tarjeta-cifra__ir { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-cifra, .tarjeta-cifra__ir i { transition: none; }
+  a.tarjeta-cifra:hover { transform: none; }
+}
+
+/* Tonos.
+
+   El rojo marca dónde mirar, no que todo esté roto. Por eso el borde es un
+   apunte —no llega a leerse como alarma— y el color fuerte se reserva para
+   la cifra, que es lo que hay que encontrar rápido. */
+.tarjeta-cifra--alerta { border-color: rgba(248, 113, 113, .2); }
+.tarjeta-cifra--alerta .tarjeta-cifra__n { color: #fca5a5; font-size: 30px; }
+a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
+
 .tarjeta-cifra--pendiente .tarjeta-cifra__n { color: var(--accent-claro); }
+
+/* En cero la cifra se apaga y la tarjeta deja de ser enlace: un atajo que no
+   lleva a ningún lado es una promesa rota. */
 .tarjeta-cifra--cero { border-color: var(--hairline); }
 .tarjeta-cifra--cero .tarjeta-cifra__n { color: var(--muted); }
 
 /* Nada pendiente: las dos zonas se colapsan en una línea. */
 .nada-pendiente {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
-  padding: 13px 18px; margin-bottom: 14px;
+  padding: 13px 18px; margin-bottom: 26px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--navy-900);
 }
 .nada-pendiente b { font-weight: 600; }
@@ -703,33 +741,41 @@ a.tarjeta-cifra:hover { border-color: var(--hairline-fuerte); background: var(--
 /* Conexiones: franja, y solo cuando algo dejó de responder. */
 .franja-conexion {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
-  padding: 12px 16px; margin-bottom: 14px;
-  border: 1px solid rgba(251,191,36,.35); border-radius: var(--r-lg);
-  background: rgba(251,191,36,.09);
+  padding: 12px 16px; margin-bottom: 26px;
+  border: 1px solid rgba(251, 191, 36, .35); border-radius: var(--r-lg);
+  background: rgba(251, 191, 36, .09);
 }
 .franja-conexion b { color: #fde68a; font-size: 14px; }
 .franja-conexion span { color: var(--muted); font-size: 12px; }
 .franja-conexion__sep { flex: 1; }
 
-/* Accesos directos: botones secundarios en fila, sin descripción. */
-.atajos { display: flex; flex-wrap: wrap; gap: 8px; }
-
-/* El periodo: informativo, más chico y sin tono. No son botones. */
+/* ---------- Tu operación ----------
+   Analítica secundaria: más compacta y sin tono, para que no compita con lo
+   que sí exige una acción. No son botones y por eso son una lista de
+   definición, no enlaces. */
 .periodo__cabeza {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 9px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
 }
-.periodo__cabeza .zona__titulo { margin-bottom: 0; margin-right: 4px; }
+.periodo__cabeza .zona__titulo { margin-bottom: 0; }
+.periodo__mando { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.periodo__mando .ficha-filtro { transition: all .16s var(--curva); }
+
 .periodo { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 .periodo__dato {
-  padding: 11px 14px;
+  padding: 8px 13px 9px;
   border: 1px solid var(--hairline); border-radius: var(--r);
   background: var(--navy-900);
 }
-.periodo__dato dt { color: var(--muted); font-size: 11px; }
+.periodo__dato dt { color: var(--muted); font-size: 11px; line-height: 1.35; }
 .periodo__dato dd {
-  margin: 3px 0 0; font-size: 19px; font-weight: 600;
+  margin: 2px 0 0; font-size: 17px; font-weight: 600; line-height: 1.2;
   letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
 }
+/* La variación solo aparece cuando el periodo anterior tiene datos de verdad:
+   comparar contra cero no es una variación. */
+.periodo__var { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.periodo__var--sube { color: var(--accent-claro); }
+.periodo__var--baja { color: #fca5a5; }
 
 /* ---------- Barra de selección múltiple ----------
    Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando
@@ -1200,7 +1246,13 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   /* Cuatro cifras cortas caben en dos columnas; una sola convierte el
      encabezado en una escalera de cuatro pantallazos. */
   .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }
-  .tarjetas, .periodo { grid-template-columns: minmax(0, 1fr); }
+  .tarjetas { grid-template-columns: minmax(0, 1fr); }
+  /* Los KPI sí caben de dos en dos: son cortos y ya son secundarios. */
+  .periodo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Objetivo táctil de 44px: los chips de 27px se fallan con el pulgar. */
+  .periodo__mando .ficha-filtro { min-height: 44px; padding-inline: 14px; }
+  .periodo__cabeza { gap: 10px; }
+  .periodo__mando { margin-left: 0; width: 100%; }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
   .encabezado h1 { font-size: 20px; }
 }

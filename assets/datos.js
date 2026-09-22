@@ -512,9 +512,8 @@ const llegoATiempo = (guia) =>
  * "Costo total de guías" es lo que se le pagó a las paqueterías. Sustituye a
  * "Ingresos", que era una cifra de ventas y no decía nada de la operación.
  */
-export function resumenPeriodo(dias) {
-  const desde = dias === null ? null : menosDias(HOY, dias);
-  const enRango = pedidos.filter((p) => !desde || p.fecha >= desde);
+function cifrasEntre(desde, hasta) {
+  const enRango = pedidos.filter((p) => p.fecha >= desde && p.fecha <= hasta);
   const conGuiaEnRango = enRango.filter((p) => p.envio);
   const entregados = conGuiaEnRango.filter((p) => p.envio.estado === "Entregado");
   const aTiempo = entregados.filter((p) => llegoATiempo(p.envio.guia)).length;
@@ -523,6 +522,39 @@ export function resumenPeriodo(dias) {
     guias: conGuiaEnRango.length,
     aTiempoPct: entregados.length ? Math.round((aTiempo / entregados.length) * 100) : null,
     costo: conGuiaEnRango.reduce((s, p) => s + (p.envio.costo ?? 0), 0),
+  };
+}
+
+export function resumenPeriodo(dias) {
+  const desde = menosDias(HOY, dias);
+  return cifrasEntre(desde, HOY);
+}
+
+/**
+ * El mismo periodo, corrido hacia atrás: los siete días anteriores a los
+ * siete que se están viendo.
+ *
+ * Devuelve null cuando en esa ventana no hubo nada. Comparar contra cero no
+ * es una variación, es una división entre cero disfrazada de porcentaje, y
+ * con datos de ejemplo de un mes la ventana anterior de "30 días" está vacía.
+ * Cuando esto devuelve null, la interfaz no enseña ninguna flecha.
+ */
+export function comparativaPeriodo(dias) {
+  const ancho = Math.max(1, dias);
+  const finAnterior = menosDias(HOY, dias + 1);
+  const iniAnterior = menosDias(HOY, dias + ancho);
+  const anterior = cifrasEntre(iniAnterior, finAnterior);
+  if (anterior.pedidos === 0) return null;
+
+  const actual = resumenPeriodo(dias);
+  const variacion = (a, b) => (b === null || a === null || b === 0 ? null : Math.round(((a - b) / b) * 100));
+  return {
+    pedidos: variacion(actual.pedidos, anterior.pedidos),
+    guias: variacion(actual.guias, anterior.guias),
+    aTiempoPct: actual.aTiempoPct === null || anterior.aTiempoPct === null
+      ? null : actual.aTiempoPct - anterior.aTiempoPct,
+    costo: variacion(actual.costo, anterior.costo),
+    desde: iniAnterior, hasta: finAnterior,
   };
 }
 
