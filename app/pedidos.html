@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=be8ca86a">
-<script src="../assets/vigia.js?v=be8ca86a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=259c75d9">
+<script src="../assets/vigia.js?v=259c75d9" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -57,9 +57,9 @@
 
       <span class="filtros__div" aria-hidden="true"></span>
       <label class="sr-only" for="fp">Filtrar por paquetería</label>
-      <select id="fp"><option value="">Toda paquetería</option></select>
+      <select id="fp"><option value="">Todas las paqueterías</option></select>
       <label class="sr-only" for="fc">Filtrar por canal</label>
-      <select id="fc"><option value="">Todo canal</option></select>
+      <select id="fc"><option value="">Todos los canales</option></select>
 
       <span class="filtros__div" aria-hidden="true"></span>
       <button class="ficha-filtro ficha-filtro--quitable" type="button" id="ficha-foco" hidden></button>
@@ -117,12 +117,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=be8ca86a";
+import { montar, exigirSesion } from "../assets/app.js?v=259c75d9";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=be8ca86a";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=259c75d9";
 if (exigirSesion()) {
   montar();
 

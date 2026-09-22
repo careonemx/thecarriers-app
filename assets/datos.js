@@ -165,7 +165,7 @@ const enviosBase = [
   { guia: "RP-4410982", canal: "WooCommerce", paqueteria: "Redpack", pedido: "#10413",
     estado: "En tránsito", original: "EN RUTA", destino: "Querétaro, QRO",
     cliente: "Martín Alcaraz", fecha: "2026-09-18", peso: 3.3, cotizado: 156.00, facturado: 156.00 },
-  { guia: "T1-88213", canal: "Tienda propia", paqueteria: "T1 Envíos", pedido: "#10411",
+  { guia: "T1-88213", canal: "Tienda propia", paqueteria: "Estafeta", via: "T1 Envíos", pedido: "#10411",
     estado: "Entregado", original: "IN_TRANSIT", destino: "Mérida, YUC",
     cliente: "Rocío Pat", fecha: "2026-09-15", peso: 0.8, cotizado: 98.00, facturado: 98.00 },
   { guia: "PX-220914", canal: "Shopify", paqueteria: "Paquetexpress", pedido: "#10409",
@@ -176,21 +176,33 @@ const enviosBase = [
   { guia: "JD01480000456", canal: "Mercado Libre", paqueteria: "DHL", pedido: "#10407",
     estado: "En tránsito", original: "Shipment in transit", destino: "León, GTO",
     cliente: "Silvia Rendón", fecha: "2026-09-17", peso: 1.9, cotizado: 167.00, facturado: 167.00 },
-  { guia: "SK-771204", canal: "Tiendanube", paqueteria: "Skydropx", pedido: "#10405",
+  { guia: "SK-771204", canal: "Tiendanube", paqueteria: "FedEx", via: "Skydropx", pedido: "#10405",
     estado: "Entregado", original: "delivered", destino: "Cancún, QROO",
     cliente: "Hotelería del Caribe", fecha: "2026-09-14", peso: 12.4, cotizado: 480.00, facturado: 480.00 },
-  { guia: "EY-9930021", canal: "Amazon", paqueteria: "EnviaYa", pedido: "#10403",
+  { guia: "EY-9930021", canal: "Amazon", paqueteria: "Redpack", via: "EnviaYa", pedido: "#10403",
     estado: "Detenido", original: "hold_at_location", destino: "Toluca, MEX",
     cliente: "Refacciones del Valle", fecha: "2026-09-15", peso: 6.7, cotizado: 233.00, facturado: 233.00,
     motivo: "Retenido en sucursal, falta documento", detenidoDesde: "2026-09-17", responsable: "Karla T." },
   { guia: "6050000998877", canal: "Tienda propia", paqueteria: "Estafeta", pedido: "#10401",
     estado: "Generada", original: "—", destino: "Veracruz, VER",
     cliente: "Pescadería del Golfo", fecha: "2026-09-19", peso: 2.0, cotizado: 143.00, facturado: null },
-  { guia: "EM-556677", canal: "WooCommerce", paqueteria: "Envíame", pedido: "#10399",
+  { guia: "EM-556677", canal: "WooCommerce", paqueteria: "DHL", via: "Envíame", pedido: "#10399",
     estado: "En tránsito", original: "in_transit", destino: "Saltillo, COAH",
     cliente: "Talleres Herrera", fecha: "2026-09-16", peso: 9.2, cotizado: 298.00, facturado: 341.00,
     diferencia: "Zona extendida: 43.00 no cotizados" },
 ];
+
+/**
+ * Plataformas de envío: T1 Envíos, Skydropx, EnviaYa, Envíame.
+ *
+ * NO son paqueterías. Revenden guías de las mismas paqueterías, así que un
+ * envío comprado por ahí lo mueve igual DHL o Estafeta: `paqueteria` es quien
+ * lo transporta y `via` es por dónde se compró la guía.
+ *
+ * La distinción cambia a quién se le reclama. El transportista falló, pero el
+ * contrato es con la plataforma: la llamada va ahí.
+ */
+export const PLATAFORMAS = ["T1 Envíos", "Skydropx", "EnviaYa", "Envíame"];
 
 /* =================================================================
  * Recolecciones.
@@ -211,14 +223,14 @@ export const recolecciones = [
   { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, recogidas: null, estado: "Confirmada", folio: "RC-8841", origen: "puebla" },
   { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, recogidas: null, estado: "Confirmada", folio: "RC-8842", origen: "puebla" },
   { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, recogidas: null, estado: "Por confirmar", folio: "RC-8845", origen: "cdmx" },
-  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, recogidas: null, estado: "Confirmada", folio: "RC-8846", origen: "puebla" },
+  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, recogidas: null, estado: "Confirmada", folio: "RC-8846", via: "Skydropx", origen: "puebla" },
   { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, recogidas: null, estado: "Recurrente", folio: "RC-8850", origen: "puebla" },
   { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, recogidas: null, estado: "Por confirmar", folio: "RC-8853", origen: "cdmx" },
 
   /* ---- Pasadas ---- */
   { fecha: "2026-09-19", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 11, recogidas: 11, estado: "Confirmada", folio: "RC-8838", origen: "puebla" },
   { fecha: "2026-09-19", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 8, recogidas: 0, estado: "Confirmada", folio: "RC-8839", origen: "puebla" },
-  { fecha: "2026-09-18", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8834", origen: "cdmx" },
+  { fecha: "2026-09-18", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8834", via: "T1 Envíos", origen: "cdmx" },
   { fecha: "2026-09-17", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 9, recogidas: 9, estado: "Confirmada", folio: "RC-8830", origen: "puebla" },
   { fecha: "2026-09-17", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 7, recogidas: 4, estado: "Confirmada", folio: "RC-8831", origen: "puebla" },
   { fecha: "2026-09-16", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 6, recogidas: 6, estado: "Confirmada", folio: "RC-8827", origen: "puebla" },
@@ -229,7 +241,7 @@ export const recolecciones = [
   { fecha: "2026-09-11", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, recogidas: 5, estado: "Confirmada", folio: "RC-8811", origen: "puebla" },
   { fecha: "2026-09-10", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 7, recogidas: 7, estado: "Confirmada", folio: "RC-8807", origen: "cdmx" },
   { fecha: "2026-09-09", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 10, recogidas: 10, estado: "Recurrente", folio: "RC-8803", origen: "puebla" },
-  { fecha: "2026-09-08", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8799", origen: "puebla" },
+  { fecha: "2026-09-08", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8799", via: "Skydropx", origen: "puebla" },
   { fecha: "2026-09-05", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 6, recogidas: 6, estado: "Confirmada", folio: "RC-8790", origen: "puebla" },
   { fecha: "2026-09-04", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, recogidas: 12, estado: "Recurrente", folio: "RC-8786", origen: "puebla" },
   { fecha: "2026-09-03", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 4, recogidas: 4, estado: "Confirmada", folio: "RC-8782", origen: "cdmx" },
@@ -499,7 +511,7 @@ const pedidosDeEnvios = enviosBase.map((e) => ({
   campos: camposDeCiudad(e.pedido, e.destino, e.cliente),
   pago: "Pagado",
   envio: {
-    guia: e.guia, paqueteria: e.paqueteria, estado: e.estado, original: e.original,
+    guia: e.guia, paqueteria: e.paqueteria, via: e.via ?? null, estado: e.estado, original: e.original,
     peso: e.peso, costo: e.facturado ?? e.cotizado, cotizado: e.cotizado, facturado: e.facturado,
     motivo: e.motivo, detenidoDesde: e.detenidoDesde, responsable: e.responsable,
     diferencia: e.diferencia,
@@ -755,6 +767,7 @@ export const envios = pedidos
     pedido: p.folio,
     estado: p.envio.estado === "Creada" ? "En tránsito" : p.envio.estado,
     original: p.envio.original ?? (p.envio.paqueteria === "DHL" ? "Shipment picked up" : "In transit"),
+    via: p.envio.via ?? null,
     destino: p.ciudad,
     cliente: p.cliente.nombre,
     fecha: p.fecha,

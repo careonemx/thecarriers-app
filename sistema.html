@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=be8ca86a">
+<link rel="stylesheet" href="assets/app.css?v=259c75d9">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=be8ca86a" defer></script>
+<script src="assets/vigia.js?v=259c75d9" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -733,6 +733,9 @@
         <div class="regla"><b>Registro neutro</b><span>La interfaz describe, no conversa. "Recolecciones sin cumplir", no "citas que no pasaron"; "Piezas sin recoger", no "piezas que se quedaron en tu bodega". El tono coloquial envejece mal, no se traduce y suena a nota interna.</span></div>
         <div class="regla"><b>Los desplegables se llenan con lo que hay</b><span>No con una lista fija. Una opción que nunca devuelve resultados es una opción que estorba y hace dudar del filtro.</span></div>
         <div class="regla"><b>Un filtro que no aplica se esconde</b><span>El resultado de una recolección solo existe en el historial: una que todavía no ocurre no tiene ninguno. Ofrecerlo en la otra pestaña promete un corte imposible.</span></div>
+        <div class="regla"><b>Una tabla, aunque haya grupos</b><span>Dos <code>&lt;table&gt;</code> miden sus columnas por separado: "Folio" empieza en un sitio el lunes y en otro el miércoles, y todo se ve descuadrado sin que ninguna esté mal. El grupo va como fila con <code>colspan</code>, no como tabla aparte.</span></div>
+        <div class="regla"><b>Plataforma no es paquetería</b><span>T1 Envíos, Skydropx, EnviaYa y Envíame revenden guías: quien recoge y entrega sigue siendo DHL o Estafeta. Se guardan por separado —<code>paqueteria</code> y <code>via</code>— porque cambia a quién se le reclama: el transportista falló, pero el contrato es con la plataforma.</span></div>
+        <div class="regla"><b>"Todas las", no "Toda"</b><span>En un desplegable de filtro, el plural es como se lee: "Todas las paqueterías", no "Toda paquetería". La forma corta suena a formulario oficial.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

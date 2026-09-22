@@ -954,12 +954,13 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 }
 .acciones-fila .boton { min-width: 104px; justify-content: center; white-space: nowrap; }
 
-.dia-recoleccion + .dia-recoleccion { border-top: 1px solid var(--hairline); }
-.dia-recoleccion__cabeza {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 12px; flex-wrap: wrap; padding: 13px 18px 10px;
+/* El día, como fila que ocupa el ancho de la tabla. */
+.tabla-reco .fila-dia th {
+  padding-top: 18px; text-align: left;
+  color: var(--ink); font-size: 13px; font-weight: 600;
+  text-transform: none; letter-spacing: 0;
 }
-.dia-recoleccion__cabeza b { font-size: 14px; }
+.tabla-reco .fila-dia:first-child th { padding-top: 12px; }
 
 /* ---------- Ficha ----------
    Tarjeta de un registro que se administra: una dirección de origen, una

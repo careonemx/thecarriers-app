@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=be8ca86a">
-<script src="../assets/vigia.js?v=be8ca86a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=259c75d9">
+<script src="../assets/vigia.js?v=259c75d9" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -44,7 +44,7 @@
         <label class="sr-only" for="q-reco">Buscar</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="q-reco" autocomplete="off" placeholder="Folio, paquetería u origen">
+        <input type="search" id="q-reco" autocomplete="off" placeholder="Folio, paquetería, plataforma u origen">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
@@ -56,14 +56,19 @@
 
       <span class="filtros__div" aria-hidden="true"></span>
       <label class="sr-only" for="f-paq">Paquetería</label>
-      <select id="f-paq"><option value="">Toda paquetería</option></select>
+      <select id="f-paq"><option value="">Todas las paqueterías</option></select>
       <label class="sr-only" for="f-org">Origen</label>
-      <select id="f-org"><option value="">Todo origen</option></select>
+      <select id="f-org"><option value="">Todos los orígenes</option></select>
+      <label class="sr-only" for="f-via">Comprada en</label>
+      <select id="f-via">
+        <option value="">Directo y plataformas</option>
+        <option value="directo">Solo directo</option>
+      </select>
       <label class="sr-only" for="f-ven">Ventana</label>
-      <select id="f-ven"><option value="">Toda ventana</option></select>
+      <select id="f-ven"><option value="">Todas las ventanas</option></select>
       <label class="sr-only" for="f-res">Resultado</label>
       <select id="f-res" hidden>
-        <option value="">Todo resultado</option>
+        <option value="">Todos los resultados</option>
         <option value="completa">Completas</option>
         <option value="parcial">Incompletas</option>
         <option value="fallida">Sin cumplir</option>
@@ -79,10 +84,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=be8ca86a";
+import { montar, exigirSesion } from "../assets/app.js?v=259c75d9";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
-         origenes, menosDias, HOY } from "../assets/datos.js?v=be8ca86a";
+         origenes, menosDias, HOY } from "../assets/datos.js?v=259c75d9";
 if (exigirSesion()) {
   montar();
 
@@ -110,6 +115,7 @@ if (exigirSesion()) {
   const buscar = document.getElementById("q-reco");
   const fPaq = document.getElementById("f-paq");
   const fOrg = document.getElementById("f-org");
+  const fVia = document.getElementById("f-via");
   const fVen = document.getElementById("f-ven");
   const fRes = document.getElementById("f-res");
   const limpiar = document.getElementById("limpiar-filtros");
@@ -122,11 +128,14 @@ if (exigirSesion()) {
     [...new Set(recolecciones.map(saca))].sort()
       .forEach((v) => sel.add(new Option(v, v)));
   }
+  /* Solo las plataformas que de verdad se usan, no la lista entera. */
+  [...new Set(recolecciones.map((r) => r.via).filter(Boolean))].sort()
+    .forEach((v) => fVia.add(new Option(v, v)));
 
   const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() ||
-                             fPaq.value || fOrg.value || fVen.value || fRes.value);
+                             fPaq.value || fOrg.value || fVen.value || fVia.value || fRes.value);
 
   function pasa(r) {
     if (desde.value && r.fecha < desde.value) return false;
@@ -134,9 +143,11 @@ if (exigirSesion()) {
     if (fPaq.value && r.paqueteria !== fPaq.value) return false;
     if (fOrg.value && nombreOrigen(r.origen) !== fOrg.value) return false;
     if (fVen.value && r.ventana !== fVen.value) return false;
+    if (fVia.value === "directo" && r.via) return false;
+    if (fVia.value && fVia.value !== "directo" && r.via !== fVia.value) return false;
     if (fRes.value && resultadoRecoleccion(r).clave !== fRes.value) return false;
     const q = sinAcentos(buscar.value.trim());
-    if (q && !sinAcentos([r.folio, r.paqueteria, nombreOrigen(r.origen), r.ventana].join(" ")).includes(q)) return false;
+    if (q && !sinAcentos([r.folio, r.paqueteria, r.via ?? "", nombreOrigen(r.origen), r.ventana].join(" ")).includes(q)) return false;
     return true;
   }
 
@@ -202,36 +213,49 @@ if (exigirSesion()) {
     const porDia = {};
     for (const r of lista) (porDia[r.fecha] ||= []).push(r);
 
-    return Object.entries(porDia).map(([fecha, dia]) => `
-      <div class="dia-recoleccion">
-        <div class="dia-recoleccion__cabeza">
-          <b>${largo(fecha)}${fecha === HOY ? " · Hoy" : ""}</b>
-          <span class="apagado" style="font-size:12px">
-            ${dia.reduce((s, r) => s + r.piezas, 0)} piezas · ${plural(dia.length, "recolección", "recolecciones")}</span>
-        </div>
-        <div class="tabla-caja scroll-fino">
-          <table>
-            <caption class="sr-only">Recolecciones del ${largo(fecha)}</caption>
-            <thead><tr>
-              <th scope="col">Paquetería</th><th scope="col">Origen</th><th scope="col">Ventana</th>
-              <th scope="col">Piezas</th><th scope="col">Folio</th><th scope="col">Estado</th>
-              <th scope="col"><span class="sr-only">Acciones</span></th>
-            </tr></thead>
-            <tbody>
-              ${dia.map((r) => `<tr>
-                <td><b>${esc(r.paqueteria)}</b></td>
-                <td>${esc(nombreOrigen(r.origen))}</td>
-                <td class="tabular">${esc(r.ventana)}</td>
-                <td class="tabular">${r.piezas}</td>
-                <td class="mono apagado">${esc(r.folio)}</td>
-                <td><span class="pastilla pastilla--${TONO_ESTADO[r.estado]}">${esc(r.estado)}</span></td>
-                <td style="text-align:right">
-                  <button class="boton boton--sutil boton--chico" type="button">Cancelar</button></td>
-              </tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>`).join("");
+    /* Una sola tabla, con el día como fila que ocupa el ancho.
+
+       Antes cada día era su propia <table>, así que cada una medía sus
+       columnas por separado: "Folio" empezaba en un sitio el lunes y en otro
+       el miércoles, y la pantalla se veía descuadrada sin que nada estuviera
+       mal por separado. */
+    const filas = Object.entries(porDia).map(([fecha, dia]) => `
+      <tr class="fila-dia">
+        <th scope="colgroup" colspan="7">
+          ${largo(fecha)}${fecha === HOY ? " · Hoy" : ""}
+          <span class="apagado" style="font-weight:400">
+            · ${dia.reduce((s, r) => s + r.piezas, 0)} piezas ·
+            ${plural(dia.length, "recolección", "recolecciones")}</span>
+        </th>
+      </tr>
+      ${dia.map((r) => `<tr>
+        <td><b>${esc(r.paqueteria)}</b></td>
+        <td>${r.via ? esc(r.via) : "<span class=\"apagado\">Directo</span>"}</td>
+        <td>${esc(nombreOrigen(r.origen))}</td>
+        <td class="tabular">${esc(r.ventana)}</td>
+        <td class="tabular">${r.piezas}</td>
+        <td class="mono apagado">${esc(r.folio)}</td>
+        <td style="text-align:right">
+          <button class="boton boton--sutil boton--chico" type="button">Cancelar</button></td>
+      </tr>`).join("")}`).join("");
+
+    return `
+      <div class="tabla-caja scroll-fino">
+        <table class="tabla-reco">
+          <caption class="sr-only">Recolecciones programadas, agrupadas por día.</caption>
+          <thead><tr>
+            <th scope="col">Paquetería</th><th scope="col">Comprada en</th>
+            <th scope="col">Origen</th><th scope="col">Ventana</th>
+            <th scope="col">Piezas</th><th scope="col">Folio</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+      <div class="tarjeta__pie">
+        <span><b>${lista.length}</b> ${lista.length === 1 ? "recolección programada" : "recolecciones programadas"} ·
+          ${lista.reduce((s, r) => s + r.piezas, 0)} piezas</span>
+      </div>`;
   }
 
   /* ---------- Historial: qué pasó de verdad ---------- */
@@ -253,12 +277,13 @@ if (exigirSesion()) {
 
     return `
       <div class="tabla-caja scroll-fino">
-        <table>
+        <table class="tabla-reco">
           <caption class="sr-only">Recolecciones pasadas y su resultado.</caption>
           <thead><tr>
-            <th scope="col">Fecha</th><th scope="col">Paquetería</th><th scope="col">Origen</th>
-            <th scope="col">Ventana</th><th scope="col">Programadas</th>
-            <th scope="col">Recogidas</th><th scope="col">Resultado</th>
+            <th scope="col">Fecha</th><th scope="col">Paquetería</th>
+            <th scope="col">Comprada en</th><th scope="col">Origen</th>
+            <th scope="col">Programadas</th><th scope="col">Recogidas</th>
+            <th scope="col">Resultado</th>
           </tr></thead>
           <tbody>
             ${enPagina.map((r) => {
@@ -266,9 +291,10 @@ if (exigirSesion()) {
               return `<tr>
                 <td>${esc(corta(r.fecha))}
                   <div class="mono apagado" style="margin-top:3px;font-size:11px">${esc(r.folio)}</div></td>
-                <td><b>${esc(r.paqueteria)}</b></td>
+                <td><b>${esc(r.paqueteria)}</b>
+                  <div class="apagado" style="margin-top:3px;font-size:11px">${esc(r.ventana)}</div></td>
+                <td>${r.via ? esc(r.via) : '<span class="apagado">Directo</span>'}</td>
                 <td>${esc(nombreOrigen(r.origen))}</td>
-                <td class="tabular">${esc(r.ventana)}</td>
                 <td class="tabular">${r.piezas}</td>
                 <td class="tabular"${r.recogidas < r.piezas ? ' style="color:#fca5a5"' : ""}>${r.recogidas}</td>
                 <td><span class="pastilla pastilla--${res.tono}">${esc(res.texto)}</span></td>
@@ -337,11 +363,11 @@ if (exigirSesion()) {
     b.addEventListener("click", () => { vista = b.dataset.vista; pintar(); }));
 
   const alFiltrar = () => { pagina = 1; pintar(); };
-  [desde, hasta, fPaq, fOrg, fVen, fRes].forEach((c) => c.addEventListener("change", alFiltrar));
+  [desde, hasta, fPaq, fOrg, fVen, fVia, fRes].forEach((c) => c.addEventListener("change", alFiltrar));
   buscar.addEventListener("input", alFiltrar);
   limpiar.addEventListener("click", () => {
     desde.value = hasta.value = "";
-    buscar.value = fPaq.value = fOrg.value = fVen.value = fRes.value = "";
+    buscar.value = fPaq.value = fOrg.value = fVen.value = fVia.value = fRes.value = "";
     alFiltrar();
   });
 

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Tracking · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=be8ca86a">
-<script src="../assets/vigia.js?v=be8ca86a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=259c75d9">
+<script src="../assets/vigia.js?v=259c75d9" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
@@ -32,7 +32,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="q-detenidos" autocomplete="off"
-               placeholder="Guía, cliente, paquetería o destino">
+               placeholder="Guía, cliente, paquetería, plataforma o destino">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
@@ -74,9 +74,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=be8ca86a";
+import { montar, exigirSesion } from "../assets/app.js?v=259c75d9";
 import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta,
-         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=be8ca86a";
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=259c75d9";
 if (exigirSesion()) {
   montar();
 
@@ -94,7 +94,7 @@ if (exigirSesion()) {
 
   /* Se busca por lo que alguien tiene a mano cuando llama la paquetería o el
      cliente: el número de guía, el nombre, la ciudad o el motivo. */
-  const texto = (e) => sinAcentos([e.guia, e.cliente, e.paqueteria, e.destino, e.motivo, e.original].join(" "));
+  const texto = (e) => sinAcentos([e.guia, e.cliente, e.paqueteria, e.via ?? "", e.destino, e.motivo, e.original].join(" "));
 
   const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim());
 
@@ -127,7 +127,8 @@ if (exigirSesion()) {
       <tr data-guia="${esc(e.guia)}">
         <td>
           <a class="mono" href="envio.html?guia=${encodeURIComponent(e.guia)}">${esc(e.guia)}</a>
-          <div style="margin-top:4px;font-size:12px"><b>${esc(e.paqueteria)}</b></div>
+          <div style="margin-top:4px;font-size:12px"><b>${esc(e.paqueteria)}</b>${
+            e.via ? ` <span class="apagado">vía ${esc(e.via)}</span>` : ""}</div>
           <div class="apagado" style="font-size:12px">${esc(e.destino)}</div>
         </td>
         <td style="max-width:34ch">
