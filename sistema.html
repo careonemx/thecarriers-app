@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=a8786376">
+<link rel="stylesheet" href="assets/app.css?v=695fbcf6">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=a8786376" defer></script>
+<script src="assets/vigia.js?v=695fbcf6" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -742,6 +742,11 @@
         <div class="regla"><b>Resultados agrupados por tipo</b><span>Un número largo puede ser una guía o un folio. En una lista plana hay que adivinar qué es cada fila; agrupada, se ve de un vistazo y cada grupo dice a dónde lleva.</span></div>
         <div class="regla"><b>Escape cierra y se queda cerrado</b><span>Al devolver el foco al campo, el manejador de <code>focus</code> volvía a abrir el panel: parpadeaba y no había forma de cerrarlo con el teclado. Se recuerda que se cerró a propósito hasta que alguien vuelva a escribir.</span></div>
         <div class="regla"><b>Un panel no hereda el ancho de su disparador</b><span>Anclado al buscador, en el móvil medía 116px y no cabía ni un folio. Se sale a la pantalla completa cuando el ancla es demasiado estrecha.</span></div>
+        <div class="regla"><b>Modelar como está escrito</b><span>Un criterio humano en forma de orden de preferencia con excepciones no se traduce a "si A y B entonces C": la traducción hay que mantenerla cada vez que quien decide cambie de opinión. La interfaz toma la forma del documento, no al revés.</span></div>
+        <div class="regla"><b>El porqué viaja con la regla</b><span>"UPS es alternativa" no impide que alguien la suba al primer puesto. "Ha tenido incidencias: no entra sola" sí. Sin el motivo, un criterio que costó meses de incidencias se deshace en un clic.</span></div>
+        <div class="regla"><b>Una regla que no se prueba no se usa</b><span>Nadie cambia algo que decide por él sin ver antes qué decide. Al lado de los ajustes va un caso de prueba que muestra el resultado y, debajo, por qué: una regla que no se puede explicar tampoco se puede corregir.</span></div>
+        <div class="regla"><b>Un interruptor cambia la decisión, no el texto</b><span>Si la casilla dice "sin esto ganaría la más barata", apagarla tiene que hacer ganar a la más barata. Cambiar solo la redacción es mentir con la interfaz.</span></div>
+        <div class="regla"><b>Lo técnico se pliega, el estado se enseña</b><span>Lo que hace falta saber de una conexión es si funciona, no cuál es su token. Las credenciales van plegadas: quien las necesita sabe buscarlas y quien no, no tiene por qué verlas.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

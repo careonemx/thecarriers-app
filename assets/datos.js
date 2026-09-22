@@ -83,6 +83,118 @@ export const enlaceRastreo = (paqueteria, guia) => {
 };
 
 /* =================================================================
+ * Reglas de selección de paquetería.
+ *
+ * No son un árbol de condiciones: son un ORDEN DE PREFERENCIA con
+ * excepciones, que es como lo tiene escrito quien decide hoy. Modelarlo como
+ * "si A y B entonces C" obligaría a traducir su criterio a algo que no es, y
+ * a mantener esa traducción cada vez que cambie de opinión.
+ *
+ * Cada paquetería tiene un papel y un porqué. El porqué no es adorno: es lo
+ * único que le explica a quien llegue después por qué UPS no sube al segundo
+ * puesto aunque salga más barata.
+ * ================================================================= */
+
+export const PAPELES = {
+  preferida:   { etiqueta: "Preferida",   ayuda: "La primera opción siempre que se pueda." },
+  alternativa: { etiqueta: "Alternativa", ayuda: "Entra cuando la preferida no conviene." },
+  evitar:      { etiqueta: "Evitar",      ayuda: "Solo si no queda otra." },
+  "no-usar":   { etiqueta: "No usar",     ayuda: "Nunca, aunque sea la más barata." },
+};
+
+export const reglasPaqueteria = {
+  orden: [
+    { paqueteria: "DHL", papel: "preferida",
+      porque: "Es la de siempre. Entrega la semana siguiente si la guía sale jueves o viernes, y eso está bien." },
+    { paqueteria: "Paquetexpress", papel: "alternativa",
+      porque: "" },
+    { paqueteria: "UPS", papel: "alternativa",
+      porque: "Suele salir más barata, pero ha tenido incidencias: no entra sola, se compara." },
+    { paqueteria: "99minutos", papel: "evitar",
+      porque: "Problemas de recolección en el almacén y guías que hubo que cancelar." },
+    { paqueteria: "FedEx", papel: "evitar",
+      porque: "Solo si el cliente la pide. Además admite direcciones muy cortas." },
+    { paqueteria: "AMPM", papel: "no-usar",
+      porque: "Incidencias difíciles de resolver." },
+  ],
+
+  /* Lo que hace que la preferida ceda el sitio. Mientras nada de esto pase,
+     se queda: es la regla de seguridad. */
+  cambiarSi: { costoMayorA: 300, zonaExtendida: true },
+
+  /* El corazón del documento: la preferida gana aunque otra sea más barata.
+     Sin esto, cualquier motor elegiría siempre la más barata y contradiría
+     lo que decidió una persona con más contexto que el motor. */
+  mandaLaPreferida: true,
+};
+
+/**
+ * Qué paquetería saldría y POR QUÉ. Lo segundo importa tanto como lo primero:
+ * una regla que no se puede explicar no se puede corregir.
+ */
+export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendida = false } = {}) {
+  const r = reglasPaqueteria;
+  const usable = (o) => o.papel !== "no-usar";
+  const preferida = r.orden.find((o) => o.papel === "preferida" && usable(o));
+
+  const precio = (nombre) => precioDe(nombre, peso);
+  const costoPref = costoPreferida ?? (preferida ? precio(preferida.paqueteria) : null);
+
+  const caro = costoPref !== null && costoPref > r.cambiarSi.costoMayorA;
+  const disparado = (r.cambiarSi.zonaExtendida && zonaExtendida && caro) || (!r.cambiarSi.zonaExtendida && caro);
+
+  /* Con la regla de seguridad puesta, la preferida se queda mientras nada la
+     obligue a ceder. Sin ella, compite por precio como una más: el
+     interruptor tiene que cambiar la decisión, no solo el texto. */
+  if (preferida && !disparado) {
+    const rivales = r.orden.filter((o) => o.papel === "alternativa" && usable(o))
+      .map((o) => ({ ...o, costo: precio(o.paqueteria) }))
+      .filter((o) => o.costo !== null && o.costo < costoPref)
+      .sort((a, b) => a.costo - b.costo);
+
+    if (!r.mandaLaPreferida && rivales.length) {
+      const barata = rivales[0];
+      return {
+        elegida: barata.paqueteria,
+        costo: barata.costo,
+        porque: `Sin la regla de seguridad gana el precio: ${barata.paqueteria} sale más barata que ` +
+                `${preferida.paqueteria} y por eso se lleva el envío.`,
+        alternativas: [{ ...preferida, costo: costoPref }, ...rivales.slice(1, 3)],
+      };
+    }
+
+    return {
+      elegida: preferida.paqueteria,
+      costo: costoPref,
+      porque: r.mandaLaPreferida
+        ? `${preferida.paqueteria} es la preferida y nada obliga a cambiar, así que se queda aunque otra salga más barata.`
+        : `${preferida.paqueteria} es la preferida y además ninguna alternativa sale más barata.`,
+      alternativas: [],
+    };
+  }
+
+  /* Se cambió: se comparan las alternativas por costo y plazo, y si no hay
+     ninguna se baja a las de evitar antes que dejar el pedido sin guía. */
+  const candidatas = ["alternativa", "evitar"].flatMap((papel) =>
+    r.orden.filter((o) => o.papel === papel)
+      .map((o) => ({ ...o, costo: precio(o.paqueteria), plazo: TARIFAS[o.paqueteria]?.plazo ?? 9 }))
+      .filter((o) => o.costo !== null)
+      .sort((a, b) => (a.costo + a.plazo * 20) - (b.costo + b.plazo * 20)));
+
+  const elegida = candidatas[0];
+  return {
+    elegida: elegida?.paqueteria ?? null,
+    costo: elegida?.costo ?? null,
+    porque: elegida
+      ? `${preferida?.paqueteria ?? "La preferida"} se descartó porque ${
+          zonaExtendida ? "es zona extendida y " : ""}su costo pasa de ${r.cambiarSi.costoMayorA}. ` +
+        `Entre las alternativas, ${elegida.paqueteria} da la mejor combinación de costo y plazo.`
+      : "No hay ninguna paquetería disponible con estas reglas.",
+    alternativas: candidatas.slice(1, 4),
+  };
+}
+
+/* =================================================================
  * Plantillas de paquete.
  *
  * Existen para no volver a capturar peso y medidas en cada guía. Pero su
@@ -1025,13 +1137,18 @@ export const ladas = [
  * carga, porque un prototipo cuyas cifras bailan no se puede discutir.
  * --------------------------------------------------------------- */
 const TARIFAS = {
-  "Estafeta":   { base: 46, servicio: "Terrestre",     dias: "2 a 3 días" },
-  "Redpack":    { base: 52, servicio: "Express",       dias: "2 a 4 días" },
-  "T1 Envíos":  { base: 58, servicio: "Estándar",      dias: "3 a 5 días" },
-  "DHL":        { base: 72, servicio: "Express",       dias: "1 a 2 días" },
-  "UPS":        { base: 95, servicio: "Express Saver", dias: "1 a 2 días" },
-  "FedEx":      { base: 88, servicio: "Prioritario",   dias: "1 día" },
+  "Estafeta":      { base: 46, servicio: "Terrestre",     dias: "2 a 3 días", plazo: 3 },
+  "99minutos":     { base: 44, servicio: "Nacional",      dias: "2 a 4 días", plazo: 4 },
+  "Redpack":       { base: 52, servicio: "Express",       dias: "2 a 4 días", plazo: 4 },
+  "AMPM":          { base: 55, servicio: "Estándar",      dias: "3 a 5 días", plazo: 5 },
+  "T1 Envíos":     { base: 58, servicio: "Estándar",      dias: "3 a 5 días", plazo: 5 },
+  "Paquetexpress": { base: 64, servicio: "Terrestre",     dias: "2 a 4 días", plazo: 4 },
+  "DHL":           { base: 72, servicio: "Express",       dias: "1 a 2 días", plazo: 2 },
+  "FedEx":         { base: 88, servicio: "Prioritario",   dias: "1 día",      plazo: 1 },
+  "UPS":           { base: 95, servicio: "Express Saver", dias: "1 a 2 días", plazo: 2 },
 };
+
+export const PAQUETERIAS = Object.keys(TARIFAS);
 
 /** El precio de UNA paquetería. `cotizar` recorta a las cuatro más baratas,
  *  así que buscar ahí dentro devolvía el precio de otra. */

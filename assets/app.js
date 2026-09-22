@@ -10,7 +10,7 @@
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=a8786376";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=695fbcf6";
 
 const CLAVE = "tc_sesion";
 
@@ -87,7 +87,7 @@ const GRUPOS = [
       { id: "origenes", texto: "Direcciones de Origen", href: "origenes.html" },
       { id: "plantillas", texto: "Plantillas", href: "plantillas.html" },
       { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },
-      { id: "ajustes", texto: "Configuración", href: "pendiente.html?p=Configuración", pendiente: true },
+      { id: "ajustes", texto: "Configuración", href: "configuracion.html" },
     ],
   },
 ];

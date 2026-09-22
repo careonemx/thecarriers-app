@@ -993,6 +993,69 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 
 @media (prefers-reduced-motion: reduce) { .hallazgo { transition: none; } }
 
+/* ---------- Orden de preferencia ----------
+   Una fila por paquetería: su puesto, su papel y su porqué. El porqué va en
+   la misma fila y no escondido tras un icono: es lo que evita que alguien
+   "arregle" el orden y tire por tierra un criterio que costó meses de
+   incidencias. */
+.orden__fila {
+  display: grid; align-items: center; gap: 12px;
+  grid-template-columns: 34px minmax(140px, 1fr) 150px minmax(180px, 2fr) auto;
+  padding: 12px 18px;
+}
+.orden__fila + .orden__fila { border-top: 1px solid var(--hairline); }
+
+/* El papel se ve antes de leerlo: una barra a la izquierda. */
+.orden__fila { position: relative; }
+.orden__fila::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+}
+.orden__fila--preferida::before { background: var(--accent); }
+.orden__fila--alternativa::before { background: var(--hairline-fuerte); }
+.orden__fila--evitar::before { background: rgba(251, 191, 36, .6); }
+.orden__fila--no-usar::before { background: rgba(248, 113, 113, .6); }
+
+.orden__puesto {
+  display: grid; place-items: center; width: 26px; height: 26px;
+  border-radius: 999px; border: 1px solid var(--hairline);
+  color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.orden__fila--no-usar .orden__quien b { text-decoration: line-through; color: var(--muted); }
+.orden__quien b { display: block; font-size: 14px; }
+.orden__quien span { display: block; margin-top: 2px; font-size: 11px; }
+.orden__mover { display: flex; gap: 4px; }
+.orden__mover .boton { min-width: 32px; justify-content: center; }
+
+/* ---------- Veredicto del probador ----------
+   Unas reglas que no se pueden probar no se usan. Aquí se ve la decisión y,
+   debajo, por qué: una regla que no se puede explicar no se puede corregir. */
+.veredicto {
+  display: grid; gap: 4px; margin-top: 4px; padding: 14px 16px;
+  border: 1px solid rgba(15, 157, 110, .35); border-radius: var(--r-lg);
+  background: rgba(15, 157, 110, .08);
+}
+.veredicto__etiqueta { color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.veredicto__quien { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.veredicto__costo { color: var(--accent-claro); font-size: 14px; font-variant-numeric: tabular-nums; }
+.veredicto p { margin-top: 4px; font-size: 13px; line-height: 1.5; }
+
+/* ---------- Lo técnico, plegado ---------- */
+.avanzado > summary {
+  padding: 12px 16px; border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900); color: var(--ink); font-size: 14px; cursor: pointer;
+  list-style: none;
+}
+.avanzado > summary::-webkit-details-marker { display: none; }
+.avanzado > summary::before { content: "▸ "; color: var(--muted); }
+.avanzado[open] > summary::before { content: "▾ "; }
+.avanzado > summary:hover { border-color: var(--hairline-fuerte); }
+.avanzado > div { padding: 18px 2px 4px; }
+
+@media (max-width: 767px) {
+  .orden__fila { grid-template-columns: 34px 1fr auto; row-gap: 10px; }
+  .orden__papel, .orden__porque { grid-column: 2 / -1; }
+}
+
 /* ---------- Ficha ----------
    Tarjeta de un registro que se administra: una dirección de origen, una
    plantilla de paquete. Nombre arriba, datos en medio, acciones al pie.
