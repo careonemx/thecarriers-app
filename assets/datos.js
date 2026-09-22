@@ -95,25 +95,34 @@ export const enlaceRastreo = (paqueteria, guia) => {
  * puesto aunque salga más barata.
  * ================================================================= */
 
+/**
+ * El papel NO dice quién es la preferida: eso lo dice el puesto en la lista.
+ * Tener las dos cosas por separado permitía subir una paquetería al primer
+ * lugar sin que cambiara nada, porque la preferida seguía siendo la que
+ * tuviera esa etiqueta. Ahora el papel solo distingue si se puede usar, y la
+ * primera que se pueda usar es la preferida.
+ */
 export const PAPELES = {
-  preferida:   { etiqueta: "Preferida",   ayuda: "La primera opción siempre que se pueda." },
-  alternativa: { etiqueta: "Alternativa", ayuda: "Entra cuando la preferida no conviene." },
-  evitar:      { etiqueta: "Evitar",      ayuda: "Solo si no queda otra." },
-  "no-usar":   { etiqueta: "No usar",     ayuda: "Nunca, aunque sea la más barata." },
+  normal:    { etiqueta: "Se puede usar", ayuda: "Entra según su puesto en la lista." },
+  evitar:    { etiqueta: "Evitar",        ayuda: "Solo si no hay otra opción." },
+  "no-usar": { etiqueta: "No usar",       ayuda: "Nunca, aunque sea la más barata." },
 };
 
 export const reglasPaqueteria = {
+  /* `porque` es la nota que sostiene cada puesto. No es un comentario suelto:
+     es lo que lee quien más adelante quiera reordenar la lista. Sin ella,
+     "UPS es alternativa" no impide que alguien la suba al primer puesto. */
   orden: [
-    { paqueteria: "DHL", papel: "preferida",
-      porque: "Es la de siempre. Entrega la semana siguiente si la guía sale jueves o viernes, y eso está bien." },
-    { paqueteria: "Paquetexpress", papel: "alternativa",
+    { paqueteria: "DHL", papel: "normal",
+      porque: "Plazo aceptable: si la guía sale jueves o viernes, entrega la semana siguiente." },
+    { paqueteria: "Paquetexpress", papel: "normal",
       porque: "" },
-    { paqueteria: "UPS", papel: "alternativa",
-      porque: "Suele salir más barata, pero ha tenido incidencias: no entra sola, se compara." },
+    { paqueteria: "UPS", papel: "normal",
+      porque: "Suele ser más barata, pero ha tenido incidencias. Se revisa antes de usarla." },
     { paqueteria: "99minutos", papel: "evitar",
       porque: "Problemas de recolección en el almacén y guías que hubo que cancelar." },
     { paqueteria: "FedEx", papel: "evitar",
-      porque: "Solo si el cliente la pide. Además admite direcciones muy cortas." },
+      porque: "Solo si el cliente la pide. Además acepta direcciones incompletas." },
     { paqueteria: "AMPM", papel: "no-usar",
       porque: "Incidencias difíciles de resolver." },
   ],
@@ -134,8 +143,9 @@ export const reglasPaqueteria = {
  */
 export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendida = false } = {}) {
   const r = reglasPaqueteria;
-  const usable = (o) => o.papel !== "no-usar";
-  const preferida = r.orden.find((o) => o.papel === "preferida" && usable(o));
+  /* La preferida es la primera de la lista que se pueda usar sin reparos: el
+     orden es la regla, no una etiqueta aparte. */
+  const preferida = r.orden.find((o) => o.papel === "normal");
 
   const precio = (nombre) => precioDe(nombre, peso);
   const costoPref = costoPreferida ?? (preferida ? precio(preferida.paqueteria) : null);
@@ -147,7 +157,7 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
      obligue a ceder. Sin ella, compite por precio como una más: el
      interruptor tiene que cambiar la decisión, no solo el texto. */
   if (preferida && !disparado) {
-    const rivales = r.orden.filter((o) => o.papel === "alternativa" && usable(o))
+    const rivales = r.orden.filter((o) => o.papel === "normal" && o !== preferida)
       .map((o) => ({ ...o, costo: precio(o.paqueteria) }))
       .filter((o) => o.costo !== null && o.costo < costoPref)
       .sort((a, b) => a.costo - b.costo);
@@ -157,8 +167,8 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
       return {
         elegida: barata.paqueteria,
         costo: barata.costo,
-        porque: `Sin la regla de seguridad gana el precio: ${barata.paqueteria} sale más barata que ` +
-                `${preferida.paqueteria} y por eso se lleva el envío.`,
+        porque: `Sin la regla de seguridad decide el precio: ${barata.paqueteria} es más barata que ` +
+                `${preferida.paqueteria}, así que se usa esa.`,
         alternativas: [{ ...preferida, costo: costoPref }, ...rivales.slice(1, 3)],
       };
     }
@@ -167,16 +177,16 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
       elegida: preferida.paqueteria,
       costo: costoPref,
       porque: r.mandaLaPreferida
-        ? `${preferida.paqueteria} es la preferida y nada obliga a cambiar, así que se queda aunque otra salga más barata.`
-        : `${preferida.paqueteria} es la preferida y además ninguna alternativa sale más barata.`,
+        ? `${preferida.paqueteria} es la preferida y no se cumple ninguna excepción, así que se mantiene aunque otra sea más barata.`
+        : `${preferida.paqueteria} es la preferida y ninguna alternativa resulta más barata.`,
       alternativas: [],
     };
   }
 
   /* Se cambió: se comparan las alternativas por costo y plazo, y si no hay
      ninguna se baja a las de evitar antes que dejar el pedido sin guía. */
-  const candidatas = ["alternativa", "evitar"].flatMap((papel) =>
-    r.orden.filter((o) => o.papel === papel)
+  const candidatas = ["normal", "evitar"].flatMap((papel) =>
+    r.orden.filter((o) => o.papel === papel && o !== preferida)
       .map((o) => ({ ...o, costo: precio(o.paqueteria), plazo: TARIFAS[o.paqueteria]?.plazo ?? 9 }))
       .filter((o) => o.costo !== null)
       .sort((a, b) => (a.costo + a.plazo * 20) - (b.costo + b.plazo * 20)));
@@ -185,11 +195,16 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
   return {
     elegida: elegida?.paqueteria ?? null,
     costo: elegida?.costo ?? null,
-    porque: elegida
-      ? `${preferida?.paqueteria ?? "La preferida"} se descartó porque ${
-          zonaExtendida ? "es zona extendida y " : ""}su costo pasa de ${r.cambiarSi.costoMayorA}. ` +
-        `Entre las alternativas, ${elegida.paqueteria} da la mejor combinación de costo y plazo.`
-      : "No hay ninguna paquetería disponible con estas reglas.",
+    /* Sin preferida no hay nada que descartar: decirlo igual sería inventar un
+       motivo. Se explica lo que de verdad pasó. */
+    porque: !elegida
+      ? "Ninguna paquetería queda disponible con estas reglas."
+      : preferida
+        ? `${preferida.paqueteria} se descarta porque ${
+            zonaExtendida ? "es zona extendida y " : ""}su costo supera los $${r.cambiarSi.costoMayorA}. ` +
+          `Entre las alternativas, ${elegida.paqueteria} ofrece la mejor combinación de costo y plazo.`
+        : `Ninguna paquetería está marcada como “Se puede usar”, así que se recurre a las de evitar: ` +
+          `${elegida.paqueteria} es la de mejor costo y plazo.`,
     alternativas: candidatas.slice(1, 4),
   };
 }

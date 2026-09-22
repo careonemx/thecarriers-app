@@ -998,11 +998,23 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
    la misma fila y no escondido tras un icono: es lo que evita que alguien
    "arregle" el orden y tire por tierra un criterio que costó meses de
    incidencias. */
+.orden, .orden__cabecera {
+  --orden-cols: 18px 30px minmax(130px, 1fr) 150px minmax(180px, 2fr) auto;
+}
 .orden__fila {
   display: grid; align-items: center; gap: 12px;
-  grid-template-columns: 34px minmax(140px, 1fr) 150px minmax(180px, 2fr) auto;
+  grid-template-columns: var(--orden-cols);
   padding: 12px 18px;
 }
+
+/* Un campo de texto sin rótulo parece un comentario suelto. La columna dice
+   para qué sirve antes de que nadie tenga que deducirlo. */
+.orden__cabecera {
+  display: grid; gap: 12px; grid-template-columns: var(--orden-cols);
+  padding: 10px 18px; border-bottom: 1px solid var(--hairline);
+  color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+}
+.orden__et { display: none; }
 .orden__fila + .orden__fila { border-top: 1px solid var(--hairline); }
 
 /* El papel se ve antes de leerlo: una barra a la izquierda. */
@@ -1010,8 +1022,8 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .orden__fila::before {
   content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
 }
-.orden__fila--preferida::before { background: var(--accent); }
-.orden__fila--alternativa::before { background: var(--hairline-fuerte); }
+.orden__fila--normal::before { background: var(--hairline-fuerte); }
+.orden__fila--manda::before { background: var(--accent); }
 .orden__fila--evitar::before { background: rgba(251, 191, 36, .6); }
 .orden__fila--no-usar::before { background: rgba(248, 113, 113, .6); }
 
@@ -1021,12 +1033,33 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
   color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums;
 }
 .orden__fila--no-usar .orden__quien b { text-decoration: line-through; color: var(--muted); }
-.orden__quien b { display: block; font-size: 14px; }
+.orden__quien b { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.orden__quien .pastilla { text-decoration: none; }
 .orden__quien span { display: block; margin-top: 2px; font-size: 11px; }
 .orden__porque textarea {
   width: 100%; min-height: 0; padding: 8px 10px; resize: none; overflow: hidden;
   font-size: 13px; line-height: 1.45;
 }
+/* ---------- Arrastrar ----------
+   El asa es lo único arrastrable: con la fila entera arrastrable, seleccionar
+   texto en la nota movería la paquetería. */
+.orden__asa {
+  display: grid; place-items: center; width: 18px; height: 28px;
+  color: var(--muted); cursor: grab;
+  transition: color .15s var(--ease-signal);
+}
+.orden__asa:active { cursor: grabbing; }
+.orden__fila:hover .orden__asa { color: var(--ink); }
+.orden__fila--viaja { opacity: .4; }
+
+/* El destino es un hueco entre filas, no una fila: se marca con una línea. */
+.orden__fila--antes::after, .orden__fila--despues::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 2px;
+  background: var(--accent); pointer-events: none;
+}
+.orden__fila--antes::after { top: -1px; }
+.orden__fila--despues::after { bottom: -1px; }
+
 .orden__mover { display: flex; gap: 4px; }
 .orden__mover .boton { min-width: 32px; justify-content: center; }
 
@@ -1055,9 +1088,35 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .avanzado > summary:hover { border-color: var(--hairline-fuerte); }
 .avanzado > div { padding: 18px 2px 4px; }
 
+/* Plegado dentro de una tarjeta: más discreto que el de página, porque ahí ya
+   hay un título que manda. Así cada credencial vive junto a la conexión que
+   explica, en vez de repetirse en un bloque técnico al final. */
+.avanzado--ficha > summary { padding: 8px 12px; font-size: 13px; }
+.avanzado--ficha > div { padding: 12px 0 0; }
+.avanzado--sangrado { margin: -2px 0 6px 30px; }
+
+/* El arrastre nativo no existe con el dedo. Donde no se puede arrastrar no se
+   enseña el asa: quedan las flechas, que son además el camino del teclado.
+   Los rótulos de columna pasan entonces a ir sobre cada campo. */
+/* Prometer "arrastra" en una pantalla donde no se puede arrastrar es mentir
+   con el texto igual que con un interruptor que no hace nada. */
+.solo-tacto { display: none; }
+
+@media (pointer: coarse), (max-width: 767px) {
+  .solo-raton { display: none; }
+  .solo-tacto { display: inline; }
+  .orden__asa, .orden__cabecera { display: none; }
+  .orden, .orden__cabecera { --orden-cols: 30px minmax(130px, 1fr) 150px minmax(180px, 2fr) auto; }
+  .orden__et {
+    display: block; margin-bottom: 4px;
+    color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  }
+}
+
 @media (max-width: 767px) {
   /* Las flechas viajan con el nombre que mueven, no al final de la fila. */
-  .orden__fila { grid-template-columns: 34px 1fr auto; row-gap: 10px; align-items: start; }
+  .orden, .orden__cabecera { --orden-cols: 30px 1fr auto; }
+  .orden__fila { row-gap: 10px; align-items: start; }
   .orden__puesto, .orden__quien, .orden__mover { grid-row: 1; }
   .orden__mover { grid-column: 3; }
   .orden__papel, .orden__porque { grid-column: 2 / -1; }
@@ -1077,6 +1136,10 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .fichas-barra__sep { flex: 1; }
 
 .fichas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+
+/* Con auto-fill en vez de auto-fit, una sola conexión no se estira a lo ancho
+   de la pantalla: ocupa su columna y deja ver que caben más. */
+.fichas--conexiones { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 
 .tarjeta--solo-pie { margin-top: 14px; }
 .tarjeta--solo-pie .tarjeta__pie { border-top: 0; }

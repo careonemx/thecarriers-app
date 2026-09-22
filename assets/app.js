@@ -10,7 +10,7 @@
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=5566f249";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=68cf173a";
 
 const CLAVE = "tc_sesion";
 
