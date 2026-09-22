@@ -41,6 +41,32 @@
       </div>
     </div>
 
+    <div class="filtros">
+      <span class="filtros__etiqueta">Fecha</span>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="0">Hoy</button>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="7">7 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="30">30 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="true" data-rango="">Todo</button>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <label class="sr-only" for="desde">Desde</label>
+      <input type="date" id="desde" aria-label="Desde">
+      <span class="filtros__etiqueta">al</span>
+      <label class="sr-only" for="hasta">Hasta</label>
+      <input type="date" id="hasta" aria-label="Hasta">
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <label class="sr-only" for="fp">Filtrar por paquetería</label>
+      <select id="fp"><option value="">Toda paquetería</option></select>
+      <label class="sr-only" for="fc">Filtrar por canal</label>
+      <select id="fc"><option value="">Todo canal</option></select>
+
+      <span class="filtros__sep"></span>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
+        Quitar filtros
+      </button>
+    </div>
+
     <div class="barra-seleccion" id="seleccion" hidden>
       <span class="barra-seleccion__cuenta"><b data-n>0</b> seleccionados</span>
       <span class="barra-seleccion__sep"></span>
@@ -69,12 +95,16 @@
     </div>
 
     <div class="tarjeta__pie">
-      <span>Mostrando <b data-contador>0</b> de <b id="total">0</b> pedidos</span>
-      <div class="paginacion">
-        <button type="button" disabled>‹</button>
-        <button type="button" aria-current="page">1</button>
-        <button type="button">›</button>
-      </div>
+      <span id="rango-pagina">Mostrando 0 pedidos</span>
+      <label class="filtros__etiqueta" for="por-pagina">
+        <select id="por-pagina" style="width:auto;margin-left:8px">
+          <option value="10">10 por página</option>
+          <option value="25">25 por página</option>
+          <option value="50">50 por página</option>
+        </select>
+      </label>
+      <span class="filtros__sep"></span>
+      <div class="paginacion" id="paginacion"></div>
     </div>
   </section>
 </main>
@@ -82,7 +112,7 @@
 <script type="module">
 import { montar, exigirSesion } from "../assets/app.js";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
-         dinero, dineroMXN, fechaCorta, diasDesde } from "../assets/datos.js";
+         dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY } from "../assets/datos.js";
 if (exigirSesion()) {
   montar();
 
@@ -185,30 +215,96 @@ if (exigirSesion()) {
       </div>
     </article>`).join("");
 
-  /* ---------- Vistas, búsqueda y selección ---------- */
+  /* ---------- Vistas, filtros y selección ----------
+     Un solo predicado decide qué se ve, y lo aplican por igual la tabla y
+     el mosaico. Si cada vista tuviera su propio filtrado, tarde o temprano
+     una mostraría algo que la otra esconde. */
   const filas = [...cuerpo.rows];
   const tarjetas = [...document.querySelectorAll(".tarjeta-pedido")];
+  const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, fila: filas[i], tarjeta: tarjetas[i] }]));
+
   const busqueda = document.getElementById("q");
   const pestanas = [...document.querySelectorAll(".pestana")];
-  const contador = document.querySelector("[data-contador]");
+  const fichasFecha = [...document.querySelectorAll("[data-rango]")];
+  const desde = document.getElementById("desde");
+  const hasta = document.getElementById("hasta");
+  const selPaq = document.getElementById("fp");
+  const selCanal = document.getElementById("fc");
+  const limpiar = document.getElementById("limpiar-filtros");
   const barra = document.getElementById("seleccion");
   const todosCheck = document.getElementById("todos-check");
+
   let vista = new URLSearchParams(location.search).get("vista") || "todos";
 
-  const coincide = (el, texto) =>
-    (vista === "todos" || el.dataset.vista === vista) &&
-    (!texto || el.textContent.toLowerCase().includes(texto));
+  for (const [sel, campo] of [[selPaq, (p) => p.envio?.paqueteria], [selCanal, (p) => p.canal]]) {
+    [...new Set(pedidos.map(campo).filter(Boolean))].sort()
+      .forEach((v) => sel.add(new Option(v, v)));
+  }
 
-  function aplicar() {
+  const hayFiltro = () =>
+    !!(desde.value || hasta.value || selPaq.value || selCanal.value ||
+       (busqueda?.value || "").trim());
+
+  function pasa({ p, fila }) {
+    if (vista !== "todos" && fila.dataset.vista !== vista) return false;
+    if (desde.value && p.fecha < desde.value) return false;
+    if (hasta.value && p.fecha > hasta.value) return false;
+    if (selPaq.value && p.envio?.paqueteria !== selPaq.value) return false;
+    if (selCanal.value && p.canal !== selCanal.value) return false;
     const texto = (busqueda?.value || "").trim().toLowerCase();
-    let visibles = 0;
-    filas.forEach((f) => { const ok = coincide(f, texto); f.hidden = !ok; if (ok) visibles++; });
-    tarjetas.forEach((t) => { t.hidden = !coincide(t, texto); });
-    contador.textContent = visibles;
-    document.getElementById("total").textContent = pedidos.length;
-    document.querySelector("[data-sin-resultados]").hidden = visibles > 0;
+    if (texto && !fila.textContent.toLowerCase().includes(texto)) return false;
+    return true;
+  }
+
+  /* La paginación corta lo FILTRADO, no la lista completa: si filtras y la
+     página sigue mostrando los mismos veintitantos, el filtro no sirvió de
+     nada. Cualquier cambio de filtro devuelve a la primera página, porque
+     quedarse en la 3 de una lista que ahora tiene 4 resultados deja la
+     pantalla vacía sin explicación. */
+  let pagina = 1;
+  const porPagina = document.getElementById("por-pagina");
+  const paginacion = document.getElementById("paginacion");
+  const rangoPagina = document.getElementById("rango-pagina");
+
+  function aplicar(reiniciar = true) {
+    if (reiniciar) pagina = 1;
+    const coinciden = [...porFolio.values()].filter(pasa);
+    const tam = +porPagina.value;
+    const paginas = Math.max(1, Math.ceil(coinciden.length / tam));
+    pagina = Math.min(pagina, paginas);
+    const ini = (pagina - 1) * tam;
+    const enPagina = new Set(coinciden.slice(ini, ini + tam));
+
+    for (const item of porFolio.values()) {
+      const visible = enPagina.has(item);
+      item.fila.hidden = !visible;
+      item.tarjeta.hidden = !visible;
+    }
+
+    rangoPagina.innerHTML = coinciden.length
+      ? `Mostrando <b>${ini + 1}–${Math.min(ini + tam, coinciden.length)}</b> de <b>${coinciden.length}</b>` +
+        (coinciden.length < pedidos.length ? ` <span class="apagado">(${pedidos.length} en total)</span>` : " pedidos")
+      : "Ningún pedido coincide";
+
+    paginacion.innerHTML =
+      `<button type="button" data-ir="${pagina - 1}"${pagina === 1 ? " disabled" : ""}>‹</button>` +
+      Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+        `<button type="button" data-ir="${n}"${n === pagina ? ' aria-current="page"' : ""}>${n}</button>`).join("") +
+      `<button type="button" data-ir="${pagina + 1}"${pagina === paginas ? " disabled" : ""}>›</button>`;
+    paginacion.hidden = paginas === 1;
+
+    document.querySelector("[data-sin-resultados]").hidden = coinciden.length > 0;
+    limpiar.hidden = !hayFiltro();
     revisarSeleccion();
   }
+
+  porPagina.addEventListener("change", () => aplicar());
+  paginacion.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ir]");
+    if (!b || b.disabled) return;
+    pagina = +b.dataset.ir;
+    aplicar(false);
+  });
 
   function revisarSeleccion() {
     const marcadas = filas.filter((f) => !f.hidden && f.querySelector(".sel:checked"));
@@ -220,6 +316,34 @@ if (exigirSesion()) {
     todosCheck.checked = posibles.length > 0 && marcadas.length === posibles.length;
     todosCheck.indeterminate = marcadas.length > 0 && marcadas.length < posibles.length;
   }
+
+  // Los atajos escriben en los campos de fecha en vez de guardar estado aparte:
+  // así el rango elegido siempre está a la vista y se puede ajustar a mano.
+  function marcarAtajo() {
+    const activo = fichasFecha.find((f) => {
+      if (f.dataset.rango === "") return !desde.value && !hasta.value;
+      return desde.value === menosDias(HOY, +f.dataset.rango) && hasta.value === HOY;
+    });
+    fichasFecha.forEach((f) => f.setAttribute("aria-pressed", String(f === activo)));
+  }
+
+  fichasFecha.forEach((f) => f.addEventListener("click", () => {
+    if (f.dataset.rango === "") { desde.value = ""; hasta.value = ""; }
+    else { desde.value = menosDias(HOY, +f.dataset.rango); hasta.value = HOY; }
+    marcarAtajo();
+    aplicar();
+  }));
+
+  [desde, hasta].forEach((i) => i.addEventListener("change", () => { marcarAtajo(); aplicar(); }));
+  [selPaq, selCanal].forEach((sel) => sel.addEventListener("change", aplicar));
+
+  limpiar.addEventListener("click", () => {
+    desde.value = hasta.value = "";
+    selPaq.value = selCanal.value = "";
+    if (busqueda) busqueda.value = "";
+    marcarAtajo();
+    aplicar();
+  });
 
   pestanas.forEach((b) => b.addEventListener("click", () => {
     pestanas.forEach((o) => o.setAttribute("aria-selected", String(o === b)));

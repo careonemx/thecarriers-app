@@ -249,6 +249,11 @@ select option { background: var(--navy-900); }
 }
 .filtros select, .filtros input { width: auto; min-width: 150px; }
 .filtros__sep { flex: 1; }
+/* Separador entre grupos de filtros: agrupa visualmente lo que se combina. */
+.filtros__div { width: 1px; align-self: stretch; background: var(--hairline); margin: 0 3px; }
+.filtros__etiqueta { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.filtros input[type="date"] { min-width: 0; width: 138px; padding: 5px 9px; font-size: 13px; }
+.filtros select { padding: 5px 9px; font-size: 13px; }
 
 .ficha-filtro {
   display: inline-flex; align-items: center; gap: 7px;

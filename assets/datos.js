@@ -104,8 +104,19 @@ export const dineroMXN = (n) => (n == null ? "—" : `${dinero(n)} MXN`);
 export const fechaCorta = (iso) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 
+/** El "hoy" del prototipo. Los datos son fijos, así que la fecha también:
+ *  si usáramos el reloj real, mañana todo llevaría un día más esperando. */
+export const HOY = "2026-09-21";
+
 export const diasDesde = (iso) =>
-  Math.max(0, Math.round((new Date("2026-09-21T12:00:00") - new Date(iso + "T12:00:00")) / 86400000));
+  Math.max(0, Math.round((new Date(HOY + "T12:00:00") - new Date(iso + "T12:00:00")) / 86400000));
+
+/** Resta días a una fecha ISO y devuelve otra ISO. Para los atajos de rango. */
+export const menosDias = (iso, n) => {
+  const d = new Date(iso + "T12:00:00");
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+};
 
 /* =================================================================
  * Pedidos — el módulo que ya existe en el MVP.
@@ -156,6 +167,32 @@ const pedidosBase = [
     destino: "Av. Juárez 1804, Col. Centro", ciudad: "Monterrey, NL 64000",
     pago: "Pagado", envio: null,
     error: "La paquetería rechazó el código postal: 64000 no coincide con la colonia." },
+
+  /* Historial. Sin pedidos viejos, los atajos de fecha no se distinguen:
+     todo cabía en los últimos siete días y "30 días" mostraba lo mismo. */
+  { folio: "#0998", fecha: "2026-09-02", total: 1240, canal: "Tiendanube",
+    cliente: { nombre: "Papelería Zaragoza", correo: "compras@zaragoza.mx", iniciales: "PZ" },
+    destino: "Av. 16 de Septiembre 402", ciudad: "Puebla, PUE 72000",
+    pago: "Pagado", envio: { guia: "6050000445566", paqueteria: "Estafeta", estado: "Entregado",
+      original: "Entregado a destinatario", costo: 132, peso: 4.1 } },
+
+  { folio: "#0995", fecha: "2026-08-30", total: 2860, canal: "Shopify",
+    cliente: { nombre: "Estudio Panal", correo: "hola@panal.design", iniciales: "EP" },
+    destino: "Colima 158, Roma Norte", ciudad: "Ciudad de México, CDMX 06700",
+    pago: "Pagado", envio: { guia: "JD01480000789", paqueteria: "DHL", estado: "Entregado",
+      original: "Delivered", costo: 204, peso: 2.8 } },
+
+  { folio: "#0991", fecha: "2026-08-27", total: 540, canal: "Mercado Libre",
+    cliente: { nombre: "Jorge Beltrán", correo: "jbeltran@correo.mx", iniciales: "JB" },
+    destino: "Blvd. Díaz Ordaz 1200", ciudad: "Tijuana, BC 22010",
+    pago: "Pagado", envio: { guia: "782394007788", paqueteria: "FedEx", estado: "Entregado",
+      original: "Delivered", costo: 318, peso: 1.5 } },
+
+  { folio: "#0987", fecha: "2026-08-25", total: 4100, canal: "Amazon",
+    cliente: { nombre: "Ferretería del Bajío", correo: "ventas@bajio.mx", iniciales: "FB" },
+    destino: "Carr. Panamericana km 12", ciudad: "León, GTO 37200",
+    pago: "Pagado", envio: { guia: "1Z999AA10456", paqueteria: "UPS", estado: "Entregado",
+      original: "DELIVERED", costo: 276, peso: 11.3 } },
 
   { folio: "#1001", fecha: "2026-09-15", total: 5, canal: "Shopify",
     cliente: { nombre: "Grupo Aldama", correo: "compras@aldama.mx", iniciales: "GA" },

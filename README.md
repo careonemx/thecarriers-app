@@ -95,6 +95,14 @@ Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
   dice por qué, en vez de dejar generar una guía que no debía existir.
 - **Selección múltiple con barra de acciones.** Las casillas ya estaban; faltaba qué
   hacer con ellas. Seleccionar todo respeta las reglas: de cuatro sin enviar, marca tres.
+- **Filtros.** Rango de fechas con atajos —Hoy, 7 días, 30 días, Todo— más un rango a
+  mano, y filtros de paquetería y canal. Los atajos escriben en los campos de fecha en
+  lugar de guardar estado aparte: así el rango elegido siempre está a la vista y se
+  puede ajustar. Todos los filtros se combinan entre sí y con la vista.
+- **Paginación de verdad.** Corta lo filtrado, no la lista completa, y cualquier cambio
+  de filtro devuelve a la primera página: quedarse en la 3 de una lista que ahora tiene
+  4 resultados deja la pantalla vacía sin explicación. El pie dice el rango real y, si
+  hay filtros activos, cuántos pedidos hay en total.
 - **Inicio.** El MVP no tenía. No es un tablero de vanidad: lista qué atender hoy, y
   separa los tres motivos por los que un pedido sigue sin guía, porque cada uno se
   resuelve distinto.
