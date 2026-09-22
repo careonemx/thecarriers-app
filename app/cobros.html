@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Cobros · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=671d69b4">
-<script src="../assets/vigia.js?v=671d69b4" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=a8786376">
+<script src="../assets/vigia.js?v=a8786376" defer></script>
 </head>
 <body data-seccion="cobros">
 <main class="contenido contenido--ancho">
@@ -23,6 +23,15 @@
   <div class="rejilla rejilla--4" style="margin-bottom:16px" id="metricas"></div>
   <section class="tarjeta">
     <div class="filtros">
+      <div class="buscador">
+        <label class="sr-only" for="q-cobros">Buscar en esta lista</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q-cobros" data-buscar-local autocomplete="off"
+               placeholder="Filtrar por guía, pedido o paquetería">
+      </div>
+
+      <span class="filtros__div" aria-hidden="true"></span>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-columna="dif" data-valor="si">Solo con diferencia</button>
       <span class="filtros__sep"></span>
       <label class="sr-only" for="fp">Filtrar por paquetería</label>
@@ -47,8 +56,8 @@
   </section>
 </main>
 <script type="module">
-import { montar, exigirSesion, conectarFiltros } from "../assets/app.js?v=671d69b4";
-import { envios, dinero } from "../assets/datos.js?v=671d69b4";
+import { montar, exigirSesion, conectarFiltros } from "../assets/app.js?v=a8786376";
+import { envios, dinero } from "../assets/datos.js?v=a8786376";
 if (exigirSesion()) {
   montar();
   const facturados = envios.filter((e) => e.facturado != null);

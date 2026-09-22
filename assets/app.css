@@ -964,6 +964,35 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 
 .nota-celda { white-space: nowrap; }
 
+/* ---------- Hallazgos del buscador global ----------
+   Cuelga del buscador de la barra superior. Los resultados van agrupados por
+   tipo porque una lista plana obliga a adivinar qué es cada fila: un número
+   largo puede ser una guía o un folio. */
+.hallazgos {
+  position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; right: 0;
+  max-height: min(70vh, 460px); overflow-y: auto;
+  padding: 6px; border: 1px solid var(--hairline-fuerte); border-radius: var(--r-lg);
+  background: var(--navy); box-shadow: var(--sombra);
+}
+.hallazgos__grupo {
+  padding: 9px 10px 5px;
+  color: var(--muted); font-size: 11px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.hallazgos__vacio { padding: 14px 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.hallazgo {
+  display: block; padding: 8px 10px; border-radius: var(--r-sm);
+  color: inherit; text-decoration: none;
+  transition: background .12s var(--curva);
+}
+.hallazgo b { display: block; font-size: 13px; font-weight: 500; }
+.hallazgo span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.hallazgo:hover, .hallazgo:focus-visible { background: var(--hover); }
+.hallazgo:hover b, .hallazgo:focus-visible b { color: var(--accent-claro); }
+
+@media (prefers-reduced-motion: reduce) { .hallazgo { transition: none; } }
+
 /* ---------- Ficha ----------
    Tarjeta de un registro que se administra: una dirección de origen, una
    plantilla de paquete. Nombre arriba, datos en medio, acciones al pie.
@@ -1484,6 +1513,20 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   .contenido { padding: 20px 16px 48px; }
   .superior { padding: 0 16px; gap: 10px; }
   .superior__empresa { display: none; }
+  /* La insignia de la tienda ocupa el sitio que necesita el buscador, y en
+     una pantalla de teléfono el buscador es lo único de esa barra que sirve
+     para algo. */
+  .insignia-tienda { display: none; }
+  .superior .buscador { flex: 1 1 auto; min-width: 0; }
+
+  /* El panel de hallazgos no se ancla al buscador: anclado, hereda su ancho
+     —116px medidos— y no cabe ni un folio. Se sale a la pantalla completa,
+     debajo de la barra. */
+  .hallazgos {
+    position: fixed; top: calc(var(--superior) + 6px);
+    left: 12px; right: 12px;
+    max-height: calc(100dvh - var(--superior) - 24px);
+  }
   /* Cuatro cifras cortas caben en dos columnas; una sola convierte el
      encabezado en una escalera de cuatro pantallazos. */
   .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }

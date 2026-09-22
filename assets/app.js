@@ -9,7 +9,8 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda, HOY } from "./datos.js?v=671d69b4";
+import { empresa, usuario, detenidos, sinGuia, tienda, HOY,
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=a8786376";
 
 const CLAVE = "tc_sesion";
 
@@ -195,6 +196,7 @@ export function montar() {
   };
   prepararFechas(cuerpo);
   conectarCalendario();
+  conectarBuscadorGlobal();
 
   const fechas = () => document.querySelectorAll('input[type="date"], input[type="time"]');
   fechas().forEach(marcarFecha);
@@ -393,6 +395,157 @@ function prepararFechas(raiz) {
   });
 }
 
+/* =================================================================
+ * Buscador global.
+ *
+ * Está en la barra de todas las pantallas, así que tiene que servir en todas.
+ * No filtra la lista que tengas delante —para eso cada pantalla trae su
+ * propio buscador—: encuentra un pedido, una guía, un destinatario, una
+ * dirección o una plantilla, y lleva hasta donde está.
+ *
+ * Por eso los resultados van agrupados por tipo y cada uno dice a dónde va:
+ * una lista plana obliga a adivinar qué es cada fila.
+ * ================================================================= */
+
+const TOPE_GRUPO = 4;
+
+const sinTildes = (t) => String(t ?? "").toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+function buscarEnTodo(q) {
+  const t = sinTildes(q);
+  if (t.length < 2) return [];
+  const casa = (...campos) => sinTildes(campos.join(" ")).includes(t);
+
+  const grupos = [
+    {
+      titulo: "Pedidos",
+      items: pedidos.filter((p) => casa(p.folio, p.cliente.nombre, p.cliente.correo, p.ciudad, p.destino))
+        .map((p) => ({
+          titulo: `${p.folio} · ${p.cliente.nombre}`,
+          nota: `${p.ciudad}${p.envio ? ` · ${p.envio.paqueteria}` : " · sin guía"}`,
+          href: `pedidos.html?pedido=${encodeURIComponent(p.folio.replace(/\D/g, ""))}`,
+        })),
+    },
+    {
+      titulo: "Guías",
+      items: envios.filter((e) => casa(e.guia, e.cliente, e.paqueteria, e.via ?? "", e.destino))
+        .map((e) => ({
+          titulo: e.guia,
+          nota: `${e.paqueteria}${e.via ? ` vía ${e.via}` : ""} · ${e.estado} · ${e.cliente}`,
+          href: `envio.html?guia=${encodeURIComponent(e.guia)}`,
+        })),
+    },
+    {
+      titulo: "Recolecciones",
+      items: recolecciones.filter((r) => casa(r.folio, r.paqueteria, r.via ?? ""))
+        .map((r) => ({
+          titulo: `${r.folio} · ${r.paqueteria}`,
+          nota: `${r.fecha} · ${r.ventana}`,
+          href: "recolecciones.html",
+        })),
+    },
+    {
+      titulo: "Direcciones de origen",
+      items: origenes.filter((o) => casa(o.nombre, o.campos.calle, o.campos.colonia, o.campos.ciudad, o.campos.cp))
+        .map((o) => ({
+          titulo: o.nombre,
+          nota: `${o.campos.calle} ${o.campos.numExt} · ${o.campos.ciudad}`,
+          href: "origenes.html",
+        })),
+    },
+    {
+      titulo: "Plantillas",
+      items: plantillas.filter((p) => casa(p.nombre))
+        .map((p) => ({
+          titulo: p.nombre,
+          nota: `${p.largo} × ${p.ancho} × ${p.alto} cm · ${p.peso} kg`,
+          href: "plantillas.html",
+        })),
+    },
+  ];
+
+  return grupos.filter((g) => g.items.length)
+    .map((g) => ({ ...g, total: g.items.length, items: g.items.slice(0, TOPE_GRUPO) }));
+}
+
+function conectarBuscadorGlobal() {
+  const campo = document.getElementById("q");
+  if (!campo) return;
+
+  const panel = document.createElement("div");
+  panel.className = "hallazgos";
+  panel.id = "hallazgos";
+  panel.setAttribute("role", "listbox");
+  panel.hidden = true;
+  campo.closest(".buscador").appendChild(panel);
+  campo.setAttribute("role", "combobox");
+  campo.setAttribute("aria-expanded", "false");
+  campo.setAttribute("aria-controls", "hallazgos");
+  campo.setAttribute("autocomplete", "off");
+
+  let cerradoAposta = false;
+
+  const cerrar = (aposta = false) => {
+    panel.hidden = true;
+    campo.setAttribute("aria-expanded", "false");
+    cerradoAposta = aposta;
+  };
+
+  function pintar() {
+    const q = campo.value.trim();
+    if (q.length < 2) return cerrar();
+    const grupos = buscarEnTodo(q);
+
+    panel.innerHTML = grupos.length
+      ? grupos.map((g) => `
+          <p class="hallazgos__grupo">${g.titulo}${
+            g.total > g.items.length ? ` · ${g.items.length} de ${g.total}` : ""}</p>
+          ${g.items.map((i) => `
+            <a class="hallazgo" href="${i.href}" role="option">
+              <b>${escapar(i.titulo)}</b><span>${escapar(i.nota)}</span>
+            </a>`).join("")}`).join("")
+      : `<p class="hallazgos__vacio">Nada coincide con “${escapar(q)}”.
+           Se busca por folio, guía, destinatario, ciudad o nombre.</p>`;
+
+    panel.hidden = false;
+    campo.setAttribute("aria-expanded", "true");
+  }
+
+  const escapar = (t) => String(t).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  campo.addEventListener("input", () => { cerradoAposta = false; pintar(); });
+  campo.addEventListener("focus", () => {
+    if (!cerradoAposta && campo.value.trim().length >= 2) pintar();
+  });
+
+  /* Teclado: bajar entra en la lista, Escape cierra sin perder lo escrito. */
+  campo.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { cerrar(true); return; }
+    if (e.key === "ArrowDown" && !panel.hidden) {
+      e.preventDefault();
+      panel.querySelector(".hallazgo")?.focus();
+    }
+  });
+
+  panel.addEventListener("keydown", (e) => {
+    const foco = document.activeElement.closest?.(".hallazgo");
+    if (!foco) return;
+    if (e.key === "Escape") { e.preventDefault(); cerrar(true); campo.focus(); return; }
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const todos = [...panel.querySelectorAll(".hallazgo")];
+    const i = todos.indexOf(foco) + (e.key === "ArrowDown" ? 1 : -1);
+    if (i < 0) campo.focus();
+    else todos[Math.min(i, todos.length - 1)].focus();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".buscador")) cerrar();
+  });
+}
+
 /** Rebota a login si nadie ha iniciado sesión. */
 export function exigirSesion() {
   if (!sesion.leer()) {
@@ -404,7 +557,11 @@ export function exigirSesion() {
 
 /** Filtra una tabla por texto y por los valores de los <select data-filtro>. */
 export function conectarFiltros(tabla) {
-  const busqueda = document.getElementById("q");
+  /* El buscador de la barra superior es GLOBAL: encuentra cosas en toda la
+     aplicación y lleva a ellas. Filtrar además la tabla de la pantalla en la
+     que estás son dos comportamientos para un mismo control, y ninguno de los
+     dos se entiende. Cada lista trae el suyo. */
+  const busqueda = tabla.closest(".tarjeta")?.querySelector("[data-buscar-local]");
   const selects = [...document.querySelectorAll("[data-filtro]")];
   const fichas = [...document.querySelectorAll(".ficha-filtro[data-columna]")];
   const contador = document.querySelector("[data-contador]");

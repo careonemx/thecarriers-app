@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=671d69b4">
-<script src="../assets/vigia.js?v=671d69b4" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=a8786376">
+<script src="../assets/vigia.js?v=a8786376" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -42,6 +42,15 @@
     </div>
 
     <div class="filtros">
+      <div class="buscador">
+        <label class="sr-only" for="q-pedidos">Buscar en esta lista</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q-pedidos" data-buscar-local autocomplete="off"
+               placeholder="Filtrar por pedido, cliente o destino">
+      </div>
+
+      <span class="filtros__div" aria-hidden="true"></span>
       <span class="filtros__etiqueta">Fecha</span>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="0">Hoy</button>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="7">7 días</button>
@@ -117,12 +126,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=671d69b4";
+import { montar, exigirSesion } from "../assets/app.js?v=a8786376";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=671d69b4";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=a8786376";
 if (exigirSesion()) {
   montar();
 
@@ -1181,7 +1190,9 @@ if (exigirSesion()) {
   const tarjetas = [...document.querySelectorAll(".tarjeta-pedido")];
   const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, i, fila: filas[i], tarjeta: tarjetas[i] }]));
 
-  const busqueda = document.getElementById("q");
+  /* El de la barra superior busca en toda la aplicación; este filtra ESTA
+     lista. Son dos cosas distintas y por eso son dos campos. */
+  const busqueda = document.getElementById("q-pedidos");
   const pestanas = [...document.querySelectorAll(".pestana")];
   const fichasFecha = [...document.querySelectorAll("[data-rango]")];
   const desde = document.getElementById("desde");
