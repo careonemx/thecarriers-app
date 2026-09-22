@@ -6,21 +6,17 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=5a713293">
-<script src="../assets/vigia.js?v=5a713293" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=3f5568e1">
+<script src="../assets/vigia.js?v=3f5568e1" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
 
-  <!-- 1 · Encabezado: el resumen del día y el estado de la sincronización -->
-  <div class="encabezado" style="margin-bottom:22px">
+  <!-- 1 · Encabezado: el resumen del día -->
+  <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Inicio</h1>
       <p class="apagado" id="resumen-dia" style="margin-top:6px;font-size:13px"></p>
-    </div>
-    <div class="encabezado__acciones">
-      <span class="apagado" style="font-size:12px" id="sync"></span>
-      <button class="boton boton--sutil" type="button" id="sincronizar">Sincronizar</button>
     </div>
   </div>
 
@@ -28,7 +24,7 @@
   <div id="atencion"></div>
 
   <!-- 5 · Tu operación -->
-  <section class="zona">
+  <section class="zona zona--analitica">
     <div class="periodo__cabeza">
       <h2 class="zona__titulo" id="rotulo-periodo">Tu operación</h2>
       <div class="periodo__mando" role="group" aria-labelledby="rotulo-periodo">
@@ -43,11 +39,11 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=5a713293";
+import { montar, exigirSesion } from "../assets/app.js?v=3f5568e1";
 import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
          resumenPeriodo, comparativaPeriodo,
          conexionesCaidas, reconectar, romperConexion,
-         minutosDesdeSync, dineroMXN } from "../assets/datos.js?v=5a713293";
+         dineroMXN } from "../assets/datos.js?v=3f5568e1";
 if (exigirSesion()) {
   montar();
 
@@ -150,7 +146,7 @@ if (exigirSesion()) {
        se queda: no depende de que haya pendientes. */
     if (pendientes === 0 && recoleccionesHoy.length === 0) {
       atencion.innerHTML = `<p class="nada-pendiente"><b>Nada pendiente.</b>
-        <span>Última sincronización hace ${minutosDesdeSync} min.</span></p>${conexion}`;
+        <span>Ningún pedido sin guía ni envío detenido.</span></p>${conexion}`;
       return;
     }
 
@@ -222,32 +218,6 @@ if (exigirSesion()) {
     `${cuenta("pagados-sin-guia")} sin guía · ` +
     `${cuenta("detenidos")} detenidos · ` +
     plural(recoleccionesHoy.length, "recolección", "recolecciones");
-
-  const sello = document.getElementById("sync");
-  sello.textContent = `Última sincronización hace ${minutosDesdeSync} min`;
-
-  /* La confirmación vive en el propio botón: un aviso flotante para algo que
-     se pidió desde aquí obliga a buscarlo en otro sitio de la pantalla.
-     `aria-live` lo anuncia sin robar el foco. */
-  const boton = document.getElementById("sincronizar");
-  boton.setAttribute("aria-live", "polite");
-  let volviendo;
-
-  boton.addEventListener("click", () => {
-    if (boton.hasAttribute("aria-busy")) return;
-    clearTimeout(volviendo);
-    boton.setAttribute("aria-busy", "true");
-    boton.disabled = true;
-    boton.innerHTML = '<span class="girador"></span>Sincronizando…';
-
-    setTimeout(() => {
-      boton.removeAttribute("aria-busy");
-      boton.disabled = false;
-      boton.innerHTML = 'Actualizado ahora <span aria-hidden="true">✓</span>';
-      sello.textContent = "Última sincronización hace un momento";
-      volviendo = setTimeout(() => { boton.textContent = "Sincronizar"; }, 2400);
-    }, 1100);
-  });
 
   pintarAtencion();
   pintarPeriodo(7);

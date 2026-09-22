@@ -658,9 +658,19 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 
    Sin iconos: un icono por tarjeta añade seis formas que hay que descifrar
    antes de poder leer el número. */
-.zona { margin-bottom: 26px; }
+/* Una sola escala: 12px dentro de una sección, 24px entre secciones. Antes
+   convivían 26, 22, 12, 10 y 9 sin relación entre sí. */
+.zona { margin-bottom: 24px; }
+
+/* "Tu operación" es analítica, no operación, y la regla lo dice.
+
+   Sin ella, el selector de periodo caía justo debajo de la última tarjeta de
+   "Por hacer hoy" y alineado a su mismo borde derecho: a 29px de distancia,
+   se leía como parte de esa tarjeta en vez de como encabezado de la sección
+   siguiente. */
+.zona--analitica { border-top: 1px solid var(--hairline); padding-top: 24px; }
 .zona__titulo {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   color: var(--muted); font-size: 11px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase;
 }
@@ -753,13 +763,14 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
    que sí exige una acción. No son botones y por eso son una lista de
    definición, no enlaces. */
 .periodo__cabeza {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px;
 }
 .periodo__cabeza .zona__titulo { margin-bottom: 0; }
 .periodo__mando { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+
 .periodo__mando .ficha-filtro { transition: all .16s var(--curva); }
 
-.periodo { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.periodo { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .periodo__dato {
   padding: 8px 13px 9px;
   border: 1px solid var(--hairline); border-radius: var(--r);
@@ -1245,12 +1256,9 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   /* Cuatro cifras cortas caben en dos columnas; una sola convierte el
      encabezado en una escalera de cuatro pantallazos. */
   .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }
-  .tarjetas { grid-template-columns: minmax(0, 1fr); }
-  /* Los KPI sí caben de dos en dos: son cortos y ya son secundarios. */
-  .periodo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* Objetivo táctil de 44px: los chips de 27px se fallan con el pulgar. */
   .periodo__mando .ficha-filtro { min-height: 44px; padding-inline: 14px; }
-  .periodo__cabeza { gap: 10px; }
+  .periodo__cabeza { gap: 12px; }
   .periodo__mando { margin-left: 0; width: 100%; }
   .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
   .encabezado h1 { font-size: 20px; }

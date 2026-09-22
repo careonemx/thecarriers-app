@@ -563,8 +563,6 @@ export const guiasDelDia = () => pedidos
   .filter((p) => p.envio && (p.envio.fecha || p.fecha) === HOY)
   .map((p) => p.envio.guia);
 
-/** Minutos desde la última sincronización. Fijo: no hay con qué sincronizar. */
-export const minutosDesdeSync = 4;
 
 /** El envío es una vista del pedido, no otra lista. */
 export const envios = pedidos

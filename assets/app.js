@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=5a713293";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=3f5568e1";
 
 const CLAVE = "tc_sesion";
 
