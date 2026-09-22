@@ -215,14 +215,26 @@ a { color: inherit; }
 /* -----------------------------------------------------------------
  * Controles
  * --------------------------------------------------------------- */
-input[type="text"], input[type="email"], input[type="password"],
-input[type="search"], input[type="date"], select, textarea {
+/* Se seleccionan POR EXCLUSIÓN, no enumerando tipos.
+ *
+ * Un <input> sin atributo `type` se comporta como texto, pero NO lo empareja
+ * el selector `input[type="text"]`: el atributo no está en el DOM. Con la lista
+ * de tipos, la mitad de un formulario salía con el estilo gris del navegador
+ * —Arial 13.3px, 21.5px de alto, borde de 2px— mientras el campo de al lado,
+ * que sí declaraba type="email", se veía bien. Así no hay forma de olvidarlo.
+ */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"],
+           [type="color"], [type="submit"], [type="button"], [type="reset"], [type="image"]),
+select,
+textarea {
   width: 100%; padding: 8px 11px;
   border: 1px solid var(--field); border-radius: var(--r);
   background: rgba(255, 255, 255, 0.05); color: var(--ink);
   font: inherit; transition: border-color .2s var(--curva);
 }
-input:hover, select:hover { border-color: rgba(255, 255, 255, 0.55); }
+input:not([type="checkbox"], [type="radio"]):hover,
+select:hover,
+textarea:hover { border-color: rgba(255, 255, 255, 0.55); }
 select { cursor: pointer; }
 select option { background: var(--navy-900); }
 
@@ -845,6 +857,7 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   padding-inline: 11px 8px; color: var(--ink);
 }
 .campo-tel input { border: 0; background: transparent; border-radius: 0 var(--r) var(--r) 0; }
+.campo-tel select { padding-block: 8px; }
 .campo-tel select:focus-visible, .campo-tel input:focus-visible { outline: none; }
 
 /* ---------- Contador de caracteres ----------

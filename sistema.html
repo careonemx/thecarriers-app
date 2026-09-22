@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=cf6b0720">
+<link rel="stylesheet" href="assets/app.css?v=67828831">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=cf6b0720" defer></script>
+<script src="assets/vigia.js?v=67828831" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -242,8 +242,12 @@
 
         <div class="campos campos--2">
           <label class="campo"><span>Nombre</span><input value="Mariana"></label>
-          <label class="campo"><span>Apellido</span><input value="Ordaz"></label>
+          <label class="campo"><span>Apellido</span><input type="text" value="Ordaz"></label>
         </div>
+        <p class="campo__ayuda" style="margin-top:-6px">
+          El primero va sin <code>type</code> y el segundo con <code>type="text"</code>.
+          Deben verse idénticos; si no, el selector de campos volvió a enumerar tipos.
+        </p>
 
         <div class="campos campos--corto-largo">
           <label class="campo">
@@ -522,6 +526,7 @@
         <div class="regla"><b>.boton</b><span>Declara <code>background</code>. Sin eso hereda el gris claro del navegador.</span></div>
         <div class="regla"><b>Anchos en el CSS</b><span>Nunca en un <code>style=</code> del HTML: en línea, la consulta de medios no los puede corregir.</span></div>
         <div class="regla"><b>Un scroll por capa</b><span>Un hijo de flex con <code>overflow:auto</code> necesita <code>min-height:0</code>, o crece hasta su contenido y aparece una segunda barra encima. Y con un panel abierto, la página de atrás se bloquea con <code>html:has(dialog[open])</code>.</span></div>
+        <div class="regla"><b>Campos por exclusión</b><span>Los controles se seleccionan con <code>input:not([type=checkbox], …)</code>, nunca enumerando <code>input[type=text]</code>. Un <code>&lt;input&gt;</code> sin atributo <code>type</code> se comporta como texto pero NO lo empareja ese selector, y sale con el gris del navegador.</span></div>
         <div class="regla"><b>Filas de campos</b><span>Van en <code>.campos</code>, no en un <code>style</code> de la pantalla. Y con <code>align-items:start</code>: si un campo lleva ayuda debajo, su celda crece y el de al lado queda centrado en vez de alineado con él.</span></div>
         <div class="regla"><b>Lo opcional, en la etiqueta</b><span>"Compañía (opcional)", no un marcador de posición que dice "Opcional" y desaparece en cuanto alguien escribe.</span></div>
         <div class="regla"><b>Etiquetas sin modismos</b><span>Un botón es verbo y objeto: "Editar dirección", no "Editar a mano". "Ver dirección original", no "ver la dirección tal como llegó". El modismo envejece mal y no se traduce.</span></div>
