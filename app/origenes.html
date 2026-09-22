@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=205815f7">
-<script src="../assets/vigia.js?v=205815f7" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=4079fca5">
+<script src="../assets/vigia.js?v=4079fca5" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
@@ -40,6 +40,8 @@
     </div>
   </div>
 
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
   <div id="vista"></div>
 
   <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
@@ -47,9 +49,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=205815f7";
+import { montar, exigirSesion } from "../assets/app.js?v=4079fca5";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=205815f7";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=4079fca5";
 if (exigirSesion()) {
   montar();
 
@@ -96,8 +98,13 @@ if (exigirSesion()) {
             <h2>${esc(o.nombre)}</h2>
             <p class="ficha__sub">${esc(c.nombre)} ${esc(c.apellido)} <span class="ficha__nowrap">· ${esc(telefonoMX(c.telefono))}</span></p>
           </div>
-          ${o.predeterminado ? '<span class="pastilla pastilla--ok">Predeterminado</span>' : ""}
+          ${o.predeterminado
+            ? '<span class="pastilla pastilla--ok" title="Es el remitente que se imprime en cada etiqueta">Predeterminado</span>'
+            : ""}
         </div>
+        ${o.predeterminado
+          ? '<p class="ficha__nota">Es el remitente que se imprime en cada etiqueta.</p>'
+          : ""}
 
         <address class="ficha__cuerpo">${enUnaLinea(c).map(esc).join("<br>")}</address>
 
@@ -528,10 +535,7 @@ if (exigirSesion()) {
      por `click` para que también funcione con el teclado. */
   vista.addEventListener("change", (e) => {
     if (!e.target.matches("[data-predeterminar]")) return;
-    const fila = e.target.closest("[data-id]");
-    const o = origenes.find((x) => x.id === fila.dataset.id);
-    origenes.forEach((x) => { x.predeterminado = x === o; });
-    pintar();
+    hacerPredeterminado(origenes.find((x) => x.id === e.target.closest("[data-id]").dataset.id));
   });
 
   /* En tarjetas el predeterminado se cambia con un botón, no con un radio:
@@ -539,11 +543,24 @@ if (exigirSesion()) {
   vista.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-predeterminar]");
     if (!b) return;
-    const tarjeta = b.closest("[data-id]");
-    const o = origenes.find((x) => x.id === tarjeta.dataset.id);
+    hacerPredeterminado(origenes.find((x) => x.id === b.closest("[data-id]").dataset.id));
+  });
+
+  /* No hay botón de "Guardar" para esto: se aplica al pulsarlo, como cualquier
+     ajuste de una sola opción. Faltaba decirlo —una marca que se mueve sin más
+     deja la duda de si quedó guardado—. */
+  const aviso = document.getElementById("guardado");
+  let quitando;
+
+  function hacerPredeterminado(o) {
+    if (!o || o.predeterminado) return;
     origenes.forEach((x) => { x.predeterminado = x === o; });
     pintar();
-  });
+    clearTimeout(quitando);
+    aviso.textContent = `Guardado. “${o.nombre}” es ahora la dirección predeterminada: se imprimirá como remitente en las etiquetas nuevas.`;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 4000);
+  }
 
   /* Borrar una dirección de origen con recolecciones programadas deja a un camión
      yendo a una dirección que ya no existe. El diálogo lo dice antes, con el

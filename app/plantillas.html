@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Plantillas · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=205815f7">
-<script src="../assets/vigia.js?v=205815f7" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=4079fca5">
+<script src="../assets/vigia.js?v=4079fca5" defer></script>
 </head>
 <body data-seccion="plantillas">
 <main class="contenido contenido--ancho">
@@ -39,6 +39,8 @@
     </div>
   </div>
 
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
   <div id="vista"></div>
 
   <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
@@ -46,9 +48,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=205815f7";
-import { plantillas, pesoCobrado, pesoVolumetrico, FACTOR_VOLUMETRICO,
-         cotizar, dinero } from "../assets/datos.js?v=205815f7";
+import { montar, exigirSesion } from "../assets/app.js?v=4079fca5";
+import { plantillas, pesoCobrado, FACTOR_VOLUMETRICO,
+         cotizar, precioDe, dinero } from "../assets/datos.js?v=4079fca5";
 if (exigirSesion()) {
   montar();
 
@@ -76,12 +78,22 @@ if (exigirSesion()) {
   const coincide = (p) => !busca || sinAcentos(p.nombre).includes(busca);
   const medidas = (p) => `${p.largo} × ${p.ancho} × ${p.alto} cm`;
 
-  /* Lo más barato con el peso que REALMENTE se cobra. Cotizar con el peso
-     real cuando la caja se cobra por volumen da un precio que no existe. */
-  const desde = (c) => {
-    const o = cotizar(c.cobrado)[0];
-    return o ? `${o.paqueteria} ${o.servicio} desde ${dinero(o.precio)}` : "";
+  /* Se cotiza con el peso que REALMENTE se cobra. Con el real, cuando la caja
+     se cobra por volumen, saldría un precio que no existe. */
+  const masBarato = (c) => cotizar(c.cobrado)[0] ?? null;
+  const precio = (c) => { const o = masBarato(c); return o ? dinero(o.precio) : "—"; };
+  const masBarata = (c) => {
+    const o = masBarato(c);
+    return o ? `Lo más barato: ${o.paqueteria} ${o.servicio}.` : "";
   };
+
+  /* Sin "volumétrico" ni "sobrecosto por espacio": son palabras de
+     transportista. Quien lee esto quiere saber por qué la factura no coincide
+     con la báscula. */
+  const explicacion = (p, c) => c.porVolumen
+    ? `Pesa ${kg(c.real)}, pero una caja de ${p.largo} × ${p.ancho} × ${p.alto} cm
+       se cobra como si pesara ${kg(c.volumetrico)}.`
+    : `Pesa ${kg(c.real)} y la caja no abulta más que eso.`;
 
   function tarjeta(p) {
     const c = pesoCobrado(p);
@@ -92,20 +104,22 @@ if (exigirSesion()) {
             <h2>${esc(p.nombre)}</h2>
             <p class="ficha__sub">${medidas(p)}</p>
           </div>
-          ${p.predeterminada ? '<span class="pastilla pastilla--ok">Predeterminada</span>' : ""}
+          ${p.predeterminada
+            ? '<span class="pastilla pastilla--ok" title="Es la que aparece elegida al generar una guía">Predeterminada</span>'
+            : ""}
         </div>
+        ${p.predeterminada
+          ? '<p class="ficha__nota">Es la que aparece ya elegida al generar una guía.</p>'
+          : ""}
 
         <dl class="ficha__datos">
-          <div><dt>Peso real</dt><dd class="tabular">${kg(c.real)}</dd></div>
-          <div><dt>Peso volumétrico</dt><dd class="tabular">${kg(c.volumetrico)}</dd></div>
-          <div><dt>Se cobra</dt>
-            <dd class="tabular"${c.porVolumen ? ' style="color:#fde68a"' : ""}>${kg(c.cobrado)}</dd></div>
+          <div><dt>Te cobran</dt>
+            <dd class="ficha__cifra tabular"${c.porVolumen ? ' style="color:#fde68a"' : ""}>${kg(c.cobrado)}</dd></div>
+          <div><dt>Costo estimado</dt><dd class="ficha__cifra tabular">${esc(precio(c))}</dd></div>
         </dl>
 
-        ${c.porVolumen
-          ? `<p class="ficha__nota">Se cobra por volumen: ${kg(c.volumetrico)} en vez de ${kg(c.real)}.</p>`
-          : `<p class="ficha__nota">Se cobra por peso real.</p>`}
-        <p class="ficha__nota">${esc(desde(c))}</p>
+        <p class="ficha__nota">${explicacion(p, c)}</p>
+        <p class="ficha__nota">${esc(masBarata(c))}</p>
 
         <div class="ficha__pie">
           <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar plantilla</button>
@@ -263,27 +277,51 @@ if (exigirSesion()) {
       </form>`;
   }
 
-  /* El aviso que se recalcula al teclear. Dice el número que va a aparecer en
-     la factura, que casi nunca es el que se acaba de escribir. */
+  /* El aviso que se recalcula al teclear.
+
+     Dice el número que va a salir en la factura, que casi nunca es el que se
+     acaba de escribir. Y cuando la caja se cobra por volumen, dice cuánto
+     dinero cuesta eso: los centímetros solos no convencen a nadie de rehacer
+     una caja. */
   function recalcular() {
     const v = (n) => +panel.querySelector(`#pl-${n}`).value || 0;
     const caja = { peso: v("peso"), largo: v("largo"), ancho: v("ancho"), alto: v("alto") };
     const caj = document.getElementById("pl-resultado");
-    if (!caja.largo || !caja.ancho || !caja.alto) {
-      caj.innerHTML = "<b>Captura las tres medidas</b><p>Con ellas se calcula el peso volumétrico, que es por el que se cobra cuando supera al real.</p>";
+
+    if (!caja.largo || !caja.ancho || !caja.alto || !caja.peso) {
+      caj.className = "aviso aviso--info aviso--bloque";
+      caj.innerHTML = `<b>Captura el peso y las tres medidas</b>
+        <p>Con eso se puede decir por cuánto te va a cobrar la paquetería,
+           que no siempre es lo que marca la báscula.</p>`;
       return;
     }
+
     const c = pesoCobrado(caja);
     caj.className = `aviso aviso--bloque ${c.porVolumen ? "aviso--alerta" : "aviso--ok"}`;
+
+    if (!c.porVolumen) {
+      caj.innerHTML = `<b>Te cobran ${kg(c.cobrado)}</b>
+        <p>Pesa ${kg(c.real)} y la caja no abulta más que eso, así que pagas por lo que pesa.</p>
+        <p>Costo estimado: <b>${esc(precio(c))}</b>. ${esc(masBarata(c))}</p>`;
+      return;
+    }
+
+    /* El alto al que el volumen deja de mandar, y lo que se ahorra al bajarlo.
+       Se redondea hacia abajo: con el alto exacto los dos pesos empatan, y
+       basta un milímetro de más para volver a cobrar por volumen. */
+    const altoJusto = Math.max(1, Math.floor((caja.peso * FACTOR_VOLUMETRICO) / (caja.largo * caja.ancho)));
+    const ahorro = precioDe("Estafeta", c.cobrado) - precioDe("Estafeta", c.real);
+
     caj.innerHTML = `
-      <b>Se cobra ${kg(c.cobrado)}${c.porVolumen ? ", por volumen" : ", por peso real"}</b>
-      <p>Volumétrico ${kg(c.volumetrico)} · Real ${kg(c.real)}.
-        ${c.porVolumen
-          ? `La caja ocupa más de lo que pesa, así que se paga por el espacio. Bajar el alto a
-             ${Math.max(1, Math.floor((caja.peso * FACTOR_VOLUMETRICO) / (caja.largo * caja.ancho)))} cm
-             igualaría los dos.`
-          : "El volumen no supera al peso: no hay sobrecosto por espacio."}</p>
-      <p>${esc(desde(c))}</p>`;
+      <b>Te cobran ${kg(c.cobrado)}, no ${kg(c.real)}</b>
+      <p>Una caja de ${caja.largo} × ${caja.ancho} × ${caja.alto} cm ocupa el lugar de
+         ${kg(c.volumetrico)} en el camión, y eso es lo que se paga aunque pese menos.</p>
+      <p>Costo estimado: <b>${esc(precio(c))}</b>. ${esc(masBarata(c))}</p>
+      ${altoJusto < caja.alto
+        ? `<p>Con ${altoJusto} cm de alto en vez de ${caja.alto} pagarías por los
+             ${kg(c.real)} reales: <b>${esc(dinero(precioDe("Estafeta", c.real)))}</b>,
+             ${esc(dinero(ahorro))} menos por envío.</p>`
+        : ""}`;
   }
 
   let editando = null;
@@ -380,10 +418,7 @@ if (exigirSesion()) {
 
     if (e.target.closest("[data-editar]")) return abrir(p);
     if (e.target.closest("[data-borrar]")) return pedirConfirmacion(p);
-    if (e.target.closest("button[data-predeterminar]")) {
-      plantillas.forEach((x) => { x.predeterminada = x === p; });
-      pintar();
-    }
+    if (e.target.closest("button[data-predeterminar]")) return hacerPredeterminada(p);
   });
 
   vista.addEventListener("change", (e) => {
@@ -391,10 +426,28 @@ if (exigirSesion()) {
       porPagina = +e.target.value; pagina = 1; return pintar();
     }
     if (!e.target.matches("input[data-predeterminar]")) return;
-    const p = plantillas.find((x) => x.id === e.target.closest("[data-id]").dataset.id);
+    hacerPredeterminada(plantillas.find((x) => x.id === e.target.closest("[data-id]").dataset.id));
+  });
+
+  /* No hay botón de "Guardar" para esto: el cambio se aplica al pulsarlo,
+     como cualquier ajuste de una sola opción. Lo que faltaba era decirlo —una
+     marca que se mueve sin más deja la duda de si quedó guardado—. */
+  const aviso = document.getElementById("guardado");
+  let quitando;
+
+  function avisar(texto) {
+    clearTimeout(quitando);
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 4000);
+  }
+
+  function hacerPredeterminada(p) {
+    if (!p || p.predeterminada) return;
     plantillas.forEach((x) => { x.predeterminada = x === p; });
     pintar();
-  });
+    avisar(`Guardado. “${p.nombre}” es ahora la plantilla predeterminada: aparecerá ya elegida al generar una guía.`);
+  }
 
   const confirmar = document.getElementById("confirmar");
 
