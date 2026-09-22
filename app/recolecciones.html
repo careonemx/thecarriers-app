@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
-<script src="../assets/vigia.js?v=4792a3af" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
+<script src="../assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -84,10 +84,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4792a3af";
+import { montar, exigirSesion } from "../assets/app.js?v=7511478e";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
-         origenes, menosDias, HOY } from "../assets/datos.js?v=4792a3af";
+         origenes, menosDias, HOY } from "../assets/datos.js?v=7511478e";
 if (exigirSesion()) {
   montar();
 
@@ -296,7 +296,7 @@ if (exigirSesion()) {
                 <td>${r.via ? esc(r.via) : '<span class="apagado">Directo</span>'}</td>
                 <td>${esc(nombreOrigen(r.origen))}</td>
                 <td class="tabular">${r.piezas}</td>
-                <td class="tabular"${r.recogidas < r.piezas ? ' style="color:#fca5a5"' : ""}>${r.recogidas}</td>
+                <td class="tabular"${r.recogidas < r.piezas ? ' style="color:var(--mal)"' : ""}>${r.recogidas}</td>
                 <td><span class="pastilla pastilla--${res.tono}">${esc(res.texto)}</span></td>
               </tr>`;
             }).join("")}
@@ -349,10 +349,10 @@ if (exigirSesion()) {
 
     document.getElementById("metricas").innerHTML =
       metrica("Cumplimiento", pct === null ? "—" : `${pct}%`, periodo,
-              pct !== null && pct < 95 ? ' style="color:#fca5a5"' : "") +
+              pct !== null && pct < 95 ? ' style="color:var(--mal)"' : "") +
       metrica("Piezas sin recoger", programadas - recogidas,
               programadas - recogidas ? "Permanecen en el origen" : "Ninguna",
-              programadas - recogidas ? ' style="color:#fca5a5"' : "") +
+              programadas - recogidas ? ' style="color:var(--mal)"' : "") +
       metrica("Recolecciones sin cumplir", fallidas,
               fallidas ? "La paquetería no se presentó" : "Sin incidencias");
 

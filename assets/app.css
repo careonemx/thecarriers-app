@@ -1,17 +1,18 @@
 /* =================================================================
  * The Carriers — sistema de diseño de la aplicación
  *
- * Los tokens son los mismos del sitio público, sin excepción: la
- * escalera oscura abyss → navy-900 → navy, el verde de marca y la
- * Inter self-hosted. Quien entra desde la landing no debe notar que
- * cambió de sitio.
+ * Los tokens son los mismos del sitio público, sin excepción: la página
+ * blanca, navy-50 para lo hundido, el verde de marca y la Inter
+ * self-hosted. Quien entra desde la landing no debe notar que cambió de
+ * sitio.
  *
  * Contrastes ya medidos y que no hay que bajar:
- *   muted  #9aa6bd  7.5:1 sobre abyss, 5.8:1 sobre navy
- *   accent #0f9d6e  5.3:1 sobre abyss — pero texto BLANCO encima da
- *                   3.46:1 y reprueba, así que sobre verde va abyss
- *   field  rgba(255,255,255,.4)  cumple el 3:1 de 1.4.11 para bordes
- *                                de control, hairline NO
+ *   muted  #5a6780  5.5:1 sobre blanco, 5.2:1 sobre navy-50
+ *   accent #0f9d6e  3.3:1 sobre blanco: NO sirve como texto. Para leerlo
+ *                   va --enlace, y como relleno de botón --accent-solido
+ *                   con texto blanco encima (4.7:1)
+ *   field  rgba(18,28,51,.45)  cumple el 3:1 de 1.4.11 para bordes de
+ *                              control, hairline NO
  * ================================================================= */
 
 @font-face {
@@ -22,19 +23,58 @@
 }
 
 :root {
-  --abyss: #0b1220;
-  --navy-900: #121c33;
+  /* ---------------------------------------------------------------
+   * Identidad. Los mismos valores que el sitio público, sin excepción.
+   * ------------------------------------------------------------- */
   --navy: #1b2a4a;
+  --navy-900: #121c33;
   --navy-700: #2b3a67;
+  --navy-50: #f4f5f9;
   --accent: #0f9d6e;
-  --accent-claro: #6ee7b7;
+  --accent-600: #0b7f58;
 
-  --ink: #eef2f8;
-  --muted: #9aa6bd;
-  --hairline: rgba(255, 255, 255, 0.09);
-  --hairline-fuerte: rgba(255, 255, 255, 0.18);
-  --field: rgba(255, 255, 255, 0.4);
-  --hover: rgba(255, 255, 255, 0.04);
+  /* ---------------------------------------------------------------
+   * Papeles: qué hace cada color, no cuál es.
+   *
+   * La escalera de superficies va al revés que en oscuro. Allí subían
+   * desde el fondo —abyss, navy-900, navy—; aquí no hay nada más claro
+   * que el blanco, así que la tarjeta se separa de la página con una
+   * sombra y lo que va DENTRO de ella baja a navy-50.
+   * ------------------------------------------------------------- */
+  --pagina: #ffffff;         /* contenido, barra superior, panel */
+  --tarjeta: #ffffff;        /* una tarjeta; la separa la sombra */
+  --hundido: var(--navy-50); /* pieza dentro de una tarjeta, y la barra lateral */
+  --hundido-fuerte: #e7eaf1;/* su estado activo o pulsado */
+  --hover: var(--navy-50);
+
+  --ink: #16233d;
+  --muted: #5a6780;
+  --hairline: rgba(18, 28, 51, 0.12);
+  --hairline-fuerte: rgba(18, 28, 51, 0.22);
+  --field: rgba(18, 28, 51, 0.45);
+
+  /* El trazo de los diagramas: la línea por la que corre el pulso verde.
+     Escrito a mano era blanco al 14% y sobre blanco no existe. */
+  --trazo: rgba(18, 28, 51, 0.16);
+
+  /* El verde de marca da 3.3:1 sobre blanco y no sirve como texto: para
+     leerlo hace falta un paso más oscuro, y como relleno de botón lleva
+     texto blanco encima. El verde intacto se queda para trazos y puntos,
+     donde basta 3:1. */
+  --enlace: #0a7350;
+  --accent-solido: var(--accent-600);
+  --sobre-accent: #ffffff;
+
+  /* Estados. */
+  --mal: #b42318;
+  --mal-fondo: var(--mal-fondo);
+  --mal-borde: rgba(220, 38, 38, 0.35);
+  --aviso: #92610a;
+  --aviso-fondo: var(--aviso-fondo);
+  --aviso-borde: rgba(217, 119, 6, 0.35);
+
+  --sombra-tarjeta: 0 1px 2px rgba(18, 28, 51, 0.04),
+                    0 12px 32px -20px rgba(18, 28, 51, 0.14);
 
   --lateral: 236px;
   --superior: 60px;
@@ -43,10 +83,10 @@
   --r: 10px;
   --r-lg: 14px;
 
-  --sombra: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
+  --sombra: 0 30px 70px -40px rgba(18, 28, 51, 0.35);
   --curva: cubic-bezier(0.16, 1, 0.3, 1);
 
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 *,
@@ -66,7 +106,7 @@ html:has(dialog[open]) { overflow: hidden; }
 
 body {
   margin: 0;
-  background: var(--abyss);
+  background: var(--pagina);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
@@ -97,21 +137,24 @@ a { color: inherit; }
 }
 
 /* Barras de scroll internas a tono. */
-.scroll-fino { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }
+.scroll-fino { scrollbar-width: thin; scrollbar-color: var(--hairline-fuerte) transparent; }
 .scroll-fino::-webkit-scrollbar { width: 9px; height: 9px; }
-.scroll-fino::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 999px; }
+.scroll-fino::-webkit-scrollbar-thumb { background: var(--hairline-fuerte); border-radius: 999px; }
 
 /* -----------------------------------------------------------------
  * Armazón: barra lateral fija + columna de contenido
  * --------------------------------------------------------------- */
 .armazon { display: grid; grid-template-columns: var(--lateral) minmax(0, 1fr); min-height: 100vh; }
 
+/* La barra se hunde y el contenido se queda en blanco: con las dos del mismo
+   color, la pantalla entera era un solo plano y la navegación perdía su sitio.
+   En oscuro esa separación la daba el navy-900 sobre el abyss. */
 .lateral {
   position: sticky; top: 0; height: 100vh;
   display: flex; flex-direction: column; gap: 4px;
   padding: 16px 12px;
   border-right: 1px solid var(--hairline);
-  background: var(--navy-900);
+  background: var(--hundido);
 }
 .lateral__marca { display: flex; align-items: center; padding: 8px 10px 18px; }
 .lateral__marca img { height: 22px; width: auto; }
@@ -127,12 +170,12 @@ a { color: inherit; }
   transition: background-color .2s var(--curva), color .2s var(--curva);
 }
 .nav-item:hover { background: var(--hover); color: var(--ink); }
-.nav-item[aria-current="page"] { background: rgba(255,255,255,.08); color: var(--ink); }
+.nav-item[aria-current="page"] { background: var(--hundido-fuerte); color: var(--ink); }
 .nav-item svg { width: 17px; height: 17px; flex: none; }
 .nav-item__cuenta {
   margin-left: auto; font-size: 11px; font-weight: 600;
   padding: 1px 7px; border-radius: 999px;
-  background: rgba(248,113,113,.16); color: #fca5a5;
+  background: var(--mal-fondo); color: var(--mal);
 }
 
 
@@ -144,19 +187,19 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 14px;
   height: var(--superior); padding: 0 24px;
   border-bottom: 1px solid var(--hairline);
-  background: rgba(11, 18, 32, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
 }
 .superior__empresa {
   display: flex; align-items: center; gap: 9px;
   padding: 6px 11px 6px 8px; border: 1px solid var(--hairline);
-  border-radius: var(--r); background: var(--navy-900);
+  border-radius: var(--r); background: var(--tarjeta);
   font-weight: 500; cursor: pointer;
 }
 .superior__empresa:hover { border-color: var(--hairline-fuerte); }
 .avatar {
   display: grid; place-items: center; width: 26px; height: 26px; flex: none;
-  border-radius: 7px; background: var(--navy-700); color: var(--ink);
+  border-radius: 7px; background: var(--hundido-fuerte); color: var(--ink);
   font-size: 11px; font-weight: 600;
 }
 .buscador { position: relative; flex: 1; max-width: 420px; }
@@ -175,8 +218,8 @@ a { color: inherit; }
 .insignia-demo {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 5px 11px; border-radius: 999px;
-  border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.12);
-  color: #fde68a; font-size: 12px; font-weight: 500; white-space: nowrap;
+  border: 1px solid var(--aviso-borde); background: var(--aviso-fondo);
+  color: var(--aviso); font-size: 12px; font-weight: 500; white-space: nowrap;
 }
 
 /* -----------------------------------------------------------------
@@ -195,7 +238,7 @@ a { color: inherit; }
 
 .tarjeta {
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); overflow: hidden;
+  background: var(--tarjeta); box-shadow: var(--sombra-tarjeta); overflow: hidden;
 }
 .tarjeta__cabeza {
   display: flex; align-items: center; justify-content: space-between;
@@ -233,12 +276,12 @@ select,
 textarea {
   width: 100%; padding: 8px 11px;
   border: 1px solid var(--field); border-radius: var(--r);
-  background: rgba(255, 255, 255, 0.05); color: var(--ink);
+  background: var(--hundido); color: var(--ink);
   font: inherit; transition: border-color .2s var(--curva);
 }
 input:not([type="checkbox"], [type="radio"]):hover,
 select:hover,
-textarea:hover { border-color: rgba(255, 255, 255, 0.55); }
+textarea:hover { border-color: var(--hairline-fuerte); }
 select { cursor: pointer; }
 
 /* ---------- Fecha y hora ----------
@@ -304,7 +347,7 @@ input[type="time"]:focus-within::-webkit-calendar-picker-indicator { background:
 .calendario {
   position: fixed; z-index: 60; width: 280px; padding: 12px;
   border: 1px solid var(--hairline-fuerte); border-radius: var(--r-lg);
-  background: var(--navy); box-shadow: var(--sombra);
+  background: var(--hundido); box-shadow: var(--sombra);
 }
 .calendario__cabeza {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -337,7 +380,7 @@ input[type="time"]:focus-within::-webkit-calendar-picker-indicator { background:
    cuando son el mismo día. */
 .calendario__dia--hoy { border-color: var(--field); }
 .calendario__dia--elegido {
-  background: var(--accent); color: var(--abyss); font-weight: 600;
+  background: var(--accent-solido); color: var(--sobre-accent); font-weight: 600;
 }
 .calendario__dia--elegido:hover { background: var(--accent); filter: brightness(1.1); }
 
@@ -369,7 +412,7 @@ input[type="time"]:not([data-lleno])::-webkit-datetime-edit { color: var(--muted
 ::-webkit-datetime-edit-hour-field:focus,
 ::-webkit-datetime-edit-minute-field:focus,
 ::-webkit-datetime-edit-ampm-field:focus {
-  background: var(--accent); color: var(--abyss);
+  background: var(--accent-solido); color: var(--sobre-accent);
   border-radius: 3px; outline: none;
 }
 
@@ -377,7 +420,7 @@ input[type="time"]:not([data-lleno])::-webkit-datetime-edit { color: var(--muted
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator { transition: none; }
 }
-select option { background: var(--navy-900); }
+select option { background: var(--pagina); }
 
 .campo { display: grid; gap: 6px; }
 .campo > span { font-weight: 500; }
@@ -396,10 +439,10 @@ select option { background: var(--navy-900); }
 .boton svg { width: 16px; height: 16px; }
 /* Texto abyss sobre el verde: blanco encima da 3.46:1 y reprueba. El hover
    ACLARA, porque oscurecer dejaría el texto oscuro sin contraste. */
-.boton--primario { background: var(--accent); color: var(--abyss); }
+.boton--primario { background: var(--accent-solido); color: var(--sobre-accent); }
 .boton--primario:hover { filter: brightness(1.1); }
-.boton--fantasma { border-color: var(--hairline-fuerte); background: rgba(255,255,255,.05); color: var(--ink); }
-.boton--fantasma:hover { border-color: rgba(15,157,110,.6); background: rgba(255,255,255,.09); }
+.boton--fantasma { border-color: var(--hairline-fuerte); background: var(--hundido); color: var(--ink); }
+.boton--fantasma:hover { border-color: rgba(15,157,110,.6); background: var(--hundido-fuerte); }
 .boton--sutil { color: var(--muted); }
 .boton--sutil:hover { background: var(--hover); color: var(--ink); }
 .boton--bloque { width: 100%; }
@@ -426,7 +469,7 @@ select option { background: var(--navy-900); }
 }
 .ficha-filtro:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
 .ficha-filtro[aria-pressed="true"] {
-  border-color: rgba(15,157,110,.5); background: rgba(15,157,110,.14); color: var(--accent-claro);
+  border-color: rgba(15,157,110,.5); background: rgba(15,157,110,.14); color: var(--enlace);
 }
 /* Ficha que se quita: la pone la franja al enfocar un pendiente. Sin ella la
    lista se queda corta y nada en pantalla dice por qué. */
@@ -449,12 +492,12 @@ table { width: 100%; border-collapse: collapse; text-align: left; }
    montaba encima de la primera fila. */
 thead th {
   position: sticky; top: 0; z-index: 5;
-  padding: 9px 16px; background: #101a2e;
+  padding: 9px 16px; background: var(--hundido);
   border-bottom: 1px solid var(--hairline);
   font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted); white-space: nowrap;
 }
-tbody td { padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,.055); }
+tbody td { padding: 11px 16px; border-bottom: 1px solid var(--hairline); }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr { transition: background-color .15s var(--curva); }
 tbody tr:hover { background: var(--hover); }
@@ -470,16 +513,16 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   padding: 2px 9px; border-radius: var(--r-sm); border: 1px solid;
   font-size: 12px; font-weight: 500; white-space: nowrap;
 }
-.pastilla--info { border-color: var(--navy-700); background: rgba(43,58,103,.45); color: #e6e9f1; }
-.pastilla--ok   { border-color: rgba(15,157,110,.45); background: rgba(15,157,110,.15); color: var(--accent-claro); }
-.pastilla--mal  { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #fca5a5; }
-.pastilla--aviso{ border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.12); color: #fde68a; }
-.pastilla--neutra { border-color: var(--hairline); background: rgba(255,255,255,.05); color: var(--muted); }
+.pastilla--info { border-color: var(--hairline-fuerte); background: var(--hundido-fuerte); color: var(--ink); }
+.pastilla--ok   { border-color: rgba(15,157,110,.45); background: rgba(15,157,110,.15); color: var(--enlace); }
+.pastilla--mal  { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
+.pastilla--aviso{ border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
+.pastilla--neutra { border-color: var(--hairline); background: var(--hundido); color: var(--muted); }
 
 /* -----------------------------------------------------------------
  * Métricas
  * --------------------------------------------------------------- */
-.metrica { padding: 16px 18px; border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--navy-900); }
+.metrica { padding: 16px 18px; border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--tarjeta); box-shadow: var(--sombra-tarjeta); }
 .metrica__etiqueta { color: var(--muted); font-size: 12px; }
 .metrica__valor { margin-top: 7px; font-size: 27px; font-weight: 600; letter-spacing: -0.02em; }
 .metrica__nota { margin-top: 5px; font-size: 12px; color: var(--muted); }
@@ -491,7 +534,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .vacio__icono {
   display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 16px;
   border-radius: var(--r-lg); border: 1px solid rgba(15,157,110,.3);
-  background: rgba(15,157,110,.1); color: var(--accent-claro);
+  background: rgba(15,157,110,.1); color: var(--enlace);
 }
 .vacio h3 { font-size: 16px; }
 .vacio p { margin: 8px auto 0; max-width: 46ch; color: var(--muted); }
@@ -505,22 +548,22 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .linea__evento:last-child { padding-bottom: 0; }
 .linea__evento::before {
   content: ""; position: absolute; left: 10px; top: 20px; bottom: 0; width: 1px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--hundido-fuerte);
 }
 .linea__evento:last-child::before { display: none; }
 .linea__punto {
   width: 21px; height: 21px; border-radius: 999px; display: grid; place-items: center;
-  border: 1px solid var(--hairline); background: var(--navy-900); position: relative; z-index: 1;
+  border: 1px solid var(--hairline); background: var(--tarjeta); position: relative; z-index: 1;
 }
 .linea__punto i { width: 7px; height: 7px; border-radius: 999px; background: var(--muted); }
 .linea__evento--activo .linea__punto { border-color: rgba(15,157,110,.55); background: rgba(15,157,110,.16); }
 .linea__evento--activo .linea__punto i { background: var(--accent); }
-.linea__evento--mal .linea__punto { border-color: rgba(248,113,113,.5); background: rgba(248,113,113,.14); }
-.linea__evento--mal .linea__punto i { background: #f87171; }
+.linea__evento--mal .linea__punto { border-color: var(--mal-borde); background: var(--mal-fondo); }
+.linea__evento--mal .linea__punto i { background: var(--mal); }
 .linea__cuando { color: var(--muted); font-size: 12px; margin-top: 3px; }
 .linea__original {
   margin-top: 7px; padding: 7px 10px; border-radius: var(--r-sm);
-  background: rgba(255,255,255,.04); border: 1px solid var(--hairline);
+  background: var(--hundido); border: 1px solid var(--hairline);
   font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted);
 }
 
@@ -541,14 +584,14 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
    ni width ni height, así que la barra se pintaba siempre del mismo largo. */
 .barras__pista {
   display: block; height: 9px; border-radius: 999px;
-  background: rgba(255,255,255,.07); overflow: hidden;
+  background: var(--hundido); overflow: hidden;
 }
 .barras__valor {
   display: block; height: 100%; border-radius: 999px; background: var(--accent);
   transition: width .5s var(--curva);
 }
-.barras__valor--aviso { background: #fbbf24; }
-.barras__valor--mal { background: #f87171; }
+.barras__valor--aviso { background: var(--aviso); }
+.barras__valor--mal { background: var(--mal); }
 .barras__num { text-align: right; color: var(--muted); font-size: 13px; }
 
 /* -----------------------------------------------------------------
@@ -558,7 +601,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__arte {
   position: relative; overflow: hidden; padding: 48px;
   display: flex;
-  border-right: 1px solid var(--hairline); background: var(--navy-900);
+  border-right: 1px solid var(--hairline); background: var(--hundido);
 }
 
 /* El contenido va en un bloque de ancho acotado y centrado dentro del panel.
@@ -574,7 +617,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__panel > img { align-self: flex-start; } /* si no, se estira a todo el ancho */
 .auth__brillo {
   position: absolute; inset: -30% -20% auto -20%; height: 760px; pointer-events: none;
-  background: radial-gradient(52% 58% at 50% 0%, rgba(27,42,74,.95), transparent 72%);
+  background: radial-gradient(52% 58% at 50% 0%, rgba(27, 42, 74, 0.07), transparent 72%);
 }
 .auth__brillo--verde {
   inset: 10% -10% auto -10%; height: 560px;
@@ -588,7 +631,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__caja h1 { font-size: 23px; }
 .auth__pie { color: var(--muted); font-size: 13px; text-align: center; }
 .auth__lema { color: var(--muted); font-size: 13px; }
-.auth__pie a { color: var(--accent-claro); }
+.auth__pie a { color: var(--enlace); }
 
 .aviso {
   display: flex; gap: 10px; padding: 10px 13px; border-radius: var(--r);
@@ -600,12 +643,12 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .aviso--bloque { display: block; }
 .aviso--bloque > b { display: block; }
 .aviso--bloque > p { margin-top: 9px; }
-.aviso--info { border-color: var(--hairline); background: rgba(255,255,255,.04); color: var(--muted); }
-.aviso--mal { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.1); color: #fca5a5; }
-.aviso--ok { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.1); color: var(--accent-claro); }
+.aviso--info { border-color: var(--hairline); background: var(--hundido); color: var(--muted); }
+.aviso--mal { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
+.aviso--ok { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.1); color: var(--enlace); }
 /* Ni error ni dato suelto: algo que sí se puede hacer y conviene mirar antes.
    Medido sobre la tarjeta: 8.9:1. */
-.aviso--alerta { border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.09); color: #fde68a; }
+.aviso--alerta { border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
 
 /* -----------------------------------------------------------------
  * Diagrama de convergencia, en miniatura.
@@ -623,19 +666,19 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
    la columna crece y los cables dejan de apuntar al centro de cada ficha. */
 .mini-red__ficha {
   display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 36px; min-width: 0;
-  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--abyss);
+  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--hundido);
   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mini-red__sigla {
   display: grid; place-items: center; width: 22px; height: 22px; flex: none;
   border: 1px solid var(--hairline); border-radius: var(--r-sm);
-  background: rgba(255,255,255,.05); color: var(--muted);
+  background: var(--hundido); color: var(--muted);
   font-family: ui-monospace, Menlo, monospace; font-size: 10px;
 }
 .mini-red__nodo {
   flex: none; margin: 0 2px; display: grid; place-items: center; gap: 7px; padding: 14px 12px;
   border: 1px solid rgba(15,157,110,.4); border-radius: var(--r-lg);
-  background: var(--navy); text-align: center;
+  background: var(--hundido); text-align: center;
   box-shadow: 0 22px 60px -28px rgba(15,157,110,.9);
 }
 .mini-red__nodo img { width: 26px; height: 26px; }
@@ -657,11 +700,11 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
    texto blanco cumpla AA ya no se lee como advertencia, y un botón rojo
    macizo invita a pulsarlo. Delineado y teñido: 8.5:1 y menos accidentes. */
 .boton--peligro {
-  border-color: rgba(248, 113, 113, 0.45);
-  background: rgba(248, 113, 113, 0.12);
-  color: #fca5a5;
+  border-color: var(--mal-borde);
+  background: var(--mal-fondo);
+  color: var(--mal);
 }
-.boton--peligro:hover { border-color: rgba(248, 113, 113, 0.75); background: rgba(248, 113, 113, 0.2); }
+.boton--peligro:hover { border-color: var(--mal-borde); background: var(--mal-fondo); }
 
 .boton--chico { padding: 5px 11px; font-size: 13px; border-radius: var(--r-sm); }
 .boton--chico svg { width: 14px; height: 14px; }
@@ -685,7 +728,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 }
 .marca-campo input[type="checkbox"], .marca-campo input[type="radio"] {
   appearance: none; flex: none; width: 17px; height: 17px; margin: 1px 0 0;
-  border: 1px solid var(--field); background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--field); background: var(--hundido);
   border-radius: 5px; cursor: pointer; display: grid; place-content: center;
   transition: background-color .15s var(--curva), border-color .15s var(--curva);
 }
@@ -693,11 +736,11 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .marca-campo input:checked { background: var(--accent); border-color: var(--accent); }
 /* El símbolo va en abyss: sobre el verde, blanco da 3.46:1 y reprueba. */
 .marca-campo input[type="checkbox"]:checked::before {
-  content: ""; width: 9px; height: 5px; border: 2px solid var(--abyss);
+  content: ""; width: 9px; height: 5px; border: 2px solid var(--sobre-accent);
   border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px);
 }
 .marca-campo input[type="radio"]:checked::before {
-  content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--abyss);
+  content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--sobre-accent);
 }
 .marca-campo input:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -705,7 +748,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .interruptor input {
   appearance: none; position: relative; flex: none; width: 38px; height: 22px; margin: 0;
   border-radius: 999px; border: 1px solid var(--field);
-  background: rgba(255, 255, 255, 0.06); cursor: pointer;
+  background: var(--hundido); cursor: pointer;
   transition: background-color .2s var(--curva), border-color .2s var(--curva);
 }
 .interruptor input::after {
@@ -714,17 +757,17 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   transition: transform .2s var(--curva), background-color .2s var(--curva);
 }
 .interruptor input:checked { background: var(--accent); border-color: var(--accent); }
-.interruptor input:checked::after { transform: translateX(16px); background: var(--abyss); }
+.interruptor input:checked::after { transform: translateX(16px); background: var(--sobre-accent); }
 
 /* ---------- Campo con error ---------- */
 /* Un campo que solo recibe una cifra no gana nada con ocupar toda la fila:
    el ancho de una caja es una pista de cuánto se espera que se escriba. */
 .campo--corto > input { max-width: 180px; }
 
-.campo--error input, .campo--error select, .campo--error textarea { border-color: #f87171; }
-.campo__error { color: #fca5a5; font-size: 12px; }
+.campo--error input, .campo--error select, .campo--error textarea { border-color: var(--mal); }
+.campo__error { color: var(--mal); font-size: 12px; }
 input:disabled, select:disabled, textarea:disabled {
-  opacity: .55; cursor: not-allowed; background: rgba(255, 255, 255, 0.02);
+  opacity: .55; cursor: not-allowed; background: var(--hundido);
 }
 
 /* ---------- Pestañas ---------- */
@@ -745,10 +788,10 @@ input:disabled, select:disabled, textarea:disabled {
 /* ---------- Diálogo ---------- */
 dialog.dialogo {
   width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--hairline);
-  border-radius: var(--r-lg); background: var(--navy-900); color: var(--ink);
+  border-radius: var(--r-lg); background: var(--tarjeta); color: var(--ink);
   box-shadow: var(--sombra);
 }
-dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(2px); }
+dialog.dialogo::backdrop { background: rgba(18, 28, 51, 0.5); backdrop-filter: blur(2px); }
 .dialogo__cabeza { padding: 18px 20px 0; }
 .dialogo__cabeza h2 { font-size: 17px; }
 .dialogo__cuerpo { padding: 10px 20px 18px; color: var(--muted); }
@@ -766,13 +809,13 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 }
 .paginacion button:hover:not([disabled]) { background: var(--hover); color: var(--ink); }
 .paginacion button[aria-current="page"] {
-  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, 0.08); color: var(--ink);
+  border-color: var(--hairline-fuerte); background: var(--hundido-fuerte); color: var(--ink);
 }
 .paginacion button[disabled] { opacity: .4; cursor: not-allowed; }
 
 /* ---------- Carga ---------- */
 .esqueleto {
-  border-radius: var(--r-sm); background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--r-sm); background: var(--hundido);
   animation: latir 1.4s ease-in-out infinite;
 }
 @keyframes latir { 50% { opacity: .45; } }
@@ -782,7 +825,7 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 .insignia-tienda {
   display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
   padding: 5px 11px; border: 1px solid var(--hairline); border-radius: 999px;
-  background: var(--navy-900); font-size: 12px; color: var(--muted);
+  background: var(--hundido); font-size: 12px; color: var(--muted);
 }
 .insignia-tienda__punto {
   width: 7px; height: 7px; border-radius: 999px; background: var(--accent); flex: none;
@@ -792,7 +835,7 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 /* ---------- Conmutador de vista ---------- */
 .conmutador {
   display: inline-flex; padding: 2px; gap: 2px;
-  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--navy-900);
+  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--hundido);
 }
 .conmutador button {
   padding: 5px 13px; border: 0; border-radius: var(--r-sm); background: transparent;
@@ -800,7 +843,7 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
   transition: background-color .15s var(--curva), color .15s var(--curva);
 }
 .conmutador button:hover { color: var(--ink); }
-.conmutador button[aria-pressed="true"] { background: rgba(255,255,255,.09); color: var(--ink); }
+.conmutador button[aria-pressed="true"] { background: var(--hundido-fuerte); color: var(--ink); }
 
 /* ---------- Inicio ----------
    Tres niveles de peso, no tres diseños: lo que exige atención, lo que toca
@@ -834,7 +877,7 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
   display: flex; flex-direction: column; gap: 3px;
   padding: 14px 16px 13px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); color: inherit; text-decoration: none;
+  background: var(--tarjeta); box-shadow: var(--sombra-tarjeta); color: inherit; text-decoration: none;
   transition: border-color .16s var(--curva), background .16s var(--curva),
               transform .16s var(--curva);
 }
@@ -858,7 +901,7 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 }
 
 a.tarjeta-cifra:hover {
-  border-color: var(--hairline-fuerte); background: var(--navy);
+  border-color: var(--hairline-fuerte); background: var(--hundido);
   transform: translateY(-1px);
 }
 a.tarjeta-cifra:hover .tarjeta-cifra__ir { color: var(--ink); }
@@ -878,11 +921,11 @@ a.tarjeta-cifra:focus-visible .tarjeta-cifra__ir { color: var(--ink); }
    El rojo marca dónde mirar, no que todo esté roto. Por eso el borde es un
    apunte —no llega a leerse como alarma— y el color fuerte se reserva para
    la cifra, que es lo que hay que encontrar rápido. */
-.tarjeta-cifra--alerta { border-color: rgba(248, 113, 113, .2); }
-.tarjeta-cifra--alerta .tarjeta-cifra__n { color: #fca5a5; font-size: 30px; }
-a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
+.tarjeta-cifra--alerta { border-color: var(--mal-fondo); }
+.tarjeta-cifra--alerta .tarjeta-cifra__n { color: var(--mal); font-size: 30px; }
+a.tarjeta-cifra--alerta:hover { border-color: var(--mal-borde); }
 
-.tarjeta-cifra--pendiente .tarjeta-cifra__n { color: var(--accent-claro); }
+.tarjeta-cifra--pendiente .tarjeta-cifra__n { color: var(--enlace); }
 
 /* En cero la cifra se apaga y la tarjeta deja de ser enlace: un atajo que no
    lleva a ningún lado es una promesa rota. */
@@ -893,7 +936,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .nada-pendiente {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
   padding: 13px 18px; margin-bottom: 26px;
-  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--navy-900);
+  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--tarjeta);
 }
 .nada-pendiente b { font-weight: 600; }
 .nada-pendiente span { font-size: 12px; color: var(--muted); }
@@ -902,10 +945,10 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .franja-conexion {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
   padding: 12px 16px; margin-bottom: 26px;
-  border: 1px solid rgba(251, 191, 36, .35); border-radius: var(--r-lg);
-  background: rgba(251, 191, 36, .09);
+  border: 1px solid var(--aviso-borde); border-radius: var(--r-lg);
+  background: var(--aviso-fondo);
 }
-.franja-conexion b { color: #fde68a; font-size: 14px; }
+.franja-conexion b { color: var(--aviso); font-size: 14px; }
 .franja-conexion span { color: var(--muted); font-size: 12px; }
 .franja-conexion__sep { flex: 1; }
 
@@ -925,7 +968,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .periodo__dato {
   padding: 8px 13px 9px;
   border: 1px solid var(--hairline); border-radius: var(--r);
-  background: var(--navy-900);
+  background: var(--tarjeta);
 }
 .periodo__dato dt { color: var(--muted); font-size: 11px; line-height: 1.35; }
 .periodo__dato dd {
@@ -935,8 +978,8 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 /* La variación solo aparece cuando el periodo anterior tiene datos de verdad:
    comparar contra cero no es una variación. */
 .periodo__var { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--muted); }
-.periodo__var--sube { color: var(--accent-claro); }
-.periodo__var--baja { color: #fca5a5; }
+.periodo__var--sube { color: var(--enlace); }
+.periodo__var--baja { color: var(--mal); }
 
 /* Ayuda de una FILA de campos, no de uno solo.
 
@@ -954,7 +997,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .guardado {
   margin-bottom: 14px; padding: 10px 14px;
   border: 1px solid rgba(15, 157, 110, .4); border-radius: var(--r);
-  background: rgba(15, 157, 110, .1); color: var(--accent-claro); font-size: 13px;
+  background: rgba(15, 157, 110, .1); color: var(--enlace); font-size: 13px;
 }
 
 /* La cifra que importa de una ficha: se lee antes que su rótulo. */
@@ -991,7 +1034,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
   position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; right: 0;
   max-height: min(70vh, 460px); overflow-y: auto;
   padding: 6px; border: 1px solid var(--hairline-fuerte); border-radius: var(--r-lg);
-  background: var(--navy); box-shadow: var(--sombra);
+  background: var(--hundido); box-shadow: var(--sombra);
 }
 .hallazgos__grupo {
   padding: 9px 10px 5px;
@@ -1008,7 +1051,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .hallazgo b { display: block; font-size: 13px; font-weight: 500; }
 .hallazgo span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 .hallazgo:hover, .hallazgo:focus-visible { background: var(--hover); }
-.hallazgo:hover b, .hallazgo:focus-visible b { color: var(--accent-claro); }
+.hallazgo:hover b, .hallazgo:focus-visible b { color: var(--enlace); }
 
 @media (prefers-reduced-motion: reduce) { .hallazgo { transition: none; } }
 
@@ -1043,8 +1086,8 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 }
 .orden__fila--normal::before { background: var(--hairline-fuerte); }
 .orden__fila--manda::before { background: var(--accent); }
-.orden__fila--evitar::before { background: rgba(251, 191, 36, .6); }
-.orden__fila--no-usar::before { background: rgba(248, 113, 113, .6); }
+.orden__fila--evitar::before { background: var(--aviso-borde); }
+.orden__fila--no-usar::before { background: var(--mal-borde); }
 
 .orden__puesto {
   display: grid; place-items: center; width: 26px; height: 26px;
@@ -1085,7 +1128,7 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 /* ---------- Lo técnico, plegado ---------- */
 .avanzado > summary {
   padding: 12px 16px; border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); color: var(--ink); font-size: 14px; cursor: pointer;
+  background: var(--tarjeta); color: var(--ink); font-size: 14px; cursor: pointer;
   list-style: none;
 }
 .avanzado > summary::-webkit-details-marker { display: none; }
@@ -1162,7 +1205,7 @@ tr.fila--principal td:first-child::before {
   position: relative; overflow: hidden;
   padding: 18px 20px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900);
+  background: var(--tarjeta); box-shadow: var(--sombra-tarjeta);
 }
 .ficha--principal::before {
   content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent);
@@ -1211,7 +1254,7 @@ tr.fila--principal td:first-child::before {
 .colgante__abrir svg { width: 19px; height: 19px; }
 .colgante__abrir:hover,
 .colgante__abrir[aria-expanded="true"] {
-  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, .05); color: var(--ink);
+  border-color: var(--hairline-fuerte); background: var(--hundido); color: var(--ink);
 }
 
 /* La cuenta la lleva el punto y aquí la cifra: son dos cosas distintas y por
@@ -1219,8 +1262,8 @@ tr.fila--principal td:first-child::before {
 .colgante__punto {
   position: absolute; top: 1px; right: 1px;
   min-width: 15px; height: 15px; padding: 0 4px;
-  border: 2px solid var(--navy-900); border-radius: 999px;
-  background: var(--accent); color: #06231a;
+  border: 2px solid var(--pagina); border-radius: 999px;
+  background: var(--accent-solido); color: var(--sobre-accent);
   font-size: 10px; font-weight: 700; line-height: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -1229,7 +1272,7 @@ tr.fila--principal td:first-child::before {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
   width: 360px; max-width: calc(100vw - 32px);
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  background: var(--tarjeta); box-shadow: 0 16px 40px rgba(18, 28, 51, .18);
 }
 
 /* ---------- Novedades ---------- */
@@ -1255,15 +1298,15 @@ tr.fila--principal td:first-child::before {
 .aviso-fila__tipo {
   padding: 1px 7px; border-radius: 999px;
   font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
-  background: rgba(255, 255, 255, .07); color: var(--muted);
+  background: var(--hundido); color: var(--muted);
 }
-.aviso-fila__tipo--novedad { background: rgba(15, 157, 110, .16); color: var(--accent-claro); }
-.aviso-fila__tipo--mantenimiento { background: rgba(251, 191, 36, .14); color: #fde68a; }
+.aviso-fila__tipo--novedad { background: rgba(15, 157, 110, .16); color: var(--enlace); }
+.aviso-fila__tipo--mantenimiento { background: var(--aviso-fondo); color: var(--aviso); }
 .aviso-fila b { display: block; font-size: 13px; line-height: 1.4; }
 .aviso-fila p { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .aviso-fila__ir {
   display: inline-block; margin-top: 7px;
-  color: var(--accent-claro); font-size: 12px; text-decoration: none;
+  color: var(--enlace); font-size: 12px; text-decoration: none;
 }
 .aviso-fila__ir:hover { text-decoration: underline; }
 
@@ -1277,7 +1320,7 @@ tr.fila--principal td:first-child::before {
 }
 .cuenta__abrir:hover,
 .cuenta__abrir[aria-expanded="true"] {
-  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, .05); color: var(--ink);
+  border-color: var(--hairline-fuerte); background: var(--hundido); color: var(--ink);
 }
 .cuenta__flecha { transition: transform .15s var(--ease-signal); }
 .cuenta__abrir[aria-expanded="true"] .cuenta__flecha { transform: rotate(180deg); }
@@ -1286,11 +1329,11 @@ tr.fila--principal td:first-child::before {
    permanente deja de leerse a la semana. */
 .cuenta__punto {
   position: absolute; top: 2px; left: 22px; width: 8px; height: 8px;
-  border: 2px solid var(--navy-900); border-radius: 999px; background: #fbbf24;
+  border: 2px solid var(--pagina); border-radius: 999px; background: #d97706;
 }
 .cuenta__cuenta {
   margin-left: auto; padding: 1px 7px; border-radius: 999px;
-  background: rgba(251, 191, 36, .16); color: #fde68a;
+  background: var(--aviso-fondo); color: var(--aviso);
   font-size: 11px; font-variant-numeric: tabular-nums;
 }
 
@@ -1298,7 +1341,7 @@ tr.fila--principal td:first-child::before {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
   min-width: 232px; max-width: calc(100vw - 32px); padding: 6px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  background: var(--tarjeta); box-shadow: 0 16px 40px rgba(18, 28, 51, .18);
 }
 .cuenta__quien {
   padding: 10px 10px 12px; margin-bottom: 4px;
@@ -1313,7 +1356,7 @@ tr.fila--principal td:first-child::before {
   color: var(--ink); font-size: 13px; text-decoration: none;
 }
 .cuenta__opcion svg { width: 17px; height: 17px; color: var(--muted); }
-.cuenta__opcion:hover { background: rgba(255, 255, 255, .06); }
+.cuenta__opcion:hover { background: var(--hundido); }
 .cuenta__opcion:hover svg { color: var(--ink); }
 
 /* En una pantalla angosta, colgar de un botón que no está pegado al borde
@@ -1329,7 +1372,7 @@ tr.fila--principal td:first-child::before {
 
 /* Lo que no cuadra se marca en su sitio, dentro de la fila: sacarlo a una
    columna aparte obliga a buscarlo de vuelta en el texto. */
-.caso__malo { color: #fbbf24; }
+.caso__malo { color: var(--aviso); }
 
 
 /* ---------- Consumo del plan ----------
@@ -1338,19 +1381,19 @@ tr.fila--principal td:first-child::before {
 .uso { display: grid; gap: 14px; }
 .uso__cifras { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
 .uso__n { font-size: 38px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.uso__n--aviso { color: #fbbf24; }
-.uso__n--alerta { color: #f87171; }
+.uso__n--aviso { color: var(--aviso); }
+.uso__n--alerta { color: var(--mal); }
 .uso__et { margin-left: 8px; color: var(--muted); font-size: 13px; }
 .uso__detalle { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .uso__nota { color: var(--muted); font-size: 12px; }
 
 .barra {
   height: 8px; border-radius: 999px; overflow: hidden;
-  background: rgba(255, 255, 255, .08);
+  background: var(--hundido-fuerte);
 }
 .barra__lleno { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
-.barra__lleno--aviso { background: #fbbf24; }
-.barra__lleno--alerta { background: #f87171; }
+.barra__lleno--aviso { background: var(--aviso); }
+.barra__lleno--alerta { background: var(--mal); }
 
 /* Una conexión que todavía no existe se ve, pero no compite con las que sí:
    sin ella la lista de lo conectado y la de lo conectable pesarían igual. */
@@ -1375,7 +1418,7 @@ tr.fila--principal td:first-child::before {
            grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); }
 .tarjeta-pedido {
   display: grid; gap: 11px; padding: 15px;
-  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--abyss);
+  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--hundido);
   transition: border-color .2s var(--curva);
 }
 .tarjeta-pedido:hover { border-color: var(--hairline-fuerte); }
@@ -1398,13 +1441,13 @@ tr.fila--principal td:first-child::before {
 .tarea:hover { background: var(--hover); }
 .tarea__icono {
   display: grid; place-items: center; width: 36px; height: 36px; flex: none;
-  border-radius: var(--r); border: 1px solid var(--hairline); background: rgba(255,255,255,.04);
+  border-radius: var(--r); border: 1px solid var(--hairline); background: var(--hundido);
   color: var(--muted);
 }
 .tarea__icono svg { width: 17px; height: 17px; }
-.tarea--urge .tarea__icono { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #fca5a5; }
-.tarea--atender .tarea__icono { border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.12); color: #fde68a; }
-.tarea--ok .tarea__icono { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.12); color: var(--accent-claro); }
+.tarea--urge .tarea__icono { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
+.tarea--atender .tarea__icono { border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
+.tarea--ok .tarea__icono { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.12); color: var(--enlace); }
 .tarea__cuerpo { flex: 1; min-width: 0; }
 .tarea__cuerpo b { font-weight: 600; }
 .tarea__cuerpo p { margin-top: 2px; color: var(--muted); font-size: 13px; }
@@ -1434,10 +1477,10 @@ dialog.panel {
   border-left: 1px solid var(--hairline);
   width: min(660px, 100vw); max-width: 100vw;
   height: 100dvh; max-height: 100dvh;
-  background: var(--abyss); color: var(--ink);
-  box-shadow: -40px 0 80px -40px rgba(0, 0, 0, 0.9);
+  background: var(--pagina); color: var(--ink);
+  box-shadow: -40px 0 80px -40px rgba(18, 28, 51, 0.28);
 }
-dialog.panel::backdrop { background: rgba(0, 0, 0, 0.55); }
+dialog.panel::backdrop { background: rgba(18, 28, 51, 0.45); }
 /* El contenedor recibe el foco al abrir; su anillo sobra. */
 dialog.panel:focus { outline: none; }
 /* El propio <dialog> nunca scrollea: solo su cuerpo. */
@@ -1453,7 +1496,7 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   position: sticky; top: 0; z-index: 2; flex: none;
   display: flex; align-items: flex-start; gap: 14px;
   padding: 18px 22px; border-bottom: 1px solid var(--hairline);
-  background: var(--navy-900);
+  background: var(--tarjeta);
 }
 /* El folio va en monoespaciado; la palabra "Pedido", no. */
 .panel__cabeza h2 {
@@ -1478,7 +1521,7 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 .panel__pie {
   flex: none; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap;
-  padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--navy-900);
+  padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--tarjeta);
 }
 
 /* ---------- Bloques del detalle ---------- */
@@ -1490,11 +1533,11 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 .bloque__caja {
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
-  background: var(--navy-900); padding: 15px 17px;
+  background: var(--tarjeta); padding: 15px 17px;
 }
 
 .dato { display: flex; justify-content: space-between; gap: 16px; padding: 5px 0; }
-.dato + .dato { border-top: 1px solid rgba(255, 255, 255, .055); }
+.dato + .dato { border-top: 1px solid var(--hairline); }
 .dato dt, .dato > span:first-child { color: var(--muted); }
 .dato dd, .dato > span:last-child { margin: 0; text-align: right; }
 .dato--fuerte { font-weight: 600; font-size: 15px; padding-top: 9px; }
@@ -1510,9 +1553,9 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   display: grid; grid-template-columns: 104px minmax(0, 1fr) 14px minmax(0, 1fr);
   gap: 10px; align-items: baseline; padding: 7px 0; font-size: 13px;
 }
-.cambio + .cambio { border-top: 1px solid rgba(255, 255, 255, .055); }
+.cambio + .cambio { border-top: 1px solid var(--hairline); }
 .cambio__campo { color: var(--muted); font-size: 12px; }
-.cambio__antes { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3); }
+.cambio__antes { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--hairline-fuerte); }
 .cambio__flecha { color: var(--accent); text-align: center; }
 .cambio__despues { color: var(--ink); font-weight: 500; }
 
@@ -1573,19 +1616,19 @@ dialog.panel[open] { display: flex; flex-direction: column; }
     radial-gradient(70% 160% at 0% 0%, rgba(15, 157, 110, 0.16), transparent 70%),
     rgba(15, 157, 110, 0.07);
 }
-.franja--resuelto .franja__icono { background: rgba(15, 157, 110, 0.2); color: var(--accent-claro); }
+.franja--resuelto .franja__icono { background: rgba(15, 157, 110, 0.2); color: var(--enlace); }
 .franja--resuelto p { color: var(--muted); }
 
 .franja--pendiente {
-  border-color: rgba(248, 113, 113, 0.4); background: rgba(248, 113, 113, 0.1);
+  border-color: var(--mal-borde); background: var(--mal-fondo);
 }
-.franja--pendiente .franja__icono { background: rgba(248, 113, 113, 0.18); color: #fca5a5; }
-.franja--pendiente p { color: #fca5a5; }
+.franja--pendiente .franja__icono { background: var(--mal-fondo); color: var(--mal); }
+.franja--pendiente p { color: var(--mal); }
 
 .franja--editada {
-  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, 0.05);
+  border-color: var(--hairline-fuerte); background: var(--hundido);
 }
-.franja--editada .franja__icono { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+.franja--editada .franja__icono { background: var(--hundido-fuerte); color: var(--muted); }
 .franja--editada p { color: var(--muted); }
 
 /* ---------- Comparación de tarifas ----------
@@ -1608,7 +1651,7 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 .tarifa__meta { margin-top: 2px; color: var(--muted); font-size: 12px; }
 .tarifa__precio { font-weight: 600; font-variant-numeric: tabular-nums; }
 .tarifa__cumple { color: var(--muted); }
-.tarifa__cumple[data-bajo="true"] { color: #fde68a; }
+.tarifa__cumple[data-bajo="true"] { color: var(--aviso); }
 
 /* =================================================================
  * REQ-01 · Lote
@@ -1631,13 +1674,13 @@ dialog.lote { width: min(620px, calc(100vw - 32px)); }
 }
 .lote__fila > :nth-child(4) { white-space: nowrap; }
 .lote__detalle { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
-.lote__fila + .lote__fila { border-top: 1px solid rgba(255, 255, 255, .055); }
+.lote__fila + .lote__fila { border-top: 1px solid var(--hairline); }
 .lote__fila b { font-family: ui-monospace, Menlo, monospace; font-weight: 500; }
 .lote__fila span { color: var(--muted); font-size: 13px; }
 .lote__estado { display: grid; place-items: center; width: 22px; height: 22px; }
 .lote__estado svg { width: 15px; height: 15px; }
-.lote__estado--generado { color: var(--accent-claro); }
-.lote__estado--fallido { color: #fca5a5; }
+.lote__estado--generado { color: var(--enlace); }
+.lote__estado--fallido { color: var(--mal); }
 .lote__estado--omitido { color: var(--muted); }
 .lote__estado--cola { color: var(--muted); opacity: .5; }
 .lote__estado--procesando i {
@@ -1652,12 +1695,12 @@ dialog.lote { width: min(620px, calc(100vw - 32px)); }
 .lote__conteo div span { color: var(--muted); font-size: 12px; }
 
 .lote__barra {
-  height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .08); overflow: hidden;
+  height: 4px; border-radius: 999px; background: var(--hundido-fuerte); overflow: hidden;
 }
 .lote__barra i { display: block; height: 100%; background: var(--accent); transition: width .25s var(--curva); }
 
 /* Fila de la tabla que falló en el lote. */
-tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
+tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
 
 @media (max-width: 520px) {
   .lote__fila { grid-template-columns: 22px minmax(0, 1fr); }
@@ -1694,10 +1737,10 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
 .campo-tel {
   display: flex; align-items: stretch;
   border: 1px solid var(--field); border-radius: var(--r);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hundido);
   transition: border-color .2s var(--curva);
 }
-.campo-tel:hover { border-color: rgba(255, 255, 255, 0.55); }
+.campo-tel:hover { border-color: var(--hairline-fuerte); }
 .campo-tel:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .campo-tel select {
   width: auto; flex: none; border: 0; border-right: 1px solid var(--hairline);
@@ -1712,8 +1755,8 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
    Debajo y a la derecha del campo, discreto hasta que importa. */
 .campo__pie { display: flex; justify-content: space-between; gap: 12px; }
 .campo__contador { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.campo__contador[data-cerca="true"] { color: #fde68a; }
-.campo__contador[data-lleno="true"] { color: #fca5a5; }
+.campo__contador[data-cerca="true"] { color: var(--aviso); }
+.campo__contador[data-lleno="true"] { color: var(--mal); }
 
 /* ---------- Separador con palabra ---------- */
 .separador-o {
@@ -1760,7 +1803,7 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
   .lateral__cerrar { display: inline-flex; margin-left: auto; }
   .abrir-menu { display: inline-flex; }
   .velo {
-    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6);
+    position: fixed; inset: 0; z-index: 50; background: rgba(18, 28, 51, 0.5);
     backdrop-filter: blur(2px);
   }
   .rejilla--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

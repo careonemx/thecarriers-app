@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=4792a3af">
+<link rel="stylesheet" href="assets/app.css?v=7511478e">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -22,9 +22,9 @@
              text-transform: uppercase; letter-spacing: .1em; margin: 32px 0 14px; }
   .guia p.intro { margin-top: 8px; color: var(--muted); max-width: 66ch; }
   .muestra { padding: 22px; border: 1px solid var(--hairline); border-radius: var(--r-lg);
-             background: var(--navy-900); }
+             background: var(--tarjeta); }
   code, .cls { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-               font-size: 12px; color: var(--accent-claro); }
+               font-size: 12px; color: var(--enlace); }
   .cls { display: inline-block; margin-top: 10px; color: var(--muted); }
   .paleta { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
   .ficha-color { border: 1px solid var(--hairline); border-radius: var(--r); overflow: hidden; }
@@ -33,7 +33,7 @@
   .ficha-color__pie b { display: block; }
   .ficha-color__pie span { color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
   .razon { margin-top: 5px; font-size: 11px; }
-  .razon--ok { color: var(--accent-claro); }
+  .razon--ok { color: var(--enlace); }
   .razon--no { color: #fca5a5; }
   .tipos > div { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
   .tipos > div:last-child { border-bottom: 0; }
@@ -42,14 +42,14 @@
   .regla { display: grid; grid-template-columns: 148px 1fr; gap: 16px; padding: 11px 0;
            border-bottom: 1px solid var(--hairline); align-items: baseline; }
   .regla:last-child { border-bottom: 0; }
-  .regla b { font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 500; color: var(--accent-claro); }
+  .regla b { font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 500; color: var(--enlace); }
   @media (max-width: 899px) {
     .guia { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 24px 16px 64px; }
     .guia__indice { position: static; display: flex; flex-wrap: wrap; gap: 4px;
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=4792a3af" defer></script>
+<script src="assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -73,7 +73,7 @@
 
   <main>
     <header>
-      <img src="assets/brand/lockup-white.svg" alt="The Carriers" style="height:24px;width:auto">
+      <img src="assets/brand/lockup.svg" alt="The Carriers" style="height:24px;width:auto">
       <h1 style="margin-top:22px;font-size:28px">Sistema de diseño</h1>
       <p class="intro">
         Todo lo que sigue se renderiza con <code>assets/app.css</code>, el mismo archivo que usa la
@@ -92,9 +92,9 @@
     <section id="color">
       <h2>Color</h2>
       <p class="intro">
-        Tres superficies apiladas y un solo acento. La profundidad se hace con la escalera, no con
-        sombras: <code>abyss</code> es la página, <code>navy-900</code> la tarjeta y
-        <code>navy</code> lo que está por encima.
+        Tres superficies y un solo acento. Sobre blanco no hay nada más claro que el blanco, así
+        que la tarjeta se separa de la página con una sombra y lo que va <b>dentro</b> de ella baja
+        a <code>navy-50</code>. La escalera va al revés que en oscuro, donde subía desde el fondo.
       </p>
 
       <h3>Superficies</h3>
@@ -840,39 +840,40 @@ function ficha({ nombre, valor, fondo = ABYSS, texto, nota, contra, hexToken }) 
 const pinta = (id, fichas) => { document.getElementById(id).innerHTML = fichas.map(ficha).join(""); };
 
 pinta("superficies", [
-  { nombre: "--abyss", valor: tk("--abyss"), nota: "La página. Único derivado del modo oscuro." },
-  { nombre: "--navy-900", valor: tk("--navy-900"), nota: "Tarjetas, barra lateral, encabezado de tabla." },
-  { nombre: "--navy", valor: tk("--navy"), nota: "Lo que está por encima de una tarjeta." },
-  { nombre: "--navy-700", valor: tk("--navy-700"), nota: "Avatares y pastilla informativa." },
+  { nombre: "--pagina", valor: tk("--pagina"), nota: "El área de contenido, la barra superior y el panel." },
+  { nombre: "--tarjeta", valor: tk("--tarjeta"), nota: "Una tarjeta. La separa de la página la sombra, no el color." },
+  { nombre: "--hundido", valor: tk("--hundido"), nota: "Pieza dentro de una tarjeta, y la barra lateral." },
+  { nombre: "--hundido-fuerte", valor: tk("--hundido-fuerte"), nota: "Su estado activo o pulsado." },
 ]);
 
 // Un token de texto se muestra SOBRE el fondo, no como fondo: medirlo contra
 // sí mismo da 1.00:1 y no significa nada.
 pinta("textos", [
-  { nombre: "--ink", valor: tk("--abyss"), texto: tk("--ink"),
+  { nombre: "--ink", valor: tk("--pagina"), texto: tk("--ink"),
     nota: "Titulares y dato principal.",
-    contra: { color: tk("--ink"), min: 4.5, que: "sobre abyss" } },
-  { nombre: "--muted", valor: tk("--abyss"), texto: tk("--muted"),
+    contra: { color: tk("--ink"), min: 4.5, que: "sobre la página" } },
+  { nombre: "--muted", valor: tk("--pagina"), texto: tk("--muted"),
     nota: "Apoyo, etiquetas y celdas secundarias.",
-    contra: { color: tk("--muted"), min: 4.5, que: "sobre abyss" } },
-  { nombre: "--ink sobre tarjeta", valor: tk("--navy-900"), texto: tk("--ink"),
-    nota: "El mismo texto, una superficie arriba.",
-    contra: { color: tk("--ink"), min: 4.5, que: "sobre navy-900" } },
-  { nombre: "--muted sobre tarjeta", valor: tk("--navy-900"), texto: tk("--muted"),
+    contra: { color: tk("--muted"), min: 4.5, que: "sobre la página" } },
+  { nombre: "--ink sobre hundido", valor: tk("--hundido"), texto: tk("--ink"),
+    nota: "El mismo texto, una superficie abajo.",
+    contra: { color: tk("--ink"), min: 4.5, que: "sobre navy-50" } },
+  { nombre: "--muted sobre hundido", valor: tk("--hundido"), texto: tk("--muted"),
     nota: "El piso real del texto de apoyo.",
-    contra: { color: tk("--muted"), min: 4.5, que: "sobre navy-900" } },
+    contra: { color: tk("--muted"), min: 4.5, que: "sobre navy-50" } },
 ]);
 
 pinta("marca", [
-  { nombre: "--accent", valor: tk("--accent"), texto: tk("--abyss"), hexToken: tk("--accent"),
-    nota: "Fondo de botón principal. El texto encima va en abyss.",
-    contra: { color: tk("--abyss"), min: 4.5, que: "texto abyss encima" } },
-  { nombre: "--accent (como texto)", valor: tk("--abyss"), texto: tk("--accent"),
-    nota: "El acento como color de texto sobre el fondo.",
-    contra: { color: tk("--accent"), min: 4.5, que: "sobre abyss" } },
-  { nombre: "--accent-claro", valor: tk("--abyss"), texto: tk("--accent-claro"),
-    nota: "Enlaces, cifras de acento y estado correcto.",
-    contra: { color: tk("--accent-claro"), min: 4.5, que: "sobre abyss" } },
+  { nombre: "--accent-solido", valor: tk("--accent-solido"), texto: tk("--sobre-accent"),
+    hexToken: tk("--accent-solido"),
+    nota: "Fondo de botón principal. Encima va blanco.",
+    contra: { color: tk("--sobre-accent"), min: 4.5, que: "texto blanco encima" } },
+  { nombre: "--accent (como texto)", valor: tk("--pagina"), texto: tk("--accent"),
+    nota: "El verde de marca NO sirve como texto sobre blanco: 3.3:1.",
+    contra: { color: tk("--accent"), min: 4.5, que: "sobre la página" } },
+  { nombre: "--enlace", valor: tk("--pagina"), texto: tk("--enlace"),
+    nota: "El verde que sí se lee: enlaces, cifras de acento y estado correcto.",
+    contra: { color: tk("--enlace"), min: 4.5, que: "sobre la página" } },
 ]);
 
 pinta("lineas", [
@@ -885,18 +886,15 @@ pinta("lineas", [
 // Un estado es un par: relleno tenue más texto legible encima. Se documenta el
 // relleno, y el color del texto va en la nota porque no se elige por separado.
 pinta("estado", [
-  { nombre: "correcto", valor: "rgba(15,157,110,.15)", texto: tk("--accent-claro"),
-    hexToken: "rgba(15,157,110,.15)", nota: "Texto #6EE7B7 · borde accent/45",
-    contra: { color: tk("--accent-claro"), min: 4.5, que: "texto de la pastilla" } },
-  { nombre: "problema", valor: "rgba(248,113,113,.12)", texto: "#fca5a5",
-    hexToken: "rgba(248,113,113,.12)", nota: "Texto #FCA5A5 · borde #F87171/40",
-    contra: { color: "#fca5a5", min: 4.5, que: "texto de la pastilla" } },
-  { nombre: "pendiente", valor: "rgba(251,191,36,.12)", texto: "#fde68a",
-    hexToken: "rgba(251,191,36,.12)", nota: "Texto #FDE68A · borde #FBBF24/40",
-    contra: { color: "#fde68a", min: 4.5, que: "texto de la pastilla" } },
-  { nombre: "informativo", valor: "rgba(43,58,103,.45)", texto: "#e6e9f1",
-    hexToken: "rgba(43,58,103,.45)", nota: "Texto #E6E9F1 · borde navy-700",
-    contra: { color: "#e6e9f1", min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "correcto", valor: "rgba(15,157,110,.12)", texto: tk("--enlace"),
+    hexToken: "rgba(15,157,110,.12)", nota: "Texto --enlace · borde accent/45",
+    contra: { color: tk("--enlace"), min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "problema", valor: tk("--mal-fondo"), texto: tk("--mal"),
+    hexToken: tk("--mal-fondo"), nota: "Texto --mal · borde --mal-borde",
+    contra: { color: tk("--mal"), min: 4.5, que: "texto de la pastilla" } },
+  { nombre: "pendiente", valor: tk("--aviso-fondo"), texto: tk("--aviso"),
+    hexToken: tk("--aviso-fondo"), nota: "Texto --aviso · borde --aviso-borde",
+    contra: { color: tk("--aviso"), min: 4.5, que: "texto de la pastilla" } },
 ]);
 
 const dialogo = document.getElementById("dialogo");

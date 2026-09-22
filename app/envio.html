@@ -6,15 +6,15 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Envío · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
-<script src="../assets/vigia.js?v=4792a3af" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
+<script src="../assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido" id="pagina"></main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4792a3af";
-import { envios, tonos, dinero, fechaCorta, diasDesde } from "../assets/datos.js?v=4792a3af";
+import { montar, exigirSesion } from "../assets/app.js?v=7511478e";
+import { envios, tonos, dinero, fechaCorta, diasDesde } from "../assets/datos.js?v=7511478e";
 if (exigirSesion()) {
   montar();
 
@@ -53,7 +53,7 @@ if (exigirSesion()) {
         <div>
           <a class="boton boton--sutil" href="pedidos.html" style="margin-left:-15px">← Pedidos</a>
           <h1 class="mono" style="margin-top:6px">${e.guia}</h1>
-          <p>${e.paqueteria} · pedido <a href="pedidos.html" style="color:var(--accent-claro)">${e.pedido}</a> · entró por ${e.canal}</p>
+          <p>${e.paqueteria} · pedido <a href="pedidos.html" style="color:var(--enlace)">${e.pedido}</a> · entró por ${e.canal}</p>
         </div>
         <div class="encabezado__acciones">
           <span class="pastilla pastilla--${tonos[e.estado]}" style="align-self:center">${e.estado}</span>

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Plantillas · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
-<script src="../assets/vigia.js?v=4792a3af" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
+<script src="../assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body data-seccion="plantillas">
 <main class="contenido contenido--ancho">
@@ -48,9 +48,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4792a3af";
+import { montar, exigirSesion } from "../assets/app.js?v=7511478e";
 import { plantillas, pesoCobrado, FACTOR_VOLUMETRICO,
-         cotizar, precioDe, dinero } from "../assets/datos.js?v=4792a3af";
+         cotizar, precioDe, dinero } from "../assets/datos.js?v=7511478e";
 if (exigirSesion()) {
   montar();
 
@@ -114,7 +114,7 @@ if (exigirSesion()) {
 
         <dl class="ficha__datos">
           <div><dt>Te cobran</dt>
-            <dd class="ficha__cifra tabular"${c.porVolumen ? ' style="color:#fde68a"' : ""}>${kg(c.cobrado)}</dd></div>
+            <dd class="ficha__cifra tabular"${c.porVolumen ? ' style="color:var(--aviso)"' : ""}>${kg(c.cobrado)}</dd></div>
           <div><dt>Costo estimado</dt><dd class="ficha__cifra tabular">${esc(precio(c))}</dd></div>
         </dl>
 

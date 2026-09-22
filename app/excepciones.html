@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Tracking · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
-<script src="../assets/vigia.js?v=4792a3af" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
+<script src="../assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
@@ -74,9 +74,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4792a3af";
+import { montar, exigirSesion } from "../assets/app.js?v=7511478e";
 import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta,
-         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=4792a3af";
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=7511478e";
 if (exigirSesion()) {
   montar();
 
@@ -193,7 +193,7 @@ if (exigirSesion()) {
       metrica("Detenidos ahora", items.length,
               hayFiltro() ? `de ${detenidos.length} en total` : "En todas tus paqueterías") +
       metrica("El que más lleva", elQueMas ? dias(elQueMas) : "—",
-              "Desde el último reporte", elQueMas >= 3 ? ' style="color:#fca5a5"' : "") +
+              "Desde el último reporte", elQueMas >= 3 ? ' style="color:var(--mal)"' : "") +
       metrica("En cuántas paqueterías", paqueterias,
               paqueterias === 1 ? "Una sola" : "Hay que hablar con varias");
   }

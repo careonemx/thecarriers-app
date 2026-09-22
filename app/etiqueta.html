@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Etiquetas · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
 
 <!--
   Los estilos de la etiqueta van aquí y no en app.css a propósito.
@@ -18,7 +18,9 @@
 
   Negro sobre blanco no es una decisión estética: una etiqueta oscura gasta
   tóner, y una impresora térmica solo quema el papel, no lo blanquea. Un
-  código de barras claro sobre fondo oscuro no lo lee ningún escáner.
+  código de barras claro sobre fondo oscuro no lo lee ningún escáner. La
+  etiqueta NO sigue el tema de la aplicación: es papel, y el papel es blanco
+  con tinta negra pase lo que pase. Lo que sí sigue el tema es la barra.
 -->
 <style>
   /* ---------- Barra de trabajo (nunca se imprime) ---------- */
@@ -27,7 +29,7 @@
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     padding: 12px 20px;
     border-bottom: 1px solid var(--hairline);
-    background: var(--navy-900);
+    background: var(--hundido);
   }
   .impresion__sep { flex: 1; }
   .impresion__cuenta { font-weight: 600; }
@@ -139,7 +141,7 @@
   }
 </style>
 <style id="regla-pagina"></style>
-<script src="../assets/vigia.js?v=4792a3af"></script>
+<script src="../assets/vigia.js?v=7511478e"></script>
 </head>
 
 <body>
@@ -167,8 +169,8 @@
 <main class="lienzo" id="lienzo"></main>
 
 <script type="module">
-import { svgCodigo } from "../assets/codigo.js?v=4792a3af";
-import { origen, datosEtiqueta, marcarImpresas, vecesImpresa, fechaLarga } from "../assets/datos.js?v=4792a3af";
+import { svgCodigo } from "../assets/codigo.js?v=7511478e";
+import { origen, datosEtiqueta, marcarImpresas, vecesImpresa, fechaLarga } from "../assets/datos.js?v=7511478e";
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);

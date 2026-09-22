@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4792a3af">
-<script src="../assets/vigia.js?v=4792a3af" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7511478e">
+<script src="../assets/vigia.js?v=7511478e" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -126,12 +126,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4792a3af";
+import { montar, exigirSesion } from "../assets/app.js?v=7511478e";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=4792a3af";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=7511478e";
 if (exigirSesion()) {
   montar();
 
@@ -210,7 +210,7 @@ if (exigirSesion()) {
     <tr data-vista="${vistaDe(p)}" data-folio="${p.folio}">
       <td><input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"></td>
       <td><button class="mono" type="button" data-abrir="${p.folio}"
-            style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
+            style="background:none;border:0;padding:0;font:inherit;color:var(--enlace);cursor:pointer;text-decoration:underline">${p.folio}</button>
           <div class="apagado" style="font-size:12px">${fechaCorta(p.fecha)}</div></td>
       <td style="max-width:220px">${p.cliente.nombre}
           <div class="apagado" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente.correo}</div></td>
@@ -228,7 +228,7 @@ if (exigirSesion()) {
   document.getElementById("vista-mosaico").innerHTML = pedidos.map((p) => `
     <article class="tarjeta-pedido" data-vista="${vistaDe(p)}">
       <div class="tarjeta-pedido__alto">
-        <button class="tarjeta-pedido__folio" type="button" data-abrir="${p.folio}" style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
+        <button class="tarjeta-pedido__folio" type="button" data-abrir="${p.folio}" style="background:none;border:0;padding:0;font:inherit;color:var(--enlace);cursor:pointer;text-decoration:underline">${p.folio}</button>
         <span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>
       </div>
       <div>
@@ -999,7 +999,7 @@ if (exigirSesion()) {
       <div class="dialogo__cabeza"><h2 id="lote-titulo">${cfg.titulo}</h2></div>
       <div class="dialogo__cuerpo" style="display:grid;gap:16px">
         <div class="lote__conteo">
-          <div><b style="color:var(--accent-claro)">${aprocesar.length}</b><span>se procesan</span></div>
+          <div><b style="color:var(--enlace)">${aprocesar.length}</b><span>se procesan</span></div>
           ${fuera.length ? `<div><b>${fuera.length}</b><span>se omiten</span></div>` : ""}
           <div><b>${todos.length}</b><span>seleccionados</span></div>
         </div>
@@ -1120,8 +1120,8 @@ if (exigirSesion()) {
     const omitidos = fuera.length;
     cuerpo.insertAdjacentHTML("afterbegin", `
       <div class="lote__conteo">
-        <div><b style="color:var(--accent-claro)">${contador.generado}</b><span>${contador.generado === 1 ? "generada" : "generadas"}</span></div>
-        <div><b style="color:${contador.fallido ? "#fca5a5" : "var(--ink)"}">${contador.fallido}</b><span>${contador.fallido === 1 ? "fallida" : "fallidas"}</span></div>
+        <div><b style="color:var(--enlace)">${contador.generado}</b><span>${contador.generado === 1 ? "generada" : "generadas"}</span></div>
+        <div><b style="color:${contador.fallido ? "var(--mal)" : "var(--ink)"}">${contador.fallido}</b><span>${contador.fallido === 1 ? "fallida" : "fallidas"}</span></div>
         <div><b>${omitidos}</b><span>${omitidos === 1 ? "omitido" : "omitidos"}</span></div>
       </div>`);
 

@@ -11,7 +11,7 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=4792a3af";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=7511478e";
 
 const CLAVE = "tc_sesion";
 
@@ -124,7 +124,7 @@ function lateral(activa) {
   <aside class="lateral" id="lateral">
     <div class="lateral__marca">
       <a href="inicio.html" aria-label="The Carriers, inicio">
-        <img src="../assets/brand/lockup-white.svg" alt="The Carriers" width="113" height="22">
+        <img src="../assets/brand/lockup.svg" alt="The Carriers" width="113" height="22">
       </a>
       <button class="boton boton--sutil lateral__cerrar" type="button" data-cerrar-menu aria-label="Cerrar menú">
         ${svg(icono.cerrar)}
