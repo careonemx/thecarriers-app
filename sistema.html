@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=c4b18c04">
+<link rel="stylesheet" href="assets/app.css?v=370c9b19">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=c4b18c04" defer></script>
+<script src="assets/vigia.js?v=370c9b19" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -693,6 +693,9 @@
         <div class="regla"><b>Ofrecer lo que sí se puede</b><span>Sin integración quedan el número de guía para copiar, el rastreo público de la paquetería y el contacto del destinatario, que es dato nuestro. Es poco y es verdad.</span></div>
         <div class="regla"><b>Dos acciones se ven como un par</b><span>Mismo control y mismo ancho mínimo. Un botón junto a un texto suelto no se lee como dos opciones: se lee como un botón y una nota.</span></div>
         <div class="regla"><b>Lo que reportó la paquetería se conserva</b><span>Pero en segundo plano y dicho con su nombre —"Texto original: <code>delivery exception</code>"—, porque es lo que se cita al llamarles. Al mismo peso que el motivo en castellano, solo estorba.</span></div>
+        <div class="regla"><b>Un nombre por pantalla</b><span>Menú, título y tarjeta dicen lo mismo. Tres etiquetas distintas para una sola pantalla obligan a deducir que son la misma.</span></div>
+        <div class="regla"><b>No repetir lo que el contexto ya dice</b><span>En una pantalla que solo trae detenidos, una columna "Detenido" y otra "Estatus" cuentan el mismo hecho dos veces. Cuánto lleva y qué reportó son el mismo evento visto por la fecha y por el texto: van juntos.</span></div>
+        <div class="regla"><b>El buscador se queda con lo que sobra</b><span>Con un ancho tope queda diminuto y deja un hueco a su derecha que parece un error. Dentro de una barra de filtros, los atajos ocupan lo suyo y el buscador el resto —y su <code>input</code> tiene que llenar su caja, que <code>.filtros input { width: auto }</code> se lo impide—.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

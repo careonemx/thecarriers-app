@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=c4b18c04";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js?v=370c9b19";
 
 const CLAVE = "tc_sesion";
 
@@ -49,7 +49,7 @@ const svg = (d, clase = "") =>
  * "¿la guía 877… la busco en Pedidos o en Envíos?". Pedidos es la lista
  * y el estado del envío es una de sus vistas.
  *
- * "Detenidos" sí se queda, y no es una incoherencia: no es un duplicado
+ * "Tracking" sí se queda, y no es una incoherencia: no es un duplicado
  * de la lista, es una cola de trabajo. Sus columnas contestan otra
  * pregunta —cuándo vence, qué lo resuelve, de quién depende— y alguien la
  * abre para vaciarla, no para consultar.
@@ -68,7 +68,7 @@ const GRUPOS = [
          de Inicio entran aquí con `?pendiente=`, ya filtradas. */
       { id: "inicio", texto: "Inicio", href: "inicio.html" },
       { id: "pedidos", texto: "Pedidos", href: "pedidos.html", cuenta: sinGuia.length },
-      { id: "excepciones", texto: "Detenidos", href: "excepciones.html", cuenta: detenidos.length },
+      { id: "excepciones", texto: "Tracking", href: "excepciones.html", cuenta: detenidos.length },
       { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
     ],
   },

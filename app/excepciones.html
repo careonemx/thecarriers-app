@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Envíos detenidos · The Carriers</title>
+<title>Tracking · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=c4b18c04">
-<script src="../assets/vigia.js?v=c4b18c04" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=370c9b19">
+<script src="../assets/vigia.js?v=370c9b19" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
 
   <div class="encabezado" style="margin-bottom:24px">
     <div>
-      <h1>Envíos detenidos</h1>
-      <p>Lo que reportaron tus paqueterías, junto en un solo lugar. Se destraba
-         con ellas o con el cliente; aquí tienes la guía y el contacto para hacerlo.</p>
+      <h1>Tracking</h1>
+      <p>Los envíos que tus paqueterías reportaron detenidos, juntos en un solo
+         lugar. Se destraban con ellas o con el cliente; aquí tienes la guía y el
+         contacto para hacerlo.</p>
     </div>
   </div>
 
@@ -25,13 +26,9 @@
   <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
 
   <section class="tarjeta">
-    <div class="tarjeta__cabeza">
-      <h2>Tracking</h2>
-    </div>
-
     <div class="filtros">
       <label class="sr-only" for="q-detenidos">Buscar</label>
-      <div class="buscador" style="max-width:320px">
+      <div class="buscador">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="q-detenidos" autocomplete="off"
@@ -51,7 +48,6 @@
       <label class="sr-only" for="hasta">Hasta</label>
       <input type="date" id="hasta" aria-label="Hasta">
 
-      <span class="filtros__sep"></span>
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
         Quitar filtros</button>
     </div>
@@ -60,7 +56,6 @@
       <table id="tabla">
         <caption class="sr-only">Envíos detenidos, con lo que reportó cada paquetería.</caption>
         <thead><tr>
-          <th scope="col">Detenido</th>
           <th scope="col">Envío</th>
           <th scope="col">Estatus</th>
           <th scope="col">Destinatario</th>
@@ -79,9 +74,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=c4b18c04";
+import { montar, exigirSesion } from "../assets/app.js?v=370c9b19";
 import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta,
-         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=c4b18c04";
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=370c9b19";
 if (exigirSesion()) {
   montar();
 
@@ -131,19 +126,16 @@ if (exigirSesion()) {
     return `
       <tr data-guia="${esc(e.guia)}">
         <td>
-          <span class="pastilla pastilla--${d >= 3 ? "mal" : "aviso"}">${dias(d)}</span>
-          <div class="apagado" style="margin-top:5px;font-size:12px">
-            desde ${esc(fechaCorta(e.detenidoDesde))}</div>
-        </td>
-        <td>
           <a class="mono" href="envio.html?guia=${encodeURIComponent(e.guia)}">${esc(e.guia)}</a>
           <div style="margin-top:4px;font-size:12px"><b>${esc(e.paqueteria)}</b></div>
           <div class="apagado" style="font-size:12px">${esc(e.destino)}</div>
         </td>
-        <td style="max-width:30ch">
-          ${esc(e.motivo)}
-          <div class="apagado" style="margin-top:5px;font-size:11px">
-            Texto original: <span class="mono">${esc(e.original)}</span></div>
+        <td style="max-width:34ch">
+          <span class="pastilla pastilla--${d >= 3 ? "mal" : "aviso"}">${dias(d)}</span>
+          <div style="margin-top:6px">${esc(e.motivo)}</div>
+          <div class="apagado" style="margin-top:4px;font-size:11px">
+            desde ${esc(fechaCorta(e.detenidoDesde))} · texto original:
+            <span class="mono">${esc(e.original)}</span></div>
         </td>
         <td style="max-width:22ch">
           ${esc(e.cliente)}

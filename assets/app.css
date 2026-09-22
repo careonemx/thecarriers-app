@@ -161,6 +161,11 @@ a { color: inherit; }
   font-size: 11px; font-weight: 600;
 }
 .buscador { position: relative; flex: 1; max-width: 420px; }
+
+/* Dentro de una barra de filtros el buscador se queda con el ancho que
+   sobra: los atajos y las fechas ocupan lo suyo y él el resto. Con el tope
+   de 420px quedaba un buscador diminuto y un hueco muerto a la derecha. */
+.filtros .buscador { flex: 1 1 260px; max-width: none; }
 .buscador svg {
   position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
   width: 15px; height: 15px; color: var(--muted); pointer-events: none;
@@ -269,6 +274,7 @@ select option { background: var(--navy-900); }
   padding: 13px 18px; border-bottom: 1px solid var(--hairline);
 }
 .filtros select, .filtros input { width: auto; min-width: 150px; }
+.filtros .buscador input { width: 100%; }
 .filtros__sep { flex: 1; }
 /* Separador entre grupos de filtros: agrupa visualmente lo que se combina. */
 .filtros__div { width: 1px; align-self: stretch; background: var(--hairline); margin: 0 3px; }
