@@ -67,6 +67,20 @@ Están documentadas en el CSS, pero conviene tenerlas a la vista:
 4. **`.boton` tiene que declarar `background`.** Si no, un `<button>` hereda el gris
    claro del navegador y el texto tenue encima da 2.17:1.
 
+## El acceso en angosto
+
+`login.html` y `recuperar.html` usan su propio umbral, **1279 y no 1023**, porque el
+panel dividido deja al diagrama sin ancho antes que eso. Pero por debajo el arte **no
+desaparece**: se compacta y pasa a ser la cabecera del formulario. Marca, resplandor
+verde y diagrama animado siguen ahí; las fichas muestran solo el monograma y se cae la
+bajada larga, que en un teléfono estorba antes del formulario.
+
+Esconderlo entero dejaba un formulario pelón sobre un fondo plano. Si alguien vuelve a
+tocar esa consulta de medios, que sea para compactar, no para ocultar.
+
+El ancho y el margen del diagrama viven en el CSS, nunca en un `style=` del HTML: en
+línea, la consulta de medios no los puede corregir y el diagrama queda descentrado.
+
 ## Accesibilidad
 
 WCAG 2.1 AA, medido sobre el render de las ocho pantallas: **621 textos, 0 fallos**.

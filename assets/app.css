@@ -410,6 +410,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .auth__caja { width: 100%; max-width: 372px; margin: 0 auto; display: grid; gap: 16px; }
 .auth__caja h1 { font-size: 23px; }
 .auth__pie { color: var(--muted); font-size: 13px; text-align: center; }
+.auth__lema { color: var(--muted); font-size: 13px; }
 .auth__pie a { color: var(--accent-claro); }
 
 .aviso {
@@ -424,7 +425,12 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
  * Diagrama de convergencia, en miniatura.
  * El mismo lenguaje del sitio: muchos canales, una plataforma, muchas salidas.
  * --------------------------------------------------------------- */
-.mini-red { display: flex; align-items: center; gap: 0; }
+/* El ancho y el margen viven aquí, no en un style= en el HTML: si están
+   en línea, la consulta de medios no los puede corregir. */
+.mini-red {
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  max-width: 520px; margin-top: 32px;
+}
 .mini-red__col { display: grid; gap: 7px; flex: 1; min-width: 0; }
 /* Alto fijo y sin saltos de línea: el SVG de los cables asume tres fichas de
    36 con 7 de hueco (3*36 + 2*7 = 122). Si "Mercado Libre" parte en dos líneas,
@@ -476,11 +482,50 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   .rejilla--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* El acceso se parte antes que el resto: con el panel dividido por debajo de
-   1280 el diagrama se queda sin ancho y le corta el texto a las fichas. */
+/* -----------------------------------------------------------------
+ * Acceso en angosto.
+ *
+ * El panel dividido no cabe por debajo de 1280, pero esconderlo entero
+ * dejaba un formulario pelón sobre un fondo plano: sin marca, sin color
+ * y sin la animación. Así que el arte no desaparece, se compacta y pasa
+ * a ser la cabecera del formulario:
+ *
+ *   - el diagrama se queda, con sus pulsos, pero las fichas muestran
+ *     solo el monograma; la geometría del SVG no cambia porque el alto
+ *     de ficha y los huecos siguen siendo los mismos;
+ *   - el resplandor verde pasa a verse sobre el fondo de la página;
+ *   - se cae la bajada larga, que en un teléfono estorba antes del
+ *     formulario.
+ * --------------------------------------------------------------- */
 @media (max-width: 1279px) {
   .auth { grid-template-columns: minmax(0, 1fr); }
-  .auth__arte { display: none; }
+
+  .auth__arte {
+    padding: 40px 24px 0;
+    border-right: 0;
+    background: transparent; /* que el resplandor caiga sobre el fondo */
+  }
+  .auth__brillo { inset: -34% 0 auto 0; height: 560px; }
+  .auth__brillo--verde { inset: -8% 0 auto 0; height: 420px; }
+
+  .auth__panel {
+    max-width: 420px; gap: 26px;
+    align-items: center; text-align: center;
+  }
+  .auth__panel > img { align-self: center; }
+  /* balance reparte las líneas en vez de dejar una huérfana. */
+  .auth__contenido h2 { font-size: 23px; max-width: none; text-wrap: balance; }
+  .auth__contenido p { display: none; } /* la bajada larga estorba aquí */
+  .auth__lema { display: none; }
+
+  /* Solo monogramas: el nombre no cabe y el sentido del diagrama se
+     entiende igual — muchos entran, uno en medio, muchos salen. */
+  .mini-red { max-width: 300px; margin: 26px auto 0; }
+  .mini-red__col { flex: none; width: 42px; }
+  .mini-red__ficha { justify-content: center; padding: 0; }
+  .mini-red__nombre { display: none; }
+
+  .auth__formulario { padding: 30px 24px 48px; }
 }
 
 @media (max-width: 767px) {
