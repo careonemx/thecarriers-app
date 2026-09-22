@@ -4,70 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Excepciones · The Carriers</title>
+<title>Envíos detenidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4079fca5">
-<script src="../assets/vigia.js?v=4079fca5" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=73e34793">
+<script src="../assets/vigia.js?v=73e34793" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
-  <div class="encabezado">
+
+  <div class="encabezado" style="margin-bottom:24px">
     <div>
-      <h1>Excepciones</h1>
-      <p>Lo que se detuvo, ordenado por antigüedad. Primero lo que lleva más tiempo parado, porque es lo que el cliente ya está esperando.</p>
+      <h1>Envíos detenidos</h1>
+      <p>No avanzan hasta que alguien hace algo. Primero los que están por vencer:
+         pasado el plazo, la paquetería los regresa y el retorno se cobra.</p>
     </div>
   </div>
+
   <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
+
+  <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
+
   <section class="tarjeta">
-    <div class="tarjeta__cabeza"><h2>Envíos detenidos</h2>
-      <span class="apagado" style="font-size:12px">Se actualiza con lo que reporta cada paquetería</span></div>
     <div class="tabla-caja scroll-fino">
       <table id="tabla">
-        <caption class="sr-only">Envíos detenidos, con el motivo que reportó la paquetería y quién lo atiende.</caption>
+        <caption class="sr-only">Envíos detenidos, con lo que resuelve cada uno y su plazo.</caption>
         <thead><tr>
-          <th scope="col">Detenido</th><th scope="col">Guía</th><th scope="col">Paquetería</th>
-          <th scope="col">Motivo</th><th scope="col">Destinatario</th><th scope="col">Atiende</th><th scope="col"></th>
+          <th scope="col">Vence</th>
+          <th scope="col">Envío</th>
+          <th scope="col">Qué pasó</th>
+          <th scope="col">Qué lo resuelve</th>
+          <th scope="col">Atiende</th>
         </tr></thead>
         <tbody></tbody>
       </table>
     </div>
-    <div class="tarjeta__pie"><span><b data-contador>0</b> detenidos</span></div>
+    <div class="tarjeta__pie"><span><b id="cuenta">0</b> detenidos</span></div>
   </section>
 </main>
+
 <script type="module">
-import { montar, exigirSesion, conectarFiltros } from "../assets/app.js?v=4079fca5";
-import { detenidos, diasDesde, fechaCorta } from "../assets/datos.js?v=4079fca5";
+import { montar, exigirSesion } from "../assets/app.js?v=73e34793";
+import { detenidos, comoResolver, DE_QUIEN, diasDesde, fechaCorta, usuario } from "../assets/datos.js?v=73e34793";
 if (exigirSesion()) {
   montar();
-  const ordenados = [...detenidos].sort((a, b) => diasDesde(b.detenidoDesde) - diasDesde(a.detenidoDesde));
-  const sinAsignar = ordenados.filter((e) => e.responsable === "Sin asignar").length;
-  const promedio = ordenados.length
-    ? (ordenados.reduce((s, e) => s + diasDesde(e.detenidoDesde), 0) / ordenados.length).toFixed(1) : "0";
 
-  const metrica = (etiqueta, valor, nota) =>
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const dias = (n) => `${n} ${n === 1 ? "día" : "días"}`;
+
+  /* Ordenar por antigüedad era el error de fondo: la que lleva más tiempo
+     parada no es la que menos tiempo queda. Aquí manda el vencimiento, que es
+     cuando el paquete se regresa y hay que pagar el retorno. */
+  const lista = () => [...detenidos]
+    .map((e) => ({ e, r: comoResolver(e) }))
+    .sort((a, b) => a.r.restan - b.r.restan);
+
+  const TONO = { vencido: "mal", hoy: "mal", manana: "aviso", holgado: "neutra" };
+  const CUANDO = (r) => r.restan < 0 ? `Venció hace ${dias(-r.restan)}`
+    : r.restan === 0 ? "Vence hoy"
+    : r.restan === 1 ? "Vence mañana"
+    : `Faltan ${dias(r.restan)}`;
+
+  /* A dónde se va a resolver. Corregir una dirección se hace en el pedido,
+     que es donde está el formulario; lo demás, en el historial del envío,
+     que es lo que se tiene a mano al llamar a la paquetería. */
+  const destino = ({ e, r }) => r.accion === "Corregir dirección"
+    ? `pedidos.html?pedido=${encodeURIComponent(String(e.pedido).replace(/\D/g, ""))}`
+    : `envio.html?guia=${encodeURIComponent(e.guia)}`;
+
+  function fila({ e, r }) {
+    const parado = diasDesde(e.detenidoDesde);
+    return `
+      <tr data-guia="${esc(e.guia)}">
+        <td>
+          <span class="pastilla pastilla--${TONO[r.urgencia]}">${CUANDO(r)}</span>
+          <div class="apagado" style="margin-top:5px;font-size:12px">
+            ${esc(fechaCorta(r.vence))} · parado ${dias(parado)}</div>
+        </td>
+        <td>
+          <a class="mono" href="envio.html?guia=${encodeURIComponent(e.guia)}">${esc(e.guia)}</a>
+          <div style="margin-top:4px;font-size:12px"><b>${esc(e.paqueteria)}</b></div>
+          <div class="apagado" style="font-size:12px">${esc(e.cliente)} · ${esc(e.destino)}</div>
+        </td>
+        <td style="max-width:26ch">
+          ${esc(e.motivo)}
+          <div class="apagado" style="margin-top:5px;font-size:11px">
+            ${esc(e.paqueteria)} reportó: <span class="mono">${esc(e.original)}</span></div>
+        </td>
+        <td style="max-width:30ch">
+          <b>${esc(DE_QUIEN[r.depende])}</b>
+          <div class="apagado" style="margin-top:4px;font-size:12px">${esc(r.porque)}</div>
+          <a class="boton boton--primario boton--chico" style="margin-top:9px"
+             href="${destino({ e, r })}">${esc(r.accion)}</a>
+        </td>
+        <td>
+          ${e.responsable === "Sin asignar"
+            ? `<button class="boton boton--fantasma boton--chico" type="button" data-asignar>Asignármelo</button>`
+            : `${esc(e.responsable)}`}
+        </td>
+      </tr>`;
+  }
+
+  const metrica = (etiqueta, valor, nota, tono = "") =>
     `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
-     <p class="metrica__valor tabular">${valor}</p><p class="metrica__nota">${nota}</p></div>`;
-  document.getElementById("metricas").innerHTML =
-    metrica("Detenidos ahora", ordenados.length, "En todas tus paqueterías") +
-    metrica("Días parados en promedio", promedio, "Desde que la paquetería lo reportó") +
-    metrica("Sin responsable", sinAsignar, "Nadie los está atendiendo todavía");
+     <p class="metrica__valor tabular"${tono}>${valor}</p>
+     <p class="metrica__nota">${nota}</p></div>`;
 
-  const tabla = document.getElementById("tabla");
-  tabla.tBodies[0].innerHTML = ordenados.map((e) => {
-    const d = diasDesde(e.detenidoDesde);
-    return `<tr data-href="envio.html?guia=${encodeURIComponent(e.guia)}" data-paqueteria="${e.paqueteria}">
-      <td><span class="pastilla pastilla--${d >= 3 ? "mal" : "aviso"}">${d} ${d === 1 ? "día" : "días"}</span>
-          <br><span class="apagado" style="font-size:12px">desde ${fechaCorta(e.detenidoDesde)}</span></td>
-      <td><a class="mono" href="envio.html?guia=${encodeURIComponent(e.guia)}">${e.guia}</a></td>
-      <td><b>${e.paqueteria}</b></td>
-      <td>${e.motivo}<br><span class="mono apagado" style="font-size:12px">${e.original}</span></td>
-      <td>${e.cliente}<br><span class="apagado" style="font-size:12px">${e.destino}</span></td>
-      <td>${e.responsable === "Sin asignar"
-            ? '<span class="pastilla pastilla--neutra">Sin asignar</span>' : e.responsable}</td>
-      <td><button class="boton boton--fantasma" type="button">Atender</button></td>
-    </tr>`;
-  }).join("");
-  conectarFiltros(tabla);
+  const cuerpo = document.querySelector("#tabla tbody");
+  const aviso = document.getElementById("guardado");
+  let quitando;
+
+  function pintar() {
+    const items = lista();
+    cuerpo.innerHTML = items.map(fila).join("");
+    document.getElementById("cuenta").textContent = items.length;
+
+    /* Las tres cifras responden lo mismo que la tabla: qué corre prisa, qué
+       me toca a mí y qué no está atendiendo nadie. El promedio de días
+       parados que había antes no llevaba a ninguna parte. */
+    const corren = items.filter((x) => x.r.restan <= 1).length;
+    const mios = items.filter((x) => x.r.depende === "ti").length;
+    const sueltos = items.filter((x) => x.e.responsable === "Sin asignar").length;
+
+    document.getElementById("metricas").innerHTML =
+      metrica("Vencen hoy o mañana", corren,
+              corren ? "Pasado el plazo, se regresan" : "Ninguno corre prisa",
+              corren ? ' style="color:#fca5a5"' : "") +
+      metrica("Dependen de ti", mios, "Nadie más los va a mover") +
+      metrica("Sin responsable", sueltos, sueltos ? "Nadie los está atendiendo" : "Todos asignados");
+  }
+
+  cuerpo.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-asignar]");
+    if (!b) return;
+    const guia = b.closest("tr").dataset.guia;
+    const envio = detenidos.find((x) => x.guia === guia);
+    envio.responsable = usuario.nombre;
+    pintar();
+    clearTimeout(quitando);
+    aviso.textContent = `Guardado. ${envio.guia} queda a tu nombre.`;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 4000);
+  });
+
+  pintar();
 }
 </script>
 </body>

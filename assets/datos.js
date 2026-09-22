@@ -59,6 +59,68 @@ export const origenes = [
 ];
 
 /* =================================================================
+ * Qué resuelve cada detención.
+ *
+ * Un envío detenido no es un aviso: es trabajo pendiente, y cada motivo se
+ * resuelve de una forma distinta y por una persona distinta. Sin esto, la
+ * pantalla solo puede ofrecer un "Atender" que no dice qué va a pasar.
+ *
+ * `plazo` es lo que la paquetería espera antes de devolver el paquete al
+ * remitente. Es la urgencia REAL: un envío detenido ayer puede vencer hoy y
+ * otro de hace cuatro días aguantar hasta el jueves. Ordenar por antigüedad
+ * pone primero el que menos corre.
+ * ================================================================= */
+
+export const RESOLUCION = {
+  "Domicilio incompleto": {
+    depende: "ti",
+    accion: "Corregir dirección",
+    porque: "La paquetería no sale otra vez sin una dirección que exista.",
+    plazo: 5,
+  },
+  "Destinatario ausente, segundo intento": {
+    depende: "cliente",
+    accion: "Avisar al cliente",
+    porque: "Queda un intento. Si no hay quién reciba, el paquete se regresa.",
+    plazo: 3,
+  },
+  "Retenido en sucursal, falta documento": {
+    depende: "ti",
+    accion: "Enviar documento",
+    porque: "La sucursal no lo libera sin la factura del contenido.",
+    plazo: 5,
+  },
+};
+
+/** Por defecto, cuando el motivo no está tipificado todavía. */
+const RESOLUCION_GENERICA = {
+  depende: "paqueteria",
+  accion: "Ver el envío",
+  porque: "La paquetería todavía no dice qué hace falta.",
+  plazo: 5,
+};
+
+/**
+ * Lo que hay que saber de una detención: qué la resuelve, de quién depende y
+ * cuándo deja de poder resolverse.
+ */
+/** De quién depende, escrito para leerse. */
+export const DE_QUIEN = { ti: "Depende de ti", cliente: "Depende del cliente",
+                          paqueteria: "Depende de la paquetería" };
+
+export function comoResolver(envio) {
+  const r = RESOLUCION[envio.motivo] ?? RESOLUCION_GENERICA;
+  const vence = masDias(envio.detenidoDesde, r.plazo);
+  const restan = diasEntre(HOY, vence);
+  return {
+    ...r,
+    vence,
+    restan,                       // negativo = ya se pasó
+    urgencia: restan < 0 ? "vencido" : restan === 0 ? "hoy" : restan === 1 ? "manana" : "holgado",
+  };
+}
+
+/* =================================================================
  * Plantillas de paquete.
  *
  * Existen para no volver a capturar peso y medidas en cada guía. Pero su
@@ -225,6 +287,17 @@ export const menosDias = (iso, n) => {
   d.setDate(d.getDate() - n);
   return d.toISOString().slice(0, 10);
 };
+
+/** Suma días. Es la resta al revés, para no repetir el manejo de fechas. */
+export const masDias = (iso, n) => menosDias(iso, -n);
+
+/**
+ * Días entre dos fechas, CON signo. `diasDesde` se detiene en cero porque
+ * mide antigüedad, y para un vencimiento hace falta saber cuántos faltan
+ * —o cuántos van de más—.
+ */
+export const diasEntre = (desde, hasta) =>
+  Math.round((new Date(hasta + "T12:00:00") - new Date(desde + "T12:00:00")) / 86400000);
 
 /* =================================================================
  * Pedidos — el módulo que ya existe en el MVP.

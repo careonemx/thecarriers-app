@@ -34,7 +34,7 @@ app/pendiente.html         nota para las pantallas del MVP sin vestir
 
 app/envios.html            la tabla principal, con filtros y métricas
 app/envio.html             un envío: historial, destino y costos
-app/excepciones.html       lo detenido, ordenado por antigüedad
+app/excepciones.html       lo detenido, ordenado por lo que está por vencer
 app/recolecciones.html     recolecciones por día
 app/desempeno.html         cumplimiento y volumen por paquetería
 app/cobros.html            cotizado contra facturado
@@ -96,12 +96,12 @@ tránsito · Detenidos · Entregados**. `envios.html` quedó como redirección a
 le corresponde, para que los enlaces viejos no se rompan.
 
 La fusión también es de datos, no solo de menú. `pedidos` es la única fuente y `envios`
-se deriva de ella, así que Excepciones, Cobros y el detalle del envío siguen consumiendo
+se deriva de ella, así que Detenidos, Cobros y el detalle del envío siguen consumiendo
 `envios` sin enterarse. Cuando el 1:1 se rompa —un pedido partido en dos guías, una
 devolución sin pedido nuevo— la solución es que `envio` pase a ser una lista dentro del
 pedido, **no** abrir una segunda pantalla.
 
-**Excepciones sí se queda,** y no es una incoherencia: no es un duplicado de la lista,
+**Detenidos sí se queda,** y no es una incoherencia: no es un duplicado de la lista,
 es una cola de trabajo. Sus columnas contestan otra pregunta —cuántos días lleva parado,
 por qué, quién lo atiende— y alguien la abre para vaciarla, no para consultar.
 
