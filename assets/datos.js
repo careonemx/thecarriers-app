@@ -101,6 +101,11 @@ export const dinero = (n) =>
 /** Con la moneda escrita. En una cifra grande y sola, "$180.00" es ambiguo. */
 export const dineroMXN = (n) => (n == null ? "—" : `${dinero(n)} MXN`);
 
+/** Con año: en un encabezado, "21-sep" se lee recortado y ambiguo. */
+export const fechaLarga = (iso) =>
+  new Date(iso + "T12:00:00").toLocaleDateString("es-MX",
+    { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
+
 export const fechaCorta = (iso) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 
@@ -364,6 +369,7 @@ const DETALLES = {
     },
     facturacionIgual: true,
     costoGuia: null,
+    pesoEstimado: 0.9,
   },
 };
 
@@ -399,6 +405,7 @@ function detalleGenerico(p) {
     correccion: null,
     facturacionIgual: true,
     costoGuia: p.envio?.costo ?? null,
+    pesoEstimado: 1.5,
   };
 }
 
@@ -447,3 +454,35 @@ export const ladas = [
   { pais: "Colombia", codigo: "+57", bandera: "🇨🇴" },
   { pais: "España", codigo: "+34", bandera: "🇪🇸" },
 ];
+
+/* -----------------------------------------------------------------
+ * Cotización con las cuentas del cliente.
+ *
+ * Generar una guía no es un botón: es elegir paquetería y servicio. Y la
+ * comparación no es solo de precio — la más barata no sirve si esa
+ * paquetería cumple mal en esa zona. Por eso cada opción trae el
+ * cumplimiento real del propio cliente, que ya está en `desempeno`.
+ *
+ * Determinista a propósito: los mismos datos dan el mismo precio en cada
+ * carga, porque un prototipo cuyas cifras bailan no se puede discutir.
+ * --------------------------------------------------------------- */
+const TARIFAS = {
+  "Estafeta":   { base: 46, servicio: "Terrestre",     dias: "2 a 3 días" },
+  "Redpack":    { base: 52, servicio: "Express",       dias: "2 a 4 días" },
+  "T1 Envíos":  { base: 58, servicio: "Estándar",      dias: "3 a 5 días" },
+  "DHL":        { base: 72, servicio: "Express",       dias: "1 a 2 días" },
+  "UPS":        { base: 95, servicio: "Express Saver", dias: "1 a 2 días" },
+  "FedEx":      { base: 88, servicio: "Prioritario",   dias: "1 día" },
+};
+
+export const cotizar = (peso) =>
+  Object.entries(TARIFAS)
+    .map(([paqueteria, t]) => ({
+      paqueteria,
+      servicio: t.servicio,
+      dias: t.dias,
+      precio: Math.round((t.base + peso * 31) * 100) / 100,
+      aTiempo: desempeno.find((d) => d.paqueteria === paqueteria)?.aTiempo ?? null,
+    }))
+    .sort((a, b) => a.precio - b.precio)
+    .slice(0, 4);

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4b65c029">
-<script src="../assets/vigia.js?v=4b65c029" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=50e8b130">
+<script src="../assets/vigia.js?v=50e8b130" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -112,10 +112,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4b65c029";
+import { montar, exigirSesion } from "../assets/app.js?v=50e8b130";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
-         dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
-         detalleDe, coloniasPorCP, telefonoMX, ladas } from "../assets/datos.js?v=4b65c029";
+         dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
+         detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar } from "../assets/datos.js?v=50e8b130";
 if (exigirSesion()) {
   montar();
 
@@ -256,6 +256,7 @@ if (exigirSesion()) {
     check: '<path d="m5 13 4 4L19 7"/>',
     alerta: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
     lapiz: '<path d="m4 20 4-1 10-10-3-3L5 16z"/><path d="m14.5 6.5 3 3"/>',
+    reloj: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 1.5"/>',
   };
 
   const svgIco = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -283,6 +284,16 @@ if (exigirSesion()) {
       ${lineas.map((l) => `<span>${esc(l)}</span>`).join("")}
       ${telefono ? `<span>Tel. ${esc(telefonoMX(telefono))}</span>` : ""}
     </div>`;
+  };
+
+  /* Enumera en español, con la "e" que sustituye a "y" antes de i- o hi-:
+     "colonia e interior", no "colonia y interior". */
+  const enumerar = (nombres) => {
+    const xs = nombres.map((n) => n.toLowerCase());
+    if (xs.length === 1) return xs[0];
+    const ultimo = xs[xs.length - 1];
+    const union = /^(i|hi)(?!e)/.test(ultimo) ? " e " : " y ";
+    return xs.slice(0, -1).join(", ") + union + ultimo;
   };
 
   const listaCambios = (cambios) => cambios.map((x) => `
@@ -344,8 +355,11 @@ if (exigirSesion()) {
       return `<div class="bloque" data-bloque-direccion>
         ${cabeza}
         <div class="bloque__caja" style="display:grid;gap:14px">
-          ${franja("resuelto", ICO.check, "Lista para enviar",
-            `Corregimos ${n} ${n === 1 ? "dato" : "datos"} con ${esc(c.fuente.split(" ·")[0])} y la guía se generó con esta versión.`)}
+          ${franja("resuelto", ICO.check, "Dirección corregida",
+            `Se ${n === 1 ? "ajustó" : "ajustaron"} ${esc(enumerar(c.cambios.map((x) => x.campo)))}. ` +
+            (d.envio
+              ? "La guía se generó con esta dirección."
+              : "Está lista para generar la guía."))}
           ${direccionCompacta(d.direccion.campos ?? {}, d.direccion.telefono)}
           <details class="desplegable">
             <summary>Ver qué se corrigió (${n})</summary>
@@ -591,47 +605,94 @@ if (exigirSesion()) {
   }
 
   function bloqueEnvio(d) {
-    if (!d.envio) {
-      /* Una sola acción principal por pantalla. Si hay una corrección de
-         dirección sin aplicar, "Generar guía" aquí volvería a fallar por el
-         mismo motivo: el botón vive abajo, junto a lo que hay que resolver. */
-      const bloqueado = d.correccion && !d.correccion.aplicada;
-      const dias = diasDesde(d.fecha);
-      let porque;
-      if (d.pago !== "Pagado") porque = "El pedido no registra pago. No se genera guía hasta confirmarlo.";
-      else if (bloqueado) porque = "La dirección tiene una corrección pendiente.";
-      else porque = `${dias} ${dias === 1 ? "día" : "días"} desde que entró el pedido.`;
-
+    if (d.envio) {
+      const e = d.envio;
       return `<div class="bloque">
         <p class="bloque__titulo">Envío</p>
         <div class="bloque__caja">
-          <p style="color:var(--muted)">Sin guía. ${porque}</p>
-          ${d.pago === "Pagado" && !bloqueado
-            ? '<button class="boton boton--primario boton--chico" type="button" style="margin-top:12px">Generar guía</button>'
-            : ""}
+          <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+            <b style="font-size:15px">${esc(e.paqueteria)}</b>
+            <span class="mono">${esc(e.guia)}</span>
+          </div>
+          <dl style="margin:13px 0 0">
+            <div class="dato"><dt>Estado</dt><dd>
+              <span class="pastilla pastilla--${e.estado === "Entregado" ? "ok" : e.estado === "Detenido" ? "mal" : "info"}">${esc(e.estado)}</span>
+            </dd></div>
+            ${e.original ? `<div class="dato"><dt>Estado original de la paquetería</dt>
+              <dd class="mono" style="font-size:12px">${esc(e.original)}</dd></div>` : ""}
+            <div class="dato"><dt>Costo de la guía</dt><dd class="tabular">${dinero(d.costoGuia)}</dd></div>
+            <div class="dato"><dt>Generada</dt><dd>${fechaCorta(d.fecha)}</dd></div>
+          </dl>
+          <div class="grupo-botones" style="margin-top:13px">
+            <a class="boton boton--fantasma boton--chico" href="envio.html?guia=${encodeURIComponent(e.guia)}">Ver historial</a>
+            <button class="boton boton--sutil boton--chico" type="button">Ver etiqueta</button>
+          </div>
         </div>
       </div>`;
     }
-    const e = d.envio;
+
+    /* ---- Sin guía ----
+       El bloque no es una frase y un botón: la decisión real es con qué
+       paquetería y a qué precio. Se comparan las tarifas del propio cliente,
+       con su cumplimiento real al lado, porque la más barata no sirve si esa
+       paquetería falla en esa zona. */
+    const dias = diasDesde(d.fecha);
+    const bloqueada = d.correccion && !d.correccion.aplicada && !editados.get(d.folio);
+    const sinPago = d.pago !== "Pagado";
+
+    if (sinPago || bloqueada) {
+      return `<div class="bloque">
+        <p class="bloque__titulo">Envío</p>
+        <div class="bloque__caja">
+          ${franja("pendiente", ICO.alerta,
+            sinPago ? "El pedido no registra pago" : "Falta resolver la dirección",
+            sinPago
+              ? "No se genera guía hasta que el pago entre."
+              : "La corrección propuesta está sin aplicar. Se resuelve abajo.")}
+        </div>
+      </div>`;
+    }
+
+    const peso = d.pesoEstimado ?? 1.5;
+    const opciones = cotizar(peso);
+    const tono = dias >= 3 ? "pendiente" : "editada";
+
     return `<div class="bloque">
       <p class="bloque__titulo">Envío</p>
-      <div class="bloque__caja">
-        <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
-          <b style="font-size:15px">${esc(e.paqueteria)}</b>
-          <span class="mono">${esc(e.guia)}</span>
+      <div class="bloque__caja" style="display:grid;gap:14px">
+        ${franja(tono, ICO.reloj,
+          dias === 0 ? "Sin guía, entró hoy" : `Sin guía desde hace ${dias} ${dias === 1 ? "día" : "días"}`,
+          dias >= 3
+            ? `Pagado el ${fechaCorta(d.fecha)}. A estas alturas el cliente ya suele preguntar.`
+            : `Pagado el ${fechaCorta(d.fecha)}.`)}
+
+        <div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">
+            Con tus cuentas, para ${esc(d.ciudad.split(",")[0])} · ${peso} kg${d.pesoEstimado ? " estimados" : ""}:
+          </p>
+          <div class="tarifas" role="radiogroup" aria-label="Paquetería y servicio">
+            ${opciones.map((o, k) => `
+              <label class="tarifa">
+                <input type="radio" name="tarifa" value="${esc(o.paqueteria)}"
+                       data-precio="${o.precio}"${k === 0 ? " checked" : ""}>
+                <span class="tarifa__nombre">
+                  <b>${esc(o.paqueteria)}</b> · ${esc(o.servicio)}
+                  <span class="tarifa__meta">
+                    Entrega en ${esc(o.dias)}${o.aTiempo != null
+                      ? ` · <span class="tarifa__cumple" data-bajo="${o.aTiempo < 90}">${o.aTiempo}% a tiempo contigo</span>`
+                      : ""}
+                  </span>
+                </span>
+                <span class="tarifa__precio">${dinero(o.precio)}</span>
+              </label>`).join("")}
+          </div>
         </div>
-        <dl style="margin:13px 0 0">
-          <div class="dato"><dt>Estado</dt><dd>
-            <span class="pastilla pastilla--${e.estado === "Entregado" ? "ok" : e.estado === "Detenido" ? "mal" : "info"}">${esc(e.estado)}</span>
-          </dd></div>
-          ${e.original ? `<div class="dato"><dt>Estado original de la paquetería</dt>
-            <dd class="mono" style="font-size:12px">${esc(e.original)}</dd></div>` : ""}
-          <div class="dato"><dt>Costo de la guía</dt><dd class="tabular">${dinero(d.costoGuia)}</dd></div>
-          <div class="dato"><dt>Generada</dt><dd>${fechaCorta(d.fecha)}</dd></div>
-        </dl>
-        <div class="grupo-botones" style="margin-top:13px">
-          <a class="boton boton--fantasma boton--chico" href="envio.html?guia=${encodeURIComponent(e.guia)}">Ver historial</a>
-          <button class="boton boton--sutil boton--chico" type="button">Ver etiqueta</button>
+
+        <div class="grupo-botones">
+          <button class="boton boton--primario boton--chico" type="button" data-generar>
+            Generar guía con ${esc(opciones[0].paqueteria)} · ${dinero(opciones[0].precio)}
+          </button>
+          <button class="boton boton--sutil boton--chico" type="button">Comparar más opciones</button>
         </div>
       </div>
     </div>`;
@@ -644,12 +705,14 @@ if (exigirSesion()) {
 
     panel.innerHTML = `
       <div class="panel__cabeza">
-        <div>
-          <h2 id="panel-titulo">${esc(d.folio)}</h2>
-          <p>${fechaCorta(d.fecha)} · entró por ${esc(d.canal)}</p>
+        <div style="min-width:0">
+          <h2 id="panel-titulo">
+            Pedido <span class="mono">${esc(d.folio)}</span>
+            <span class="pastilla pastilla--${d.pago === "Pagado" ? "ok" : "aviso"}"
+                  title="${esc(d.canal)} lo reporta como &quot;${esc(d.pagoOriginal)}&quot;">${esc(d.pago)}</span>
+          </h2>
+          <p>${fechaLarga(d.fecha)} · ${esc(d.canal)}</p>
         </div>
-        <span class="pastilla pastilla--${d.pago === "Pagado" ? "ok" : "aviso"}"
-              title="Shopify lo reporta como &quot;${esc(d.pagoOriginal)}&quot;">${esc(d.pago)}</span>
         <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
       </div>
 
@@ -764,6 +827,15 @@ if (exigirSesion()) {
   // está en sus hijos. Se exige que el botón se haya PULSADO ahí también,
   // para no cerrar cuando alguien selecciona texto y suelta fuera.
   panel.addEventListener("mousedown", (e) => { empezoEnElFondo = e.target === panel; });
+
+  // El botón nombra lo que va a hacer, así que cambia con la tarifa elegida.
+  panel.addEventListener("change", (e) => {
+    if (!e.target.matches('input[name="tarifa"]')) return;
+    const b = panel.querySelector("[data-generar]");
+    if (b) b.textContent = `Generar guía con ${e.target.value} · ` +
+      Number(e.target.dataset.precio).toLocaleString("es-MX",
+        { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+  });
 
   panel.addEventListener("click", (e) => {
     if (e.target.closest("[data-cerrar-panel]")) return panel.close();

@@ -734,7 +734,12 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   padding: 18px 22px; border-bottom: 1px solid var(--hairline);
   background: var(--navy-900);
 }
-.panel__cabeza h2 { font-size: 20px; font-family: ui-monospace, Menlo, monospace; }
+/* El folio va en monoespaciado; la palabra "Pedido", no. */
+.panel__cabeza h2 {
+  display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+  font-size: 19px;
+}
+.panel__cabeza h2 .mono { font-size: 19px; }
 .panel__cabeza p { margin-top: 4px; color: var(--muted); font-size: 13px; }
 .panel__cerrar {
   margin-left: auto; flex: none; width: 34px; height: 34px; padding: 0;
@@ -861,6 +866,28 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 .franja--editada .franja__icono { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
 .franja--editada p { color: var(--muted); }
+
+/* ---------- Comparación de tarifas ----------
+   Lista con radios y no un desplegable: el trabajo de esta pantalla es
+   COMPARAR, y un desplegable esconde justo lo que hay que comparar. */
+.tarifas { display: grid; gap: 8px; }
+.tarifa {
+  display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 12px;
+  align-items: center; padding: 11px 13px; cursor: pointer;
+  border: 1px solid var(--hairline); border-radius: var(--r);
+  transition: border-color .15s var(--curva), background-color .15s var(--curva);
+}
+.tarifa:hover { border-color: var(--hairline-fuerte); background: var(--hover); }
+.tarifa:has(input:checked) {
+  border-color: rgba(15, 157, 110, 0.5); background: rgba(15, 157, 110, 0.09);
+}
+.tarifa:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tarifa input { margin: 0; }
+.tarifa__nombre b { font-weight: 600; }
+.tarifa__meta { margin-top: 2px; color: var(--muted); font-size: 12px; }
+.tarifa__precio { font-weight: 600; font-variant-numeric: tabular-nums; }
+.tarifa__cumple { color: var(--muted); }
+.tarifa__cumple[data-bajo="true"] { color: #fde68a; }
 
 /* =================================================================
  * Formularios: rejilla y campos compuestos.
