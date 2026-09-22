@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=23eadb8f">
+<link rel="stylesheet" href="assets/app.css?v=cf6b0720">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=23eadb8f" defer></script>
+<script src="assets/vigia.js?v=cf6b0720" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -240,6 +240,39 @@
           <input type="text" value="No editable en acceso anticipado" disabled>
         </label>
 
+        <div class="campos campos--2">
+          <label class="campo"><span>Nombre</span><input value="Mariana"></label>
+          <label class="campo"><span>Apellido</span><input value="Ordaz"></label>
+        </div>
+
+        <div class="campos campos--corto-largo">
+          <label class="campo">
+            <span>Código postal</span>
+            <input value="64720" inputmode="numeric" maxlength="5">
+            <span class="campo__ayuda">Define la colonia, la ciudad y el estado.</span>
+          </label>
+          <label class="campo"><span>Colonia</span><input value="Centro"></label>
+        </div>
+
+        <label class="campo">
+          <span>Número de contacto</span>
+          <span class="campo-tel">
+            <select><option>🇲🇽 +52</option><option>🇺🇸 +1</option></select>
+            <input value="8183402211" inputmode="tel" maxlength="10">
+          </span>
+        </label>
+
+        <label class="campo">
+          <span>Referencia</span>
+          <textarea rows="2" maxlength="100">Portón gris, entre Hidalgo y Matamoros.</textarea>
+          <span class="campo__pie">
+            <span class="campo__ayuda">Ayuda al repartidor a encontrar el domicilio.</span>
+            <span class="campo__contador">39/100</span>
+          </span>
+        </label>
+
+        <p class="separador-o"><span>o</span></p>
+
         <div style="display:grid;gap:11px">
           <label class="marca-campo"><input type="checkbox" checked> Avisarme cuando un envío se detenga</label>
           <label class="marca-campo"><input type="checkbox"> Incluir envíos entregados en la exportación</label>
@@ -247,7 +280,7 @@
           <label class="marca-campo"><input type="radio" name="r"> Recolección recurrente</label>
           <label class="interruptor"><input type="checkbox" checked> Enviar cambios de estado a mi sistema</label>
         </div>
-        <span class="cls">.campo · .campo--error · .marca-campo · .interruptor</span>
+        <span class="cls">.campo · .campo--error · .marca-campo · .interruptor · .campo-tel · .campo__contador · .campos--2 --3 --corto-largo · .separador-o</span>
       </div>
     </section>
 
@@ -489,6 +522,8 @@
         <div class="regla"><b>.boton</b><span>Declara <code>background</code>. Sin eso hereda el gris claro del navegador.</span></div>
         <div class="regla"><b>Anchos en el CSS</b><span>Nunca en un <code>style=</code> del HTML: en línea, la consulta de medios no los puede corregir.</span></div>
         <div class="regla"><b>Un scroll por capa</b><span>Un hijo de flex con <code>overflow:auto</code> necesita <code>min-height:0</code>, o crece hasta su contenido y aparece una segunda barra encima. Y con un panel abierto, la página de atrás se bloquea con <code>html:has(dialog[open])</code>.</span></div>
+        <div class="regla"><b>Filas de campos</b><span>Van en <code>.campos</code>, no en un <code>style</code> de la pantalla. Y con <code>align-items:start</code>: si un campo lleva ayuda debajo, su celda crece y el de al lado queda centrado en vez de alineado con él.</span></div>
+        <div class="regla"><b>Lo opcional, en la etiqueta</b><span>"Compañía (opcional)", no un marcador de posición que dice "Opcional" y desaparece en cuanto alguien escribe.</span></div>
         <div class="regla"><b>Etiquetas sin modismos</b><span>Un botón es verbo y objeto: "Editar dirección", no "Editar a mano". "Ver dirección original", no "ver la dirección tal como llegó". El modismo envejece mal y no se traduce.</span></div>
         <div class="regla"><b>Editar en su lugar</b><span>Un formulario se abre dentro del bloque que edita, no en otro diálogo encima. Apilar ventanas modales esconde justo el contexto que hace falta para decidir.</span></div>
         <div class="regla"><b>Avatares</b><span>Identifican a una persona recurrente —tu cuenta, tu empresa—, no una fila de datos. En una lista donde el nombre está al lado, las iniciales son ruido que cuesta ancho.</span></div>

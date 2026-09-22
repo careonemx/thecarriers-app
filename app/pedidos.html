@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=23eadb8f">
-<script src="../assets/vigia.js?v=23eadb8f" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=cf6b0720">
+<script src="../assets/vigia.js?v=cf6b0720" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -112,10 +112,10 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=23eadb8f";
+import { montar, exigirSesion } from "../assets/app.js?v=cf6b0720";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, diasDesde, menosDias, HOY,
-         detalleDe, coloniasPorCP, telefonoMX } from "../assets/datos.js?v=23eadb8f";
+         detalleDe, coloniasPorCP, telefonoMX, ladas } from "../assets/datos.js?v=cf6b0720";
 if (exigirSesion()) {
   montar();
 
@@ -239,12 +239,17 @@ if (exigirSesion()) {
      puede juzgar el flujo. */
   const editados = new Map();
 
+  const nombreDe = (c) => [c.nombre, c.apellido].filter(Boolean).join(" ");
+
   const lineasDe = (c) => [
-    [c.calle, c.interior ? `Int. ${c.interior}` : ""].filter(Boolean).join(" · "),
+    [c.calle, c.numExt].filter(Boolean).join(" "),
+    c.numInt ? `Int. ${c.numInt}` : "",
+    c.compania,
     c.colonia,
     [c.ciudad, c.estado].filter(Boolean).join(", "),
     c.cp ? `CP ${c.cp}` : "",
     "México",
+    c.referencia ? `Ref. ${c.referencia}` : "",
   ].filter(Boolean);
 
   function bloqueDireccion(d) {
@@ -341,24 +346,77 @@ if (exigirSesion()) {
      corresponden y llena lo demás, en vez de dejar teclear cualquier cosa. */
   function formularioDireccion(d) {
     const c = editados.get(d.folio) ?? d.direccion.campos ?? {};
-    const campo = (id, etiqueta, valor, extra = "") => `
+    const campo = (id, etiqueta, valor, extra = "", ayuda = "") => `
       <label class="campo" data-campo="${id}">
         <span>${etiqueta}</span>
         <input id="dir-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
+        ${ayuda ? `<span class="campo__ayuda">${ayuda}</span>` : ""}
         <span class="campo__error" hidden></span>
       </label>`;
 
+    // Direcciones ya usadas en otros pedidos, para no volver a teclearlas.
+    const conocidas = [...new Set(pedidos
+      .filter((p) => p.folio !== d.folio)
+      .map((p) => `${p.cliente.nombre} — ${p.ciudad}`))].slice(0, 12);
+
     return `
-      <form id="form-direccion" novalidate style="display:grid;gap:14px">
+      <form id="form-direccion" novalidate class="campos">
         ${d.envio ? `<p class="aviso aviso--info">
           Este pedido ya tiene la guía ${esc(d.envio.guia)}. Cambiar la dirección aquí
           <b style="color:var(--ink)">no modifica la etiqueta ya generada</b>.
         </p>` : ""}
 
-        ${campo("nombre", "Nombre del destinatario", c.nombre, "autocomplete=\"name\" required")}
+        <div class="campo-buscar">
+          <div class="buscador">
+            <label class="sr-only" for="dir-buscar">Buscar una dirección ya registrada</label>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="dir-buscar" list="dir-conocidas" autocomplete="off"
+                   placeholder="Buscar por cliente o dirección">
+            <datalist id="dir-conocidas">${conocidas.map((x) => `<option value="${esc(x)}">`).join("")}</datalist>
+          </div>
+          <button class="boton-ayuda" type="button"
+            title="Busca entre las direcciones de pedidos anteriores para no volver a escribirla."
+            aria-label="Cómo funciona la búsqueda">?</button>
+        </div>
 
-        <div style="display:grid;grid-template-columns:132px minmax(0,1fr);gap:14px">
-          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required')}
+        <p class="separador-o"><span>o escríbela</span></p>
+
+        <div class="campos campos--2">
+          ${campo("nombre", "Nombre de contacto", c.nombre, 'autocomplete="given-name" required')}
+          ${campo("apellido", "Apellido de contacto", c.apellido, 'autocomplete="family-name" required')}
+        </div>
+
+        ${campo("correo", "Correo electrónico", c.correo, 'type="email" autocomplete="email" placeholder="nombre@ejemplo.com"')}
+
+        <div class="campos campos--2">
+          <label class="campo" data-campo="telefono">
+            <span>Número de contacto</span>
+            <span class="campo-tel">
+              <label class="sr-only" for="dir-lada">Código de país</label>
+              <select id="dir-lada" name="lada">
+                ${ladas.map((l) => `<option value="${l.codigo}"${l.codigo === (c.lada ?? "+52") ? " selected" : ""}>${l.bandera} ${l.codigo}</option>`).join("")}
+              </select>
+              <input id="dir-telefono" name="telefono" value="${esc(c.telefono ?? "")}"
+                     inputmode="tel" maxlength="10" placeholder="55 1234 5678" autocomplete="tel-national">
+            </span>
+            <span class="campo__error" hidden></span>
+          </label>
+          ${campo("compania", "Compañía (opcional)", c.compania, 'placeholder="Mi empresa"')}
+        </div>
+
+        <p class="campos__titulo">Dirección</p>
+
+        ${campo("calle", "Calle", c.calle, 'autocomplete="address-line1" required placeholder="Av. Reforma"')}
+
+        <div class="campos campos--2">
+          ${campo("numExt", "Número exterior", c.numExt, 'required placeholder="123"')}
+          ${campo("numInt", "Número interior (opcional)", c.numInt, 'placeholder="Depto 5A"')}
+        </div>
+
+        <div class="campos campos--corto-largo">
+          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required',
+                  "Define la colonia, la ciudad y el estado.")}
           <label class="campo" data-campo="colonia">
             <span>Colonia</span>
             <input id="dir-colonia" name="colonia" list="colonias" value="${esc(c.colonia ?? "")}" required>
@@ -367,15 +425,20 @@ if (exigirSesion()) {
           </label>
         </div>
 
-        ${campo("calle", "Calle y número", c.calle, "required")}
-        ${campo("interior", "Interior o referencia", c.interior, 'placeholder="Opcional"')}
-
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
-          ${campo("ciudad", "Ciudad o municipio", c.ciudad, "required")}
+        <div class="campos campos--2">
           ${campo("estado", "Estado", c.estado, "required")}
+          ${campo("ciudad", "Ciudad o municipio", c.ciudad, "required")}
         </div>
 
-        ${campo("telefono", "Teléfono", c.telefono, 'inputmode="tel" maxlength="10" placeholder="10 dígitos"')}
+        <label class="campo" data-campo="referencia">
+          <span>Referencia</span>
+          <textarea id="dir-referencia" name="referencia" rows="2" maxlength="100"
+            placeholder="Casa azul con puerta negra, junto a la tienda de la esquina.">${esc(c.referencia ?? "")}</textarea>
+          <span class="campo__pie">
+            <span class="campo__ayuda">Ayuda al repartidor a encontrar el domicilio.</span>
+            <span class="campo__contador" id="dir-contador">0/100</span>
+          </span>
+        </label>
 
         <div class="grupo-botones" style="margin-top:2px">
           <button class="boton boton--primario boton--chico" type="submit">Guardar dirección</button>
@@ -408,6 +471,18 @@ if (exigirSesion()) {
     cp.addEventListener("input", sugerirPorCP);
     sugerirPorCP();
 
+    // Contador de la referencia.
+    const ref = form.querySelector("#dir-referencia");
+    const contador = form.querySelector("#dir-contador");
+    const contar = () => {
+      const n = ref.value.length;
+      contador.textContent = `${n}/100`;
+      contador.dataset.cerca = String(n >= 80 && n < 100);
+      contador.dataset.lleno = String(n >= 100);
+    };
+    ref.addEventListener("input", contar);
+    contar();
+
     const marcarError = (nombre, mensaje) => {
       const l = form.querySelector(`[data-campo="${nombre}"]`);
       const e = l.querySelector(".campo__error");
@@ -420,7 +495,8 @@ if (exigirSesion()) {
       ev.preventDefault();
       const v = Object.fromEntries(new FormData(form).entries());
       let ok = true;
-      for (const [k, etiqueta] of [["nombre", "el nombre"], ["calle", "la calle"],
+      for (const [k, etiqueta] of [["nombre", "el nombre"], ["apellido", "el apellido"],
+                                   ["calle", "la calle"], ["numExt", "el número exterior"],
                                    ["colonia", "la colonia"], ["ciudad", "la ciudad"], ["estado", "el estado"]]) {
         const falta = !String(v[k] || "").trim();
         marcarError(k, falta ? `Falta ${etiqueta}.` : "");
@@ -432,8 +508,13 @@ if (exigirSesion()) {
 
       const tel = String(v.telefono || "").replace(/\D/g, "");
       const malTel = tel && tel.length !== 10;
-      marcarError("telefono", malTel ? "El teléfono son diez dígitos, sin lada internacional." : "");
+      marcarError("telefono", malTel ? "Son diez dígitos, sin el código de país." : "");
       if (malTel) ok = false;
+
+      const correo = String(v.correo || "").trim();
+      const malCorreo = correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo);
+      marcarError("correo", malCorreo ? "Revisa el correo: falta el @ o el dominio." : "");
+      if (malCorreo) ok = false;
 
       if (!ok) { form.querySelector(".campo--error input")?.focus(); return; }
 

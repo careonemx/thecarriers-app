@@ -805,6 +805,80 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 
 /* =================================================================
+ * Formularios: rejilla y campos compuestos.
+ *
+ * Estas piezas existen porque se estaban improvisando con estilos en
+ * línea dentro de las pantallas, que es exactamente lo que el sistema
+ * sirve para evitar: cada formulario acababa con su propio ancho de
+ * columna y su propio hueco.
+ * ================================================================= */
+
+/* align-items:start es obligatorio: si un campo de la fila lleva texto de
+   ayuda debajo, su celda crece y el de al lado queda centrado en vez de
+   alineado con él. */
+.campos { display: grid; gap: 14px; align-items: start; }
+.campos--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.campos--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Para un par donde el primero es corto y fijo: código postal, número. */
+.campos--corto-largo { grid-template-columns: 148px minmax(0, 1fr); }
+
+.campos__titulo {
+  grid-column: 1 / -1; margin-top: 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ---------- Teléfono con lada ----------
+   La lada va DENTRO del campo, no en uno aparte: son un solo dato y
+   separarlos hace que la gente escriba el país dos veces. */
+.campo-tel {
+  display: flex; align-items: stretch;
+  border: 1px solid var(--field); border-radius: var(--r);
+  background: rgba(255, 255, 255, 0.05);
+  transition: border-color .2s var(--curva);
+}
+.campo-tel:hover { border-color: rgba(255, 255, 255, 0.55); }
+.campo-tel:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.campo-tel select {
+  width: auto; flex: none; border: 0; border-right: 1px solid var(--hairline);
+  border-radius: var(--r) 0 0 var(--r); background: transparent;
+  padding-inline: 11px 8px; color: var(--ink);
+}
+.campo-tel input { border: 0; background: transparent; border-radius: 0 var(--r) var(--r) 0; }
+.campo-tel select:focus-visible, .campo-tel input:focus-visible { outline: none; }
+
+/* ---------- Contador de caracteres ----------
+   Debajo y a la derecha del campo, discreto hasta que importa. */
+.campo__pie { display: flex; justify-content: space-between; gap: 12px; }
+.campo__contador { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.campo__contador[data-cerca="true"] { color: #fde68a; }
+.campo__contador[data-lleno="true"] { color: #fca5a5; }
+
+/* ---------- Separador con palabra ---------- */
+.separador-o {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px;
+  color: var(--muted); font-size: 12px;
+}
+.separador-o::before, .separador-o::after {
+  content: ""; height: 1px; background: var(--hairline);
+}
+
+/* ---------- Búsqueda dentro de un formulario ---------- */
+.campo-buscar { display: flex; align-items: center; gap: 9px; }
+.campo-buscar .buscador { flex: 1; max-width: none; }
+.boton-ayuda {
+  flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
+  border: 1px solid var(--hairline); border-radius: var(--r);
+  background: transparent; color: var(--muted); font: inherit; cursor: help;
+  transition: all .15s var(--curva);
+}
+.boton-ayuda:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
+
+@media (max-width: 640px) {
+  .campos--2, .campos--3, .campos--corto-largo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* =================================================================
  * Adaptable — SIEMPRE AL FINAL DEL ARCHIVO.
  *
  * Estas reglas tienen la misma especificidad que las de arriba, así que

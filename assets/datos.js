@@ -300,9 +300,11 @@ const DETALLES = {
       nombre: "Arturo García",
       lineas: ["Porto Alegre 9", "Int. Casa", "Geovillas del Sur", "Puebla, Puebla", "CP 72495", "México"],
       telefono: "222 198 7512",
-      campos: { nombre: "Arturo García", calle: "Porto Alegre 9", interior: "Casa",
-                colonia: "Geovillas del Sur", cp: "72495", ciudad: "Puebla",
-                estado: "Puebla", telefono: "2221987512" },
+      campos: { nombre: "Arturo", apellido: "García", correo: "drianrgez@gmail.com",
+                lada: "+52", telefono: "2221987512", compania: "",
+                calle: "Porto Alegre", numExt: "9", numInt: "Casa",
+                cp: "72495", colonia: "Geovillas del Sur",
+                estado: "Puebla", ciudad: "Puebla", referencia: "" },
     },
     correccion: {
       fuente: "SEPOMEX · automática",
@@ -339,9 +341,12 @@ const DETALLES = {
       nombre: "Mariana Ordaz",
       lineas: ["Av. Juárez 1804", "Col. Centro", "Monterrey, Nuevo León", "CP 64000", "México"],
       telefono: "81 8340 2211",
-      campos: { nombre: "Mariana Ordaz", calle: "Av. Juárez 1804", interior: "",
-                colonia: "Centro", cp: "64000", ciudad: "Monterrey",
-                estado: "Nuevo León", telefono: "8183402211" },
+      campos: { nombre: "Mariana", apellido: "Ordaz", correo: "mariana@tallerlumbre.mx",
+                lada: "+52", telefono: "8183402211", compania: "Taller Lumbre",
+                calle: "Av. Juárez", numExt: "1804", numInt: "",
+                cp: "64000", colonia: "Centro",
+                estado: "Nuevo León", ciudad: "Monterrey",
+                referencia: "Portón gris, entre Hidalgo y Matamoros." },
     },
     correccion: {
       fuente: "SEPOMEX · automática",
@@ -375,12 +380,21 @@ function detalleGenerico(p) {
       nombre: p.cliente.nombre,
       lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
       telefono: null,
-      campos: {
-        nombre: p.cliente.nombre, calle: p.destino || "", interior: "", colonia: "",
-        cp: (p.ciudad.match(/\b(\d{5})\b/) || [])[1] || "",
-        ciudad: p.ciudad.split(",")[0] || "", estado: (p.ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, ""),
-        telefono: "",
-      },
+      campos: (() => {
+        const partes = p.cliente.nombre.split(" ");
+        const calle = (p.destino || "").replace(/\s+(\d+)$/, "");
+        const numExt = ((p.destino || "").match(/(\d+)\s*$/) || [])[1] || "";
+        return {
+          nombre: partes[0] || "", apellido: partes.slice(1).join(" "),
+          correo: p.cliente.correo, lada: "+52", telefono: "", compania: "",
+          calle, numExt, numInt: "",
+          cp: (p.ciudad.match(/\b(\d{5})\b/) || [])[1] || "",
+          colonia: "",
+          estado: (p.ciudad.split(",")[1] || "").trim().replace(/\s*\d{5}$/, ""),
+          ciudad: p.ciudad.split(",")[0] || "",
+          referencia: "",
+        };
+      })(),
     },
     correccion: null,
     facturacionIgual: true,
@@ -425,3 +439,11 @@ export const telefonoMX = (v) => {
     ? `${d.slice(0, 2)} ${d.slice(2, 6)} ${d.slice(6)}`
     : `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
 };
+
+/** Ladas que se ofrecen en el campo de teléfono. */
+export const ladas = [
+  { pais: "México", codigo: "+52", bandera: "🇲🇽" },
+  { pais: "Estados Unidos", codigo: "+1", bandera: "🇺🇸" },
+  { pais: "Colombia", codigo: "+57", bandera: "🇨🇴" },
+  { pais: "España", codigo: "+34", bandera: "🇪🇸" },
+];
