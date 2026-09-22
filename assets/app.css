@@ -1023,6 +1023,10 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .orden__fila--no-usar .orden__quien b { text-decoration: line-through; color: var(--muted); }
 .orden__quien b { display: block; font-size: 14px; }
 .orden__quien span { display: block; margin-top: 2px; font-size: 11px; }
+.orden__porque textarea {
+  width: 100%; min-height: 0; padding: 8px 10px; resize: none; overflow: hidden;
+  font-size: 13px; line-height: 1.45;
+}
 .orden__mover { display: flex; gap: 4px; }
 .orden__mover .boton { min-width: 32px; justify-content: center; }
 
@@ -1052,7 +1056,10 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .avanzado > div { padding: 18px 2px 4px; }
 
 @media (max-width: 767px) {
-  .orden__fila { grid-template-columns: 34px 1fr auto; row-gap: 10px; }
+  /* Las flechas viajan con el nombre que mueven, no al final de la fila. */
+  .orden__fila { grid-template-columns: 34px 1fr auto; row-gap: 10px; align-items: start; }
+  .orden__puesto, .orden__quien, .orden__mover { grid-row: 1; }
+  .orden__mover { grid-column: 3; }
   .orden__papel, .orden__porque { grid-column: 2 / -1; }
 }
 
