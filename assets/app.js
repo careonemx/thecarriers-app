@@ -44,14 +44,15 @@ const svg = (d, clase = "") =>
 /**
  * Una sola navegación, ordenada por el recorrido real del trabajo.
  *
- * Pedidos y Envíos no son dos productos: son el mismo objeto en dos
- * momentos. El pedido entra por un canal y pregunta "¿ya tiene guía?";
- * cuando la tiene se convierte en un envío y la pregunta cambia a
- * "¿dónde va y va a llegar a tiempo?". Por eso van seguidos, y por eso
- * Rastrear en Pedidos abre el detalle del envío: es el mismo objeto.
+ * NO hay una entrada "Envíos": un pedido y su envío son el mismo objeto
+ * en dos momentos, y dos listas casi iguales obligaban a preguntarse
+ * "¿la guía 877… la busco en Pedidos o en Envíos?". Pedidos es la lista
+ * y el estado del envío es una de sus vistas.
  *
- * Excepciones es una vista filtrada de Envíos, pero se saca al menú con
- * su cuenta a la vista porque es lo único que exige que alguien actúe.
+ * Excepciones sí se queda, y no es una incoherencia: no es un duplicado
+ * de la lista, es una cola de trabajo. Sus columnas contestan otra
+ * pregunta —cuántos días lleva parado, por qué, quién lo atiende— y
+ * alguien la abre para vaciarla, no para consultar.
  *
  * El punto marca las pantallas que todavía no existen en este prototipo:
  * llevan a una nota, no a un 404.
@@ -62,7 +63,6 @@ const GRUPOS = [
     items: [
       { id: "inicio", texto: "Inicio", href: "inicio.html" },
       { id: "pedidos", texto: "Pedidos", href: "pedidos.html", cuenta: sinGuia.length },
-      { id: "envios", texto: "Envíos", href: "envios.html" },
       { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
       { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
     ],

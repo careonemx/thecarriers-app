@@ -122,28 +122,28 @@ export const tienda = {
   conectada: true,
 };
 
-export const pedidos = [
-  { folio: "#1007", fecha: "2026-09-21", total: 10,
+const pedidosBase = [
+  { folio: "#1007", fecha: "2026-09-21", total: 10, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: { guia: "877543753572", paqueteria: "FedEx", estado: "Creada", costo: 189, peso: 1.2 } },
 
-  { folio: "#1006", fecha: "2026-09-17", total: 60,
+  { folio: "#1006", fecha: "2026-09-17", total: 60, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada", costo: 156, peso: 3.4 } },
 
-  { folio: "#1005", fecha: "2026-09-17", total: 50,
+  { folio: "#1005", fecha: "2026-09-17", total: 50, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: { guia: "877394716724", paqueteria: "FedEx", estado: "Creada", costo: 142, peso: 2 } },
 
-  { folio: "#1004", fecha: "2026-09-17", total: 30,
+  { folio: "#1004", fecha: "2026-09-17", total: 30, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: null },
 
-  { folio: "#1003", fecha: "2026-09-17", total: 10,
+  { folio: "#1003", fecha: "2026-09-17", total: 10, canal: "Shopify",
     cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
     destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
     pago: "Pagado", envio: null },
@@ -151,52 +151,90 @@ export const pedidos = [
   // Un pedido al que le falla la generación de la guía. El MVP todavía no
   // tiene este estado y es el que más duele: el pedido parece pendiente,
   // pero nadie va a volver a intentarlo si no se dice.
-  { folio: "#1002", fecha: "2026-09-16", total: 15,
+  { folio: "#1002", fecha: "2026-09-16", total: 15, canal: "Shopify",
     cliente: { nombre: "Mariana Ordaz", correo: "mariana@tallerlumbre.mx", iniciales: "MO" },
     destino: "Av. Juárez 1804, Col. Centro", ciudad: "Monterrey, NL 64000",
     pago: "Pagado", envio: null,
     error: "La paquetería rechazó el código postal: 64000 no coincide con la colonia." },
 
-  { folio: "#1001", fecha: "2026-09-15", total: 5,
+  { folio: "#1001", fecha: "2026-09-15", total: 5, canal: "Shopify",
     cliente: { nombre: "Grupo Aldama", correo: "compras@aldama.mx", iniciales: "GA" },
     destino: "Calz. de Tlalpan 3020, Coyoacán", ciudad: "Ciudad de México, CDMX 04650",
     pago: "Pendiente", envio: null },
 ];
 
+/* -----------------------------------------------------------------
+ * Pedidos y envíos son el mismo objeto, así que hay UNA sola lista.
+ *
+ * Tener dos obligaba a preguntarse "¿la guía 877… la busco en Pedidos o
+ * en Envíos?". Aquí el pedido es la fuente: cuando tiene guía, se deriva
+ * el envío. Las pantallas que trabajan con envíos siguen consumiendo
+ * `envios` y no se enteran del cambio.
+ *
+ * Cuando el 1:1 se rompa —un pedido partido en dos guías, una devolución
+ * sin pedido nuevo— la solución es que `envio` pase a ser una lista, no
+ * abrir una segunda pantalla.
+ * --------------------------------------------------------------- */
+
+/** Los envíos que no nacieron de la tienda conectada, vistos como pedidos. */
+const totalesPorFolio = {
+  "#10422": 1480, "#10419": 2360, "#10417": 640, "#10415": 3120, "#10413": 890,
+  "#10411": 410, "#10409": 1250, "#10407": 760, "#10405": 5400, "#10403": 2180,
+  "#10401": 980, "#10399": 3450,
+};
+
+const pedidosDeEnvios = enviosBase.map((e) => ({
+  folio: e.pedido,
+  fecha: e.fecha,
+  total: totalesPorFolio[e.pedido] ?? 0,
+  canal: e.canal,
+  cliente: {
+    nombre: e.cliente,
+    correo: e.cliente.toLowerCase().replace(/[^a-záéíóúñ ]/g, "").trim().split(" ").slice(0, 2).join(".")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") + "@correo.mx",
+    iniciales: e.cliente.split(" ").slice(0, 2).map((x) => x[0]).join("").toUpperCase(),
+  },
+  direccion: "",
+  ciudad: e.destino,
+  pago: "Pagado",
+  envio: {
+    guia: e.guia, paqueteria: e.paqueteria, estado: e.estado, original: e.original,
+    peso: e.peso, costo: e.facturado ?? e.cotizado, cotizado: e.cotizado, facturado: e.facturado,
+    motivo: e.motivo, detenidoDesde: e.detenidoDesde, responsable: e.responsable,
+    diferencia: e.diferencia,
+  },
+}));
+
+export const pedidos = [...pedidosBase, ...pedidosDeEnvios];
+
+/** El envío es una vista del pedido, no otra lista. */
+export const envios = pedidos
+  .filter((p) => p.envio)
+  .map((p) => ({
+    guia: p.envio.guia,
+    canal: p.canal,
+    paqueteria: p.envio.paqueteria,
+    pedido: p.folio,
+    estado: p.envio.estado === "Creada" ? "En tránsito" : p.envio.estado,
+    original: p.envio.original ?? (p.envio.paqueteria === "DHL" ? "Shipment picked up" : "In transit"),
+    destino: p.ciudad,
+    cliente: p.cliente.nombre,
+    fecha: p.fecha,
+    peso: p.envio.peso,
+    cotizado: p.envio.cotizado ?? p.envio.costo,
+    facturado: p.envio.facturado ?? p.envio.costo,
+    motivo: p.envio.motivo,
+    detenidoDesde: p.envio.detenidoDesde,
+    responsable: p.envio.responsable,
+    diferencia: p.envio.diferencia,
+  }));
+
+/* ---------- Derivados ---------- */
 export const sinGuia = pedidos.filter((p) => !p.envio);
 export const conGuia = pedidos.filter((p) => p.envio);
 export const conError = pedidos.filter((p) => p.error);
 export const ingresos = pedidos.reduce((s, p) => s + p.total, 0);
 
-/* -----------------------------------------------------------------
- * Pedidos y envíos son el mismo objeto en dos momentos.
- *
- * Un pedido deja de estar "sin guía" y se convierte en un envío que hay
- * que seguir. Si cada pantalla tuviera su propia lista, Rastrear llevaría
- * a una guía que no existe en Envíos y las dos mitades del producto no se
- * hablarían. Así que los pedidos con guía se normalizan y entran a la
- * misma lista.
- * --------------------------------------------------------------- */
-const enviosDePedidos = pedidos
-  .filter((p) => p.envio)
-  .map((p) => ({
-    guia: p.envio.guia,
-    canal: tienda.canal,
-    paqueteria: p.envio.paqueteria,
-    pedido: p.folio,
-    estado: "En tránsito",
-    original: p.envio.paqueteria === "DHL" ? "Shipment picked up" : "In transit",
-    destino: p.ciudad,
-    cliente: p.cliente.nombre,
-    fecha: p.fecha,
-    peso: p.envio.peso,
-    cotizado: p.envio.costo,
-    facturado: p.envio.costo,
-  }));
-
-export const envios = [...enviosDePedidos, ...enviosBase];
-
-/* ---------- Derivados de la lista ya completa ---------- */
 export const detenidos = envios.filter((e) => e.estado === "Detenido" || e.estado === "Con incidencia");
 export const porRecolectar = envios.filter((e) => e.estado === "Recolección pendiente" || e.estado === "Generada");
 export const conDiferencia = envios.filter((e) => e.diferencia);

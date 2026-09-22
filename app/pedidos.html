@@ -30,8 +30,10 @@
     <div class="tarjeta__cabeza" style="padding-bottom:0;border-bottom:0">
       <div class="pestanas" role="tablist" style="border-bottom:0">
         <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="todos">Todos</button>
-        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="sin-enviar">Sin enviar</button>
-        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="enviados">Enviados</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="sin-guia">Sin guía</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="transito">En tránsito</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="detenidos">Detenidos</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="entregados">Entregados</button>
       </div>
       <div class="conmutador" role="group" aria-label="Forma de ver la lista">
         <button type="button" aria-pressed="true" data-modo="clasico">Clásico</button>
@@ -88,13 +90,24 @@ if (exigirSesion()) {
     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
     style="width:${w}px;height:${w}px">${d}</svg>`;
 
+  /* La vista de una fila sale del estado de su envío. Una sola lista con
+     cinco lentes, en vez de dos listas que dicen casi lo mismo. */
+  const vistaDe = (p) => {
+    if (!p.envio) return "sin-guia";
+    const e = p.envio.estado;
+    if (e === "Detenido" || e === "Con incidencia") return "detenidos";
+    if (e === "Entregado") return "entregados";
+    return "transito";
+  };
+  const cuenta = (v) => pedidos.filter((p) => vistaDe(p) === v).length;
+
   const metrica = (e, v, n) =>
     `<div class="metrica"><p class="metrica__etiqueta">${e}</p>
      <p class="metrica__valor tabular">${v}</p><p class="metrica__nota">${n}</p></div>`;
   document.getElementById("metricas").innerHTML =
     metrica("Total de pedidos", pedidos.length, "En el periodo") +
-    metrica("Sin enviar", sinGuia.length, conError.length ? `${conError.length} con error de guía` : "Pendientes de guía") +
-    metrica("Enviados", conGuia.length, "Con guía generada") +
+    metrica("Sin guía", sinGuia.length, conError.length ? `${conError.length} con error al generarla` : "Pendientes de despachar") +
+    metrica("En tránsito", cuenta("transito"), `${cuenta("detenidos")} detenidos`) +
     metrica("Ingresos", dineroMXN(ingresos), "Suma de los pedidos");
 
   /* La columna de envío carga tres cosas distintas: la guía si existe, el
@@ -137,7 +150,7 @@ if (exigirSesion()) {
 
   const cuerpo = document.querySelector("#tabla tbody");
   cuerpo.innerHTML = pedidos.map((p) => `
-    <tr data-vista="${p.envio ? "enviados" : "sin-enviar"}" data-folio="${p.folio}">
+    <tr data-vista="${vistaDe(p)}" data-folio="${p.folio}">
       <td>${p.envio ? "" : `<input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"${
         p.pago === "Pagado" ? "" : " disabled"}>`}</td>
       <td><a class="mono" href="#${p.folio.slice(1)}">${p.folio}</a>
@@ -146,8 +159,9 @@ if (exigirSesion()) {
             <span class="avatar">${p.cliente.iniciales}</span>
             <div><b>${p.cliente.nombre}</b><span>${p.cliente.correo}</span></div>
           </div></td>
-      <td style="max-width:260px">${p.destino}
-          <div class="apagado" style="font-size:12px">${p.ciudad}</div></td>
+      <td style="max-width:260px">${p.direccion || p.destino || p.ciudad}
+          <div class="apagado" style="font-size:12px">${
+            (p.direccion || p.destino) ? p.ciudad : p.canal}</div></td>
       <td class="tabular nowrap">${dinero(p.total)}</td>
       <td><span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span></td>
       <td>${celdaEnvio(p)}</td>
@@ -155,7 +169,7 @@ if (exigirSesion()) {
     </tr>`).join("");
 
   document.getElementById("vista-mosaico").innerHTML = pedidos.map((p) => `
-    <article class="tarjeta-pedido" data-vista="${p.envio ? "enviados" : "sin-enviar"}">
+    <article class="tarjeta-pedido" data-vista="${vistaDe(p)}">
       <div class="tarjeta-pedido__alto">
         <span class="tarjeta-pedido__folio">${p.folio}</span>
         <span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>

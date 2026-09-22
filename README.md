@@ -58,23 +58,31 @@ no lo reemplaza: el módulo de Pedidos conserva su estructura —pestañas Todos
 enviar / Enviados, conmutador Clásico / Mosaico, insignia de la tienda conectada,
 Sincronizar estatus, casillas solo en lo pendiente, paginación— y le aplica el sistema.
 
-### Una sola navegación
+### Una sola lista
 
-El menú no separa "lo del MVP" de "lo propuesto": se ordena por el recorrido real del
-trabajo, en tres grupos — **Operación**, **Análisis** y **Ajustes**. El punto marca las
-pantallas que todavía no existen en este prototipo; llevan a una nota, no a un 404.
+**No hay pantalla de "Envíos".** Un pedido y su envío son el mismo objeto en dos
+momentos: el pedido entra por un canal y pregunta *¿ya tiene guía?*; cuando la tiene, la
+pregunta cambia a *¿dónde va y va a llegar a tiempo?*. Dos listas casi iguales obligaban
+a preguntarse "¿la guía 877… la busco en Pedidos o en Envíos?", y esa duda no debería
+existir.
 
-**Pedidos y Envíos son el mismo objeto en dos momentos.** El pedido entra por un canal y
-pregunta *¿ya tiene guía?*; cuando la tiene se convierte en un envío y la pregunta cambia
-a *¿dónde va y va a llegar a tiempo?*. Por eso van seguidos en el menú, y por eso los
-pedidos con guía se normalizan y entran a la misma lista que el resto de los envíos: si
-cada pantalla tuviera su propia lista, Rastrear llevaría a una guía que no existe en
-Envíos y las dos mitades del producto no se hablarían.
+Pedidos es la lista, y el estado del envío es una de sus vistas: **Todos · Sin guía · En
+tránsito · Detenidos · Entregados**. `envios.html` quedó como redirección a la vista que
+le corresponde, para que los enlaces viejos no se rompan.
 
-El recorrido cierra en los dos sentidos: Pedidos → Rastrear abre el detalle del envío, y
-el detalle enlaza de vuelta a su pedido. **Excepciones** es una vista filtrada de Envíos,
-pero se saca al menú con su cuenta a la vista porque es lo único que exige que alguien
-actúe.
+La fusión también es de datos, no solo de menú. `pedidos` es la única fuente y `envios`
+se deriva de ella, así que Excepciones, Cobros y el detalle del envío siguen consumiendo
+`envios` sin enterarse. Cuando el 1:1 se rompa —un pedido partido en dos guías, una
+devolución sin pedido nuevo— la solución es que `envio` pase a ser una lista dentro del
+pedido, **no** abrir una segunda pantalla.
+
+**Excepciones sí se queda,** y no es una incoherencia: no es un duplicado de la lista,
+es una cola de trabajo. Sus columnas contestan otra pregunta —cuántos días lleva parado,
+por qué, quién lo atiende— y alguien la abre para vaciarla, no para consultar.
+
+El menú queda en tres grupos ordenados por el recorrido del trabajo: **Operación**,
+**Análisis** y **Ajustes**. El punto marca las pantallas que todavía no existen en este
+prototipo; llevan a una nota, no a un 404.
 
 Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
 

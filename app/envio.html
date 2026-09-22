@@ -8,7 +8,7 @@
 <link rel="icon" href="../assets/brand/mark-white.svg">
 <link rel="stylesheet" href="../assets/app.css">
 </head>
-<body data-seccion="envios">
+<body data-seccion="pedidos">
 <main class="contenido" id="pagina"></main>
 
 <script type="module">
@@ -26,7 +26,7 @@ if (exigirSesion()) {
       <div class="tarjeta"><div class="vacio">
         <h3>No encontramos esa guía</h3>
         <p>La guía <span class="mono">${guia ? guia.replace(/[<>&]/g, "") : "—"}</span> no está en los datos de ejemplo.</p>
-        <div class="vacio__acciones"><a class="boton boton--primario" href="envios.html">Volver a envíos</a></div>
+        <div class="vacio__acciones"><a class="boton boton--primario" href="pedidos.html">Volver a pedidos</a></div>
       </div></div>`;
   } else {
     // La línea de tiempo conserva SIEMPRE el texto original de la paquetería
@@ -50,7 +50,7 @@ if (exigirSesion()) {
     pagina.innerHTML = `
       <div class="encabezado">
         <div>
-          <a class="boton boton--sutil" href="envios.html" style="margin-left:-15px">← Envíos</a>
+          <a class="boton boton--sutil" href="pedidos.html" style="margin-left:-15px">← Pedidos</a>
           <h1 class="mono" style="margin-top:6px">${e.guia}</h1>
           <p>${e.paqueteria} · pedido <a href="pedidos.html" style="color:var(--accent-claro)">${e.pedido}</a> · entró por ${e.canal}</p>
         </div>
