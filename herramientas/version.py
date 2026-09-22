@@ -16,7 +16,8 @@ import re
 import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
-COMPARTIDOS = ["assets/app.css", "assets/app.js", "assets/datos.js", "assets/vigia.js"]
+COMPARTIDOS = ["assets/app.css", "assets/app.js", "assets/datos.js",
+               "assets/vigia.js", "assets/codigo.js"]
 SELLO = re.compile(r"\?v=[0-9a-f]{8}")
 
 
@@ -37,7 +38,7 @@ def main() -> int:
     # Solo dentro de href="", src="" y de un especificador de import. Un patrón
     # suelto también sella las menciones en prosa: la guía de diseño llegó a
     # decir "se renderiza con assets/app.css?v=ac87998b", que no es una ruta.
-    activo = r"(?:app\.css|app\.js|datos\.js|vigia\.js)"
+    activo = r"(?:app\.css|app\.js|datos\.js|vigia\.js|codigo\.js)"
     objetivo = re.compile(
         r'((?:href|src)="[^"]*?assets/' + activo + r')(\?v=[0-9a-f]{8})?(")'
     )

@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=1c6dd10b">
+<link rel="stylesheet" href="assets/app.css?v=948af1b6">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=1c6dd10b" defer></script>
+<script src="assets/vigia.js?v=948af1b6" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -619,6 +619,13 @@
         <div class="regla"><b>Fallar por partes</b><span>Un lote no es atómico. Si uno falla, los demás terminan; lo que no se pudo queda listo para reintentar, con su motivo.</span></div>
         <div class="regla"><b>Distinguir el reintento</b><span>No todo fallo se reintenta. Un tiempo de espera agotado sí; una falta de cobertura no, y ofrecer el botón ahí es mentir. El desenlace trae <code>reintentable</code> y el pie solo cuenta esos.</span></div>
         <div class="regla"><b>Clave de idempotencia</b><span>Es <code>folio:intento</code>, no <code>folio</code>. Con el folio solo, la protección contra el doble clic bloquea también el reintento, que es justo lo que hay que permitir.</span></div>
+        <div class="regla"><b>Una acción termina en su artefacto</b><span>Generar una guía sin poder imprimirla no es generar nada. El resultado del lote ofrece el paso siguiente; si el pie solo dice "Cerrar", hay que volver a la tabla y buscar los mismos pedidos a mano.</span></div>
+        <div class="regla"><b>El papel es blanco</b><span>La etiqueta es negro sobre blanco aunque la aplicación sea oscura, y se mide en milímetros. Una térmica solo quema el papel: no puede imprimir blanco, y un código de barras claro sobre oscuro no lo lee ningún escáner. Sus estilos viven aparte de los de pantalla.</span></div>
+        <div class="regla"><b>Aritmética de la hoja</b><span>Carta mide 279.4 mm. Dos filas de 133 mm más huecos suman 282 y mandan la cuarta etiqueta a una hoja sola. El tamaño de página se calcula, no se tantea.</span></div>
+        <div class="regla"><b>Sin hoja en blanco al final</b><span><code>break-after: page</code> en todas menos en la última. En todas, la impresión termina con una hoja vacía.</span></div>
+        <div class="regla"><b>Código de barras de verdad</b><span>Code 128 con su dígito de control y su zona muda. Un código decorativo se ve bien y en la bodega no se escanea, que es su único trabajo.</span></div>
+        <div class="regla"><b>Toda fila lleva casilla</b><span>Si unas filas no la tienen, "seleccionar todo" se salta en silencio justo las que una acción necesita. Qué aplica lo decide la acción, no la casilla.</span></div>
+        <div class="regla"><b>Lo que falta, antes de imprimir</b><span>Una etiqueta sin colonia o sin código postal se pega y el paquete se pierde una semana después. Se avisa en pantalla, no en el papel: el aviso es para quien opera, no para la paquetería.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

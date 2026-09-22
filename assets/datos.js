@@ -10,6 +10,20 @@
 export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
+/**
+ * El origen: de dónde sale la mercancía. Va en la etiqueta como remitente y
+ * es lo que la paquetería usa para cotizar la zona y programar la recolección.
+ * En el producto lo administra Ajustes → Orígenes y puede haber varios; aquí
+ * hay uno solo, el predeterminado.
+ */
+export const origen = {
+  nombre: "Distribuidora Monarca",
+  contacto: "Almacén Puebla",
+  calle: "Av. 11 Oriente", numExt: "2410", numInt: "Bodega 4",
+  colonia: "Azcárate", ciudad: "Puebla", estado: "Puebla", cp: "72501",
+  telefono: "222 431 9080",
+};
+
 /** Cómo se traduce cada estado a color. */
 export const tonos = {
   "En tránsito": "info",
@@ -240,6 +254,51 @@ const totalesPorFolio = {
   "#10401": 980, "#10399": 3450,
 };
 
+/**
+ * Una dirección de entrega por ciudad de destino.
+ *
+ * Los envíos antiguos del ejemplo solo traían la ciudad, así que su etiqueta
+ * salía con la calle y el código postal en blanco. Una etiqueta sin CP no
+ * entra a ninguna ruta: el prototipo no puede enseñar impresión con ellas.
+ *
+ * El número exterior y el teléfono se derivan del folio, no del azar: dos
+ * cargas de la misma pantalla tienen que dar lo mismo o no se puede hablar
+ * de lo que se ve.
+ */
+const DIRECCION_POR_CIUDAD = {
+  "Cancún, QROO":        { calle: "Av. Tulum", colonia: "Supermanzana 15", ciudad: "Cancún", estado: "Quintana Roo", cp: "77500", lada: "998" },
+  "Ciudad de México, CDMX": { calle: "Av. Insurgentes Sur", colonia: "Crédito Constructor", ciudad: "Ciudad de México", estado: "Ciudad de México", cp: "03940", lada: "55" },
+  "Guadalajara, JAL":    { calle: "Av. Vallarta", colonia: "Americana", ciudad: "Guadalajara", estado: "Jalisco", cp: "44160", lada: "33" },
+  "León, GTO":           { calle: "Blvd. Adolfo López Mateos", colonia: "Jardines del Moral", ciudad: "León", estado: "Guanajuato", cp: "37160", lada: "477" },
+  "Monterrey, NL":       { calle: "Av. Constitución", colonia: "Centro", ciudad: "Monterrey", estado: "Nuevo León", cp: "64000", lada: "81" },
+  "Mérida, YUC":         { calle: "Calle 60", colonia: "Alcalá Martín", ciudad: "Mérida", estado: "Yucatán", cp: "97050", lada: "999" },
+  "Puebla, PUE":         { calle: "Av. Juárez", colonia: "La Paz", ciudad: "Puebla", estado: "Puebla", cp: "72160", lada: "222" },
+  "Querétaro, QRO":      { calle: "Av. Constituyentes", colonia: "Villas del Sol", ciudad: "Querétaro", estado: "Querétaro", cp: "76040", lada: "442" },
+  "Saltillo, COAH":      { calle: "Blvd. Venustiano Carranza", colonia: "Villa Olímpica", ciudad: "Saltillo", estado: "Coahuila", cp: "25230", lada: "844" },
+  "Tijuana, BC":         { calle: "Blvd. Agua Caliente", colonia: "Aviación", ciudad: "Tijuana", estado: "Baja California", cp: "22014", lada: "664" },
+  "Toluca, MEX":         { calle: "Paseo Tollocan", colonia: "Universidad", ciudad: "Toluca", estado: "México", cp: "50130", lada: "722" },
+  "Veracruz, VER":       { calle: "Blvd. Manuel Ávila Camacho", colonia: "Costa de Oro", ciudad: "Veracruz", estado: "Veracruz", cp: "94299", lada: "229" },
+};
+
+/** Entero estable a partir del folio. Mismo folio, mismo número, siempre. */
+const semilla = (folio) => [...folio].reduce((n, ch) => (n * 131 + ch.codePointAt(0)) % 1e9, 7);
+
+function camposDeCiudad(folio, ciudad, nombre) {
+  const base = DIRECCION_POR_CIUDAD[ciudad];
+  if (!base) return null;
+  const n = semilla(folio);
+  const partes = nombre.split(" ");
+  return {
+    nombre: partes[0] || "", apellido: partes.slice(1).join(" "),
+    correo: "", lada: "+52",
+    telefono: base.lada + String((n * 7919) % 10 ** (10 - base.lada.length))
+      .padStart(10 - base.lada.length, "0"),
+    compania: "", calle: base.calle, numExt: String(100 + (n % 1800)), numInt: "",
+    cp: base.cp, colonia: base.colonia, estado: base.estado, ciudad: base.ciudad,
+    referencia: "",
+  };
+}
+
 const pedidosDeEnvios = enviosBase.map((e) => ({
   folio: e.pedido,
   fecha: e.fecha,
@@ -253,6 +312,7 @@ const pedidosDeEnvios = enviosBase.map((e) => ({
   },
   direccion: "",
   ciudad: e.destino,
+  campos: camposDeCiudad(e.pedido, e.destino, e.cliente),
   pago: "Pagado",
   envio: {
     guia: e.guia, paqueteria: e.paqueteria, estado: e.estado, original: e.original,
@@ -263,6 +323,54 @@ const pedidosDeEnvios = enviosBase.map((e) => ({
 }));
 
 export const pedidos = [...pedidosBase, ...pedidosDeEnvios];
+
+/* =================================================================
+ * Guías creadas durante la sesión.
+ *
+ * El prototipo no tiene servidor, así que una guía generada en Pedidos vivía
+ * solo en memoria: al abrir su etiqueta en otra pestaña ya no existía. Se
+ * guardan en sessionStorage y se aplican a `pedidos` ANTES de derivar
+ * `envios`, para que todas las pantallas vean lo mismo.
+ *
+ * sessionStorage y no localStorage a propósito: al cerrar la pestaña el
+ * prototipo vuelve a su estado inicial y la siguiente demostración empieza
+ * limpia.
+ * ================================================================= */
+
+const CLAVE_GUIAS = "tc:guias";
+const CLAVE_IMPRESAS = "tc:impresas";
+
+const leerMapa = (clave) => {
+  try { return JSON.parse(sessionStorage.getItem(clave) || "{}"); } catch { return {}; }
+};
+const escribirMapa = (clave, valor) => {
+  try { sessionStorage.setItem(clave, JSON.stringify(valor)); } catch { /* modo privado */ }
+};
+
+/** Deja constancia de una guía recién creada. */
+export function guardarGuia(folio, envio) {
+  const mapa = leerMapa(CLAVE_GUIAS);
+  mapa[folio] = envio;
+  escribirMapa(CLAVE_GUIAS, mapa);
+}
+
+/* Se aplican al arrancar el módulo. Si el pedido ya traía envío de fábrica no
+   se toca: lo guardado son guías NUEVAS, no correcciones de las existentes. */
+for (const [folio, envio] of Object.entries(leerMapa(CLAVE_GUIAS))) {
+  const pedido = pedidos.find((x) => x.folio === folio);
+  if (pedido && !pedido.envio) pedido.envio = envio;
+}
+
+/** Qué guías ya se mandaron a imprimir. Reimprimir se permite; a ciegas, no. */
+export const impresas = () => new Set(Object.keys(leerMapa(CLAVE_IMPRESAS)));
+
+export function marcarImpresas(guias) {
+  const mapa = leerMapa(CLAVE_IMPRESAS);
+  for (const g of guias) mapa[g] = (mapa[g] || 0) + 1;
+  escribirMapa(CLAVE_IMPRESAS, mapa);
+}
+
+export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
 
 /** El envío es una vista del pedido, no otra lista. */
 export const envios = pedidos
@@ -401,7 +509,7 @@ function detalleGenerico(p) {
       nombre: p.cliente.nombre,
       lineas: [p.destino || p.ciudad, p.destino ? p.ciudad : ""].filter(Boolean),
       telefono: null,
-      campos: (() => {
+      campos: p.campos ?? (() => {
         const partes = p.cliente.nombre.split(" ");
         const calle = (p.destino || "").replace(/\s+(\d+)$/, "");
         const numExt = ((p.destino || "").match(/(\d+)\s*$/) || [])[1] || "";
@@ -430,6 +538,51 @@ export const detalleDe = (folio) => {
   if (!p) return null;
   return { ...p, ...(DETALLES[folio] ?? detalleGenerico(p)) };
 };
+
+/**
+ * Todo lo que necesita una etiqueta, resuelto desde el número de guía.
+ *
+ * La etiqueta se arma con la dirección CORREGIDA, que es la que se le dio a
+ * la paquetería. Imprimir la original produciría un paquete que no llega, y
+ * es exactamente el error que la plataforma existe para evitar.
+ */
+export function datosEtiqueta(guia) {
+  const pedido = pedidos.find((x) => x.envio?.guia === guia);
+  if (!pedido) return null;
+  const d = detalleDe(pedido.folio);
+  const c = d.direccion.campos;
+  const linea = [c.calle, c.numExt].filter(Boolean).join(" ") + (c.numInt ? ` Int. ${c.numInt}` : "");
+  /* Lo que falta para que el paquete llegue. En México la colonia no es
+     opcional: dos calles con el mismo nombre en colonias distintas son
+     habituales, y sin código postal el paquete no entra a ninguna ruta. */
+  const falta = [];
+  if (!c.colonia) falta.push("colonia");
+  if (!c.cp) falta.push("código postal");
+  if (!c.telefono && !d.direccion.telefono) falta.push("teléfono");
+
+  return {
+    guia,
+    folio: pedido.folio,
+    falta,
+    corregida: d.correccion?.aplicada === true,
+    paqueteria: pedido.envio.paqueteria,
+    servicio: pedido.envio.servicio || "Terrestre",
+    fecha: pedido.envio.fecha || HOY,
+    peso: pedido.envio.peso ?? d.pesoEstimado ?? 1,
+    piezas: d.articulos?.reduce((n, a) => n + a.cantidad, 0) || 1,
+    destinatario: {
+      nombre: [c.nombre, c.apellido].filter(Boolean).join(" ") || d.direccion.nombre,
+      compania: c.compania || "",
+      calle: linea,
+      colonia: c.colonia,
+      ciudad: c.ciudad,
+      estado: c.estado,
+      cp: c.cp,
+      telefono: d.direccion.telefono || (c.telefono ? telefonoMX(c.telefono) : ""),
+      referencia: c.referencia || "",
+    },
+  };
+}
 
 
 /**

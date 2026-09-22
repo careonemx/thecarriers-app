@@ -443,9 +443,18 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   display: flex; gap: 10px; padding: 10px 13px; border-radius: var(--r);
   border: 1px solid; font-size: 13px;
 }
+/* `.aviso` es flex para poner un icono junto a una línea de texto. En cuanto
+   lleva título, lista y explicación, esos hijos se vuelven columnas y el texto
+   queda en tiras verticales. Con contenido estructurado, se apila. */
+.aviso--bloque { display: block; }
+.aviso--bloque > b { display: block; }
+.aviso--bloque > p { margin-top: 9px; }
 .aviso--info { border-color: var(--hairline); background: rgba(255,255,255,.04); color: var(--muted); }
 .aviso--mal { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.1); color: #fca5a5; }
 .aviso--ok { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.1); color: var(--accent-claro); }
+/* Ni error ni dato suelto: algo que sí se puede hacer y conviene mirar antes.
+   Medido sobre la tarjeta: 8.9:1. */
+.aviso--alerta { border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.09); color: #fde68a; }
 
 /* -----------------------------------------------------------------
  * Diagrama de convergencia, en miniatura.

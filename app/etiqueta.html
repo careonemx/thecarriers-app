@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etiquetas · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=948af1b6">
+
+<!--
+  Los estilos de la etiqueta van aquí y no en app.css a propósito.
+
+  Es un artefacto de papel, no un componente de la interfaz: se mide en
+  milímetros, es negro sobre blanco aunque la aplicación sea oscura, y su
+  única presentación que importa es la impresa. Mezclarlo con los estilos de
+  pantalla termina en que alguien "arregla" un color y rompe una etiqueta que
+  ya no se escanea.
+
+  Negro sobre blanco no es una decisión estética: una etiqueta oscura gasta
+  tóner, y una impresora térmica solo quema el papel, no lo blanquea. Un
+  código de barras claro sobre fondo oscuro no lo lee ningún escáner.
+-->
+<style>
+  /* ---------- Barra de trabajo (nunca se imprime) ---------- */
+  .impresion {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--navy-900);
+  }
+  .impresion__sep { flex: 1; }
+  .impresion__cuenta { font-weight: 600; }
+  .impresion__cuenta span { color: var(--muted); font-weight: 400; }
+
+  .lienzo { padding: 24px 20px 60px; display: grid; gap: 20px; justify-content: center; }
+  .aviso-reimpresion { max-width: 640px; margin-inline: auto; }
+
+  /* ---------- La etiqueta ----------
+     100 × 150 mm es el estándar de las impresoras térmicas de escritorio
+     (Zebra GK420, Rollo) y el que devuelven DHL, FedEx y Estafeta. */
+  .etiqueta {
+    position: relative;
+    box-sizing: border-box;
+    width: 100mm; height: 150mm;
+    padding: 5mm;
+    display: flex; flex-direction: column; gap: 3mm;
+    background: #fff; color: #000;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 3mm; line-height: 1.32;
+    border: 1px solid #000;
+  }
+
+  .etiqueta__cab {
+    display: flex; align-items: baseline; gap: 3mm;
+    padding-bottom: 2.5mm; border-bottom: 0.6mm solid #000;
+  }
+  .etiqueta__paq { font-size: 6.5mm; font-weight: 800; letter-spacing: -0.02em; }
+  .etiqueta__srv { font-size: 3.4mm; text-transform: uppercase; letter-spacing: .08em; }
+  .etiqueta__fecha { margin-left: auto; font-size: 3mm; }
+
+  .etiqueta__rotulo {
+    display: block; margin-bottom: 1mm;
+    font-size: 2.4mm; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  }
+
+  .etiqueta__de { font-size: 2.8mm; }
+  .etiqueta__de p { margin: 0; }
+
+  /* El destinatario ocupa el espacio que sobre: es lo que lee, a un brazo de
+     distancia y con prisa, la persona que entrega. */
+  .etiqueta__para {
+    flex: 1;
+    padding: 3mm 0; border-top: 0.3mm solid #000; border-bottom: 0.3mm solid #000;
+  }
+  .etiqueta__para b { display: block; font-size: 4.6mm; line-height: 1.2; }
+  .etiqueta__para p { margin: 1.5mm 0 0; font-size: 3.6mm; }
+  .etiqueta__ref { font-size: 2.8mm; font-style: italic; }
+
+  /* El código postal manda el paquete a su ruta: se separa y se agranda para
+     que se lea del fajo sin sacarlo. */
+  .etiqueta__cp { display: flex; align-items: baseline; gap: 2mm; margin-top: 2mm; }
+  .etiqueta__cp b { font-size: 7mm; font-weight: 800; letter-spacing: .04em; }
+  .etiqueta__cp span { font-size: 2.6mm; letter-spacing: .12em; text-transform: uppercase; }
+
+  .etiqueta__datos { display: flex; gap: 6mm; }
+  .etiqueta__datos div span {
+    display: block; font-size: 2.4mm; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .etiqueta__datos div b { font-size: 3.6mm; }
+
+  .etiqueta__pie { text-align: center; }
+  .etiqueta__pie .codigo { display: block; margin: 0 auto; }
+  .etiqueta__guia {
+    display: block; margin-top: 1.5mm;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 4.4mm; font-weight: 700; letter-spacing: .12em;
+  }
+
+  /* Una etiqueta impresa se sale de la pantalla y de este prototipo. Si sale,
+     tiene que decir por sí sola que no ampara ningún envío. */
+  .etiqueta__marca {
+    position: absolute; right: 5mm; bottom: 2mm;
+    font-size: 2.2mm; letter-spacing: .1em; text-transform: uppercase; color: #666;
+  }
+
+  /* ---------- Carta: cuatro por hoja ---------- */
+  .hoja {
+    box-sizing: border-box;
+    display: grid; grid-template-columns: repeat(2, 100mm); gap: 4mm;
+    align-content: start; justify-content: center;
+    padding: 5mm;
+    background: #fff;
+  }
+  /* Carta mide 279.4 mm de alto. Dos filas más los huecos tienen que caber
+     DENTRO: 5 + 130 + 4 + 130 + 5 = 274. Con 133 mm sumaba 282 y la cuarta
+     etiqueta se iba sola a una segunda hoja. */
+  .hoja .etiqueta { height: 130mm; }
+  .hoja .etiqueta__para b { font-size: 4.2mm; }
+
+  /* En pantalla se ve el papel; el borde y la sombra desaparecen al imprimir. */
+  .hoja, .lienzo > .etiqueta { box-shadow: 0 0 0 1px var(--hairline), 0 10px 30px rgba(0, 0, 0, .45); }
+
+  /* ---------- Impresión ----------
+     `@page` no acepta clases, así que el tamaño lo inyecta el JS en
+     #regla-pagina según el formato elegido. */
+  @media print {
+    .impresion, .aviso-reimpresion, .insignia-demo { display: none !important; }
+    html, body { background: #fff; }
+    .lienzo { display: block; padding: 0; }
+    .hoja, .lienzo > .etiqueta { box-shadow: none; }
+    .etiqueta { border: none; }
+
+    /* Un salto después de CADA etiqueta deja una hoja en blanco al final.
+       Se rompe entre hermanas, no después de la última. */
+    .lienzo > .etiqueta, .hoja { break-after: page; }
+    .lienzo > .etiqueta:last-child, .hoja:last-child { break-after: auto; }
+    .etiqueta { break-inside: avoid; }
+  }
+</style>
+<style id="regla-pagina"></style>
+<script src="../assets/vigia.js?v=948af1b6"></script>
+</head>
+
+<body>
+
+<header class="impresion">
+  <a class="boton boton--sutil boton--chico" href="pedidos.html">← Pedidos</a>
+  <span class="impresion__cuenta" id="cuenta">…</span>
+
+  <span class="impresion__sep"></span>
+
+  <div class="pestanas" role="tablist" aria-label="Formato de impresión">
+    <button class="pestana" role="tab" type="button" data-formato="termica" aria-selected="true">
+      Térmica 10 × 15 cm
+    </button>
+    <button class="pestana" role="tab" type="button" data-formato="carta" aria-selected="false">
+      Carta, 4 por hoja
+    </button>
+  </div>
+
+  <button class="boton boton--primario boton--chico" type="button" id="imprimir">
+    Imprimir o guardar PDF
+  </button>
+</header>
+
+<main class="lienzo" id="lienzo"></main>
+
+<script type="module">
+import { svgCodigo } from "../assets/codigo.js?v=948af1b6";
+import { origen, datosEtiqueta, marcarImpresas, vecesImpresa, fechaLarga } from "../assets/datos.js?v=948af1b6";
+
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+const guias = (new URLSearchParams(location.search).get("guias") || "")
+  .split(",").map((g) => g.trim()).filter(Boolean);
+
+const lienzo = document.getElementById("lienzo");
+const cuenta = document.getElementById("cuenta");
+
+/* El formato se recuerda: quien tiene impresora térmica la tiene siempre, y
+   volver a elegirla en cada lote es una pregunta cuya respuesta ya se sabe. */
+const CLAVE = "tc:formato-etiqueta";
+let formato = "termica";
+try { formato = localStorage.getItem(CLAVE) || "termica"; } catch { /* modo privado */ }
+
+const reglaPagina = document.getElementById("regla-pagina");
+const PAGINA = {
+  termica: "@page { size: 100mm 150mm; margin: 0; }",
+  carta: "@page { size: letter; margin: 0; }",
+};
+
+const datos = guias.map(datosEtiqueta).filter(Boolean);
+const perdidas = guias.length - datos.length;
+
+function etiqueta(d) {
+  const t = d.destinatario;
+  const lineas = [
+    t.compania,
+    t.calle,
+    t.colonia,
+    [t.ciudad, t.estado].filter(Boolean).join(", "),
+  ].filter(Boolean);
+
+  return `
+  <article class="etiqueta">
+    <header class="etiqueta__cab">
+      <b class="etiqueta__paq">${esc(d.paqueteria)}</b>
+      <span class="etiqueta__srv">${esc(d.servicio)}</span>
+      <span class="etiqueta__fecha">${esc(fechaLarga(d.fecha))}</span>
+    </header>
+
+    <section class="etiqueta__de">
+      <span class="etiqueta__rotulo">Remitente</span>
+      <p>${esc(origen.nombre)} · ${esc(origen.contacto)}</p>
+      <p>${esc(origen.calle)} ${esc(origen.numExt)}${origen.numInt ? " " + esc(origen.numInt) : ""}, ${esc(origen.colonia)}</p>
+      <p>${esc(origen.ciudad)}, ${esc(origen.estado)} · CP ${esc(origen.cp)} · Tel. ${esc(origen.telefono)}</p>
+    </section>
+
+    <section class="etiqueta__para">
+      <span class="etiqueta__rotulo">Destinatario</span>
+      <b>${esc(t.nombre)}</b>
+      <p>${lineas.map(esc).join("<br>")}</p>
+      ${t.telefono ? `<p>Tel. ${esc(t.telefono)}</p>` : ""}
+      ${t.referencia ? `<p class="etiqueta__ref">${esc(t.referencia)}</p>` : ""}
+      <div class="etiqueta__cp"><span>CP</span><b>${esc(t.cp)}</b></div>
+    </section>
+
+    <section class="etiqueta__datos">
+      <div><span>Peso</span><b>${d.peso} kg</b></div>
+      <div><span>Piezas</span><b>${d.piezas}</b></div>
+      <div><span>Referencia</span><b>${esc(d.folio)}</b></div>
+    </section>
+
+    <footer class="etiqueta__pie">
+      ${svgCodigo(d.guia, { alto: 20 })}
+      <b class="etiqueta__guia">${esc(d.guia)}</b>
+    </footer>
+
+    <span class="etiqueta__marca">Ejemplo · sin valor de envío</span>
+  </article>`;
+}
+
+function pintar() {
+  reglaPagina.textContent = PAGINA[formato];
+  document.querySelectorAll("[data-formato]").forEach((b) =>
+    b.setAttribute("aria-selected", String(b.dataset.formato === formato)));
+
+  if (!datos.length) {
+    lienzo.innerHTML = `
+      <div class="vacio">
+        <h3>No hay ninguna etiqueta que imprimir</h3>
+        <p>${guias.length
+          ? "Las guías indicadas no existen en estos datos de ejemplo."
+          : "Se llega aquí desde Pedidos, eligiendo pedidos que ya tengan guía."}</p>
+        <div class="vacio__acciones"><a class="boton boton--primario boton--chico" href="pedidos.html">Ir a Pedidos</a></div>
+      </div>`;
+    cuenta.textContent = "Sin etiquetas";
+    document.getElementById("imprimir").disabled = true;
+    return;
+  }
+
+  cuenta.innerHTML = `${datos.length} ${datos.length === 1 ? "etiqueta" : "etiquetas"}` +
+    (perdidas ? ` <span>· ${perdidas} sin encontrar</span>` : "");
+
+  /* Una etiqueta incompleta se imprime, se pega y el paquete se pierde una
+     semana después. El momento de decirlo es antes de pegarla, no cuando la
+     paquetería la devuelve. No se bloquea: hay direcciones raras que sí
+     llegan, y quien opera sabe cuáles. */
+  const incompletas = datos.filter((d) => d.falta.length);
+  const repetidas = datos.filter((d) => vecesImpresa(d.guia) > 0);
+
+  const aviso =
+    (incompletas.length ? `
+      <div class="aviso aviso--mal aviso--bloque aviso-reimpresion">
+        <b>${incompletas.length === 1
+          ? "A una etiqueta le faltan datos de entrega"
+          : `A ${incompletas.length} etiquetas les faltan datos de entrega`}</b>
+        <div style="margin-top:8px;display:grid;gap:4px">
+          ${incompletas.map((d) => `<div class="dato">
+            <span class="mono">${esc(d.guia)}</span>
+            <span>Sin ${d.falta.join(", sin ")}</span>
+          </div>`).join("")}
+        </div>
+        <p>La guía ya existe con esa dirección, así que corregirla aquí no cambia
+          la etiqueta: hay que cancelarla y generarla de nuevo.</p>
+      </div>` : "") +
+    (repetidas.length ? `
+      <p class="aviso aviso--alerta aviso-reimpresion">
+        ${repetidas.length === 1
+          ? `La etiqueta ${esc(repetidas[0].guia)} ya se mandó a imprimir antes.`
+          : `${repetidas.length} de estas etiquetas ya se mandaron a imprimir antes.`}
+        Reimprimir está bien —se rompen, se despegan—, pero dos etiquetas iguales
+        pegadas en dos cajas distintas son dos paquetes perdidos.
+      </p>` : "");
+
+  /* En térmica cada etiqueta es su propia hoja; en carta se agrupan de cuatro
+     en cuatro y el grupo es lo que se pagina. */
+  const cuerpo = formato === "termica"
+    ? datos.map(etiqueta).join("")
+    : Array.from({ length: Math.ceil(datos.length / 4) }, (_, i) =>
+        `<div class="hoja">${datos.slice(i * 4, i * 4 + 4).map(etiqueta).join("")}</div>`).join("");
+
+  lienzo.innerHTML = aviso + cuerpo;
+}
+
+document.querySelector(".pestanas").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-formato]");
+  if (!b || b.dataset.formato === formato) return;
+  formato = b.dataset.formato;
+  try { localStorage.setItem(CLAVE, formato); } catch { /* modo privado */ }
+  pintar();
+});
+
+document.getElementById("imprimir").addEventListener("click", () => print());
+
+/* Se marcan al imprimir de verdad, no al pulsar el botón: si alguien cancela
+   el diálogo del navegador, la etiqueta no salió y decir que sí es mentir.
+   `afterprint` también se dispara al cancelar en algunos navegadores, así que
+   esto registra el intento, y por eso el aviso habla de "se mandó a imprimir"
+   y no de "se imprimió". */
+addEventListener("afterprint", () => { marcarImpresas(datos.map((d) => d.guia)); });
+
+pintar();
+</script>
+</body>
+</html>

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=1c6dd10b">
-<script src="../assets/vigia.js?v=1c6dd10b" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=948af1b6">
+<script src="../assets/vigia.js?v=948af1b6" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -115,11 +115,11 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=1c6dd10b";
+import { montar, exigirSesion } from "../assets/app.js?v=948af1b6";
 import { pedidos, sinGuia, conGuia, conError, ingresos,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion } from "../assets/datos.js?v=1c6dd10b";
+         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=948af1b6";
 if (exigirSesion()) {
   montar();
 
@@ -175,7 +175,8 @@ if (exigirSesion()) {
       return `<div class="grupo-botones" style="gap:6px;flex-wrap:nowrap">
         <a class="boton boton--fantasma boton--chico"
            href="envio.html?guia=${encodeURIComponent(p.envio.guia)}">Rastrear</a>
-        <button class="boton boton--sutil boton--chico" type="button">Etiqueta</button></div>`;
+        <a class="boton boton--sutil boton--chico"
+           href="etiqueta.html?guias=${encodeURIComponent(p.envio.guia)}">Etiqueta</a></div>`;
     }
     if (p.pago !== "Pagado") {
       return `<button class="boton boton--fantasma boton--chico" type="button" disabled
@@ -187,11 +188,16 @@ if (exigirSesion()) {
 
   const cuerpo = document.querySelector("#tabla tbody");
 
-  /** Una fila. Es función para poder repintar UNA sola tras el lote. */
+  /* Una fila. Es función para poder repintar UNA sola tras el lote.
+
+     TODA fila lleva casilla. Antes solo la llevaban las que no tenían guía,
+     porque el lote solo servía para generar; con etiquetas y recolección en
+     juego, "seleccionar todo" se saltaba en silencio justo las filas que esas
+     acciones necesitan. Qué aplica a cada acción lo decide `aplica()`, y lo
+     que se omite se explica en el resumen. */
   const filaHTML = (p) => `
     <tr data-vista="${vistaDe(p)}" data-folio="${p.folio}">
-      <td>${p.envio ? "" : `<input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"${
-        p.pago === "Pagado" ? "" : " disabled"}>`}</td>
+      <td><input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"></td>
       <td><button class="mono" type="button" data-abrir="${p.folio}"
             style="background:none;border:0;padding:0;font:inherit;color:var(--accent-claro);cursor:pointer;text-decoration:underline">${p.folio}</button>
           <div class="apagado" style="font-size:12px">${fechaCorta(p.fecha)}</div></td>
@@ -907,9 +913,10 @@ if (exigirSesion()) {
     },
     etiquetas: {
       titulo: "Imprimir etiquetas",
-      verbo: "Descargar",
+      verbo: "Preparar",
       aplica: (p) => (p.envio ? null : "Todavía no tiene guía"),
-      resumen: "Se descarga un solo PDF con todas las etiquetas, en el orden de la tabla.",
+      resumen: "Se abren en el orden de la tabla, para imprimirlas o guardarlas como PDF.",
+      ir: (lista) => `etiqueta.html?guias=${encodeURIComponent(lista.map((p) => p.envio.guia).join(","))}`,
     },
     recoleccion: {
       titulo: "Programar recolección",
@@ -990,6 +997,7 @@ if (exigirSesion()) {
 
     dlg.querySelector("[data-ejecutar]")?.addEventListener("click", () => {
       if (accion === "guias") ejecutarGuias(aprocesar, fuera);
+      else if (cfg.ir) location.href = cfg.ir(aprocesar);
       else cerrarConAviso(cfg, aprocesar);
     });
     dlg.showModal();
@@ -1028,6 +1036,7 @@ if (exigirSesion()) {
     pie.innerHTML = '<button class="boton boton--sutil" type="button" disabled>Procesando…</button>';
 
     const contador = { generado: 0, fallido: 0 };
+    const generadas = [];
     for (let i = 0; i < lista.length; i++) {
       const p = lista[i];
       const intento = (intentos.get(p.folio) ?? 0) + 1;
@@ -1052,8 +1061,13 @@ if (exigirSesion()) {
       if (res.estado === "generado") {
         contador.generado++;
         delete porFolio.get(p.folio).fila.dataset.fallido;
-        p.envio = { guia: res.guia, paqueteria: res.paqueteria, estado: "Creada",
-                    costo: res.costo, peso, original: "label_created" };
+        p.envio = { guia: res.guia, paqueteria: res.paqueteria, servicio: res.servicio,
+                    estado: "Creada", costo: res.costo, peso, fecha: HOY,
+                    original: "label_created" };
+        /* Se persiste para que la etiqueta exista al cambiar de pantalla: sin
+           esto la guía vivía solo en esta variable y se perdía al navegar. */
+        guardarGuia(p.folio, p.envio);
+        generadas.push(res.guia);
         repintarFila(p.folio);
       } else if (res.estado === "fallido") {
         contador.fallido++;
@@ -1079,12 +1093,19 @@ if (exigirSesion()) {
         <div><b>${omitidos}</b><span>${omitidos === 1 ? "omitido" : "omitidos"}</span></div>
       </div>`);
 
+    /* El siguiente paso después de generar es imprimir, y sale del resultado.
+       Si el pie solo dice "Cerrar", la guía queda hecha y nadie sabe cómo
+       sacarla: hay que volver a la tabla y buscar los mismos pedidos. */
     pie.innerHTML =
+      '<button class="boton boton--sutil" type="button" data-cerrar-lote>Cerrar</button>' +
       (ultimoFallidos.length
         ? `<button class="boton boton--fantasma" type="button" data-seleccionar-fallidos>
              Reintentar ${ultimoFallidos.length} ${ultimoFallidos.length === 1 ? "fallido" : "fallidos"}
            </button>` : "") +
-      '<button class="boton boton--primario" type="button" data-cerrar-lote>Cerrar</button>';
+      (generadas.length
+        ? `<a class="boton boton--primario" href="etiqueta.html?guias=${encodeURIComponent(generadas.join(","))}">
+             Imprimir ${generadas.length} ${generadas.length === 1 ? "etiqueta" : "etiquetas"}
+           </a>` : "");
 
     aplicar(false);
   }
