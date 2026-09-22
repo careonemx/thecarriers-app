@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=73e34793">
+<link rel="stylesheet" href="assets/app.css?v=c4b18c04">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=73e34793" defer></script>
+<script src="assets/vigia.js?v=c4b18c04" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -686,11 +686,13 @@
         <div class="regla"><b>La consecuencia antes que el dato</b><span>Primero "Te cobran 6 kg", después por qué. Tres cifras con rótulo —real, volumétrico, cobrado— obligan a compararlas para deducir la única que importaba.</span></div>
         <div class="regla"><b>Sin palabras de transportista</b><span>"Sobrecosto por espacio" y "peso volumétrico" son jerga. Quien lo lee quiere saber por qué la factura no coincide con la báscula: "Pesa 4 kg, pero una caja de 40 × 30 × 25 cm se cobra como si pesara 6".</span></div>
         <div class="regla"><b>Una sugerencia vale lo que ahorra</b><span>"Baja el alto a 16 cm" no mueve a nadie. "Con 16 cm en vez de 25 pagarías $170 en vez de $232, $62 menos por envío" sí.</span></div>
-        <div class="regla"><b>Ordenar por lo que corre, no por lo que lleva</b><span>La antigüedad no es la urgencia. Un envío parado ayer puede vencer hoy y otro de hace cuatro días aguantar hasta el jueves. Se ordena por el plazo, que es cuando el paquete se regresa y hay que pagar el retorno.</span></div>
-        <div class="regla"><b>Decir qué pasa si nadie hace nada</b><span>Una cola de trabajo sin consecuencia es una lista de avisos. "Vence hoy" mueve; "lleva 3 días parado" no.</span></div>
-        <div class="regla"><b>De quién depende</b><span>Si la pelota la tiene la paquetería o el cliente, ofrecer "Atender" es mentira. Cada caso dice quién lo tiene que mover antes de ofrecer un botón.</span></div>
-        <div class="regla"><b>Un botón sin objeto no es una acción</b><span>"Atender" no dice qué va a pasar. Cada motivo se resuelve distinto y el botón se llama como eso: "Corregir dirección", "Avisar al cliente", "Enviar documento".</span></div>
-        <div class="regla"><b>Lo que reportó la paquetería se conserva</b><span>Pero en segundo plano y dicho con su nombre —"FedEx reportó: <code>delivery exception</code>"—, porque es lo que se cita al llamarles. Al mismo peso que el motivo en castellano, solo estorba.</span></div>
+        <div class="regla"><b>Somos la capa intermedia</b><span>No se ofrece lo que necesita una integración que no existe. "Corregir dirección" o "Enviar documento" sobre un envío ya despachado exigen la API de la paquetería; sin ella, el botón promete algo que no va a pasar.</span></div>
+        <div class="regla"><b>No se inventa lo que no nos informan</b><span>Los plazos antes de devolver al remitente los sabe la paquetería, no nosotros. Poner "Vence hoy" sin ese dato es telemetría inventada, por bien que se lea.</span></div>
+        <div class="regla"><b>Ordenar por lo único que se sabe</b><span>De un envío detenido conocemos la fecha del último reporte. Esa es la señal de prioridad disponible, así que va primero lo que lleva más tiempo sin moverse.</span></div>
+        <div class="regla"><b>Un campo necesita de dónde salir</b><span>Antes de poner "Atiende: Karla T." hay que poder decir quién lo registra y dónde. Un dato sin origen es una columna que nunca se va a llenar.</span></div>
+        <div class="regla"><b>Ofrecer lo que sí se puede</b><span>Sin integración quedan el número de guía para copiar, el rastreo público de la paquetería y el contacto del destinatario, que es dato nuestro. Es poco y es verdad.</span></div>
+        <div class="regla"><b>Dos acciones se ven como un par</b><span>Mismo control y mismo ancho mínimo. Un botón junto a un texto suelto no se lee como dos opciones: se lee como un botón y una nota.</span></div>
+        <div class="regla"><b>Lo que reportó la paquetería se conserva</b><span>Pero en segundo plano y dicho con su nombre —"Texto original: <code>delivery exception</code>"—, porque es lo que se cita al llamarles. Al mismo peso que el motivo en castellano, solo estorba.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

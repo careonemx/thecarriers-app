@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Envíos detenidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=73e34793">
-<script src="../assets/vigia.js?v=73e34793" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=c4b18c04">
+<script src="../assets/vigia.js?v=c4b18c04" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
@@ -15,8 +15,8 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Envíos detenidos</h1>
-      <p>No avanzan hasta que alguien hace algo. Primero los que están por vencer:
-         pasado el plazo, la paquetería los regresa y el retorno se cobra.</p>
+      <p>Lo que reportaron tus paqueterías, junto en un solo lugar. Se destraba
+         con ellas o con el cliente; aquí tienes la guía y el contacto para hacerlo.</p>
     </div>
   </div>
 
@@ -25,26 +25,63 @@
   <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
 
   <section class="tarjeta">
+    <div class="tarjeta__cabeza">
+      <h2>Tracking</h2>
+    </div>
+
+    <div class="filtros">
+      <label class="sr-only" for="q-detenidos">Buscar</label>
+      <div class="buscador" style="max-width:320px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q-detenidos" autocomplete="off"
+               placeholder="Guía, cliente, paquetería o destino">
+      </div>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <span class="filtros__etiqueta">Detenido desde</span>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="7">7 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="30">30 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="true" data-rango="">Todo</button>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <label class="sr-only" for="desde">Desde</label>
+      <input type="date" id="desde" aria-label="Desde">
+      <span class="filtros__etiqueta">al</span>
+      <label class="sr-only" for="hasta">Hasta</label>
+      <input type="date" id="hasta" aria-label="Hasta">
+
+      <span class="filtros__sep"></span>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
+        Quitar filtros</button>
+    </div>
+
     <div class="tabla-caja scroll-fino">
       <table id="tabla">
-        <caption class="sr-only">Envíos detenidos, con lo que resuelve cada uno y su plazo.</caption>
+        <caption class="sr-only">Envíos detenidos, con lo que reportó cada paquetería.</caption>
         <thead><tr>
-          <th scope="col">Vence</th>
+          <th scope="col">Detenido</th>
           <th scope="col">Envío</th>
-          <th scope="col">Qué pasó</th>
-          <th scope="col">Qué lo resuelve</th>
-          <th scope="col">Atiende</th>
+          <th scope="col">Estatus</th>
+          <th scope="col">Destinatario</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
         </tr></thead>
         <tbody></tbody>
       </table>
     </div>
+    <div class="vacio" data-sin-resultados hidden>
+      <h3>Ningún envío detenido coincide</h3>
+      <p>Prueba con otro rango de fechas o quita la búsqueda.</p>
+    </div>
+
     <div class="tarjeta__pie"><span><b id="cuenta">0</b> detenidos</span></div>
   </section>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=73e34793";
-import { detenidos, comoResolver, DE_QUIEN, diasDesde, fechaCorta, usuario } from "../assets/datos.js?v=73e34793";
+import { montar, exigirSesion } from "../assets/app.js?v=c4b18c04";
+import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta,
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=c4b18c04";
 if (exigirSesion()) {
   montar();
 
@@ -52,55 +89,78 @@ if (exigirSesion()) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const dias = (n) => `${n} ${n === 1 ? "día" : "días"}`;
 
-  /* Ordenar por antigüedad era el error de fondo: la que lleva más tiempo
-     parada no es la que menos tiempo queda. Aquí manda el vencimiento, que es
-     cuando el paquete se regresa y hay que pagar el retorno. */
-  const lista = () => [...detenidos]
-    .map((e) => ({ e, r: comoResolver(e) }))
-    .sort((a, b) => a.r.restan - b.r.restan);
+  const desde = document.getElementById("desde");
+  const hasta = document.getElementById("hasta");
+  const buscar = document.getElementById("q-detenidos");
+  const limpiar = document.getElementById("limpiar-filtros");
+  const fichas = [...document.querySelectorAll("[data-rango]")];
 
-  const TONO = { vencido: "mal", hoy: "mal", manana: "aviso", holgado: "neutra" };
-  const CUANDO = (r) => r.restan < 0 ? `Venció hace ${dias(-r.restan)}`
-    : r.restan === 0 ? "Vence hoy"
-    : r.restan === 1 ? "Vence mañana"
-    : `Faltan ${dias(r.restan)}`;
+  const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  /* A dónde se va a resolver. Corregir una dirección se hace en el pedido,
-     que es donde está el formulario; lo demás, en el historial del envío,
-     que es lo que se tiene a mano al llamar a la paquetería. */
-  const destino = ({ e, r }) => r.accion === "Corregir dirección"
-    ? `pedidos.html?pedido=${encodeURIComponent(String(e.pedido).replace(/\D/g, ""))}`
-    : `envio.html?guia=${encodeURIComponent(e.guia)}`;
+  /* Se busca por lo que alguien tiene a mano cuando llama la paquetería o el
+     cliente: el número de guía, el nombre, la ciudad o el motivo. */
+  const texto = (e) => sinAcentos([e.guia, e.cliente, e.paqueteria, e.destino, e.motivo, e.original].join(" "));
 
-  function fila({ e, r }) {
-    const parado = diasDesde(e.detenidoDesde);
+  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim());
+
+  function pasa(e) {
+    if (desde.value && e.detenidoDesde < desde.value) return false;
+    if (hasta.value && e.detenidoDesde > hasta.value) return false;
+    const q = sinAcentos(buscar.value.trim());
+    return !q || texto(e).includes(q);
+  }
+
+  /* Lo que llevamos más tiempo sin saber va primero. Es la única señal de
+     prioridad que tenemos: la fecha del último reporte de la paquetería.
+     Cuánto le queda antes de regresarse lo sabe ella, no nosotros. */
+  const lista = () => detenidos.filter(pasa)
+    .sort((a, b) => diasDesde(b.detenidoDesde) - diasDesde(a.detenidoDesde));
+
+  /* El contacto sale del pedido, que es dato nuestro. La paquetería no hace
+     falta para llamar a un cliente. */
+  const contacto = (e) => {
+    const d = detalleDe(e.pedido);
+    const c = d?.direccion?.campos ?? {};
+    return { tel: c.telefono ? telefonoMX(c.telefono) : "", correo: c.correo || "" };
+  };
+
+  function fila(e) {
+    const d = diasDesde(e.detenidoDesde);
+    const url = enlaceRastreo(e.paqueteria, e.guia);
+    const c = contacto(e);
     return `
       <tr data-guia="${esc(e.guia)}">
         <td>
-          <span class="pastilla pastilla--${TONO[r.urgencia]}">${CUANDO(r)}</span>
+          <span class="pastilla pastilla--${d >= 3 ? "mal" : "aviso"}">${dias(d)}</span>
           <div class="apagado" style="margin-top:5px;font-size:12px">
-            ${esc(fechaCorta(r.vence))} · parado ${dias(parado)}</div>
+            desde ${esc(fechaCorta(e.detenidoDesde))}</div>
         </td>
         <td>
           <a class="mono" href="envio.html?guia=${encodeURIComponent(e.guia)}">${esc(e.guia)}</a>
           <div style="margin-top:4px;font-size:12px"><b>${esc(e.paqueteria)}</b></div>
-          <div class="apagado" style="font-size:12px">${esc(e.cliente)} · ${esc(e.destino)}</div>
-        </td>
-        <td style="max-width:26ch">
-          ${esc(e.motivo)}
-          <div class="apagado" style="margin-top:5px;font-size:11px">
-            ${esc(e.paqueteria)} reportó: <span class="mono">${esc(e.original)}</span></div>
+          <div class="apagado" style="font-size:12px">${esc(e.destino)}</div>
         </td>
         <td style="max-width:30ch">
-          <b>${esc(DE_QUIEN[r.depende])}</b>
-          <div class="apagado" style="margin-top:4px;font-size:12px">${esc(r.porque)}</div>
-          <a class="boton boton--primario boton--chico" style="margin-top:9px"
-             href="${destino({ e, r })}">${esc(r.accion)}</a>
+          ${esc(e.motivo)}
+          <div class="apagado" style="margin-top:5px;font-size:11px">
+            Texto original: <span class="mono">${esc(e.original)}</span></div>
+        </td>
+        <td style="max-width:22ch">
+          ${esc(e.cliente)}
+          ${c.tel ? `<div style="margin-top:4px;font-size:12px">
+            <a href="tel:${esc(c.tel.replace(/\s/g, ""))}">${esc(c.tel)}</a></div>` : ""}
+          ${c.correo ? `<div style="font-size:12px"><a href="mailto:${esc(c.correo)}">${esc(c.correo)}</a></div>` : ""}
         </td>
         <td>
-          ${e.responsable === "Sin asignar"
-            ? `<button class="boton boton--fantasma boton--chico" type="button" data-asignar>Asignármelo</button>`
-            : `${esc(e.responsable)}`}
+          <div class="acciones-fila">
+            <button class="boton boton--fantasma boton--chico" type="button"
+                    data-copiar="${esc(e.guia)}">Copiar guía</button>
+            ${url
+              ? `<a class="boton boton--fantasma boton--chico" href="${esc(url)}"
+                    target="_blank" rel="noopener">Ver en ${esc(e.paqueteria)}</a>`
+              : `<button class="boton boton--fantasma boton--chico" type="button" disabled
+                    title="Falta confirmar la URL de rastreo de ${esc(e.paqueteria)}">Sin rastreo</button>`}
+          </div>
         </td>
       </tr>`;
   }
@@ -114,37 +174,73 @@ if (exigirSesion()) {
   const aviso = document.getElementById("guardado");
   let quitando;
 
+  function avisar(texto) {
+    clearTimeout(quitando);
+    aviso.textContent = texto;
+    aviso.hidden = false;
+    quitando = setTimeout(() => { aviso.hidden = true; }, 3000);
+  }
+
   function pintar() {
     const items = lista();
     cuerpo.innerHTML = items.map(fila).join("");
     document.getElementById("cuenta").textContent = items.length;
 
-    /* Las tres cifras responden lo mismo que la tabla: qué corre prisa, qué
-       me toca a mí y qué no está atendiendo nadie. El promedio de días
-       parados que había antes no llevaba a ninguna parte. */
-    const corren = items.filter((x) => x.r.restan <= 1).length;
-    const mios = items.filter((x) => x.r.depende === "ti").length;
-    const sueltos = items.filter((x) => x.e.responsable === "Sin asignar").length;
+    /* Las tres cifras salen de la única fecha que tenemos. Nada de plazos ni
+       de vencimientos: eso lo sabe la paquetería y nosotros no. */
+    const viejos = items.map((e) => diasDesde(e.detenidoDesde));
+    const elQueMas = viejos.length ? Math.max(...viejos) : 0;
+    const masDeTres = viejos.filter((d) => d >= 3).length;
+    const paqueterias = new Set(items.map((e) => e.paqueteria)).size;
+
+    limpiar.hidden = !hayFiltro();
+    document.querySelector("[data-sin-resultados]").hidden = items.length > 0;
 
     document.getElementById("metricas").innerHTML =
-      metrica("Vencen hoy o mañana", corren,
-              corren ? "Pasado el plazo, se regresan" : "Ninguno corre prisa",
-              corren ? ' style="color:#fca5a5"' : "") +
-      metrica("Dependen de ti", mios, "Nadie más los va a mover") +
-      metrica("Sin responsable", sueltos, sueltos ? "Nadie los está atendiendo" : "Todos asignados");
+      metrica("Detenidos ahora", items.length,
+              hayFiltro() ? `de ${detenidos.length} en total` : "En todas tus paqueterías") +
+      metrica("El que más lleva", elQueMas ? dias(elQueMas) : "—",
+              "Desde el último reporte", elQueMas >= 3 ? ' style="color:#fca5a5"' : "") +
+      metrica("En cuántas paqueterías", paqueterias,
+              paqueterias === 1 ? "Una sola" : "Hay que hablar con varias");
   }
 
-  cuerpo.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-asignar]");
-    if (!b) return;
-    const guia = b.closest("tr").dataset.guia;
-    const envio = detenidos.find((x) => x.guia === guia);
-    envio.responsable = usuario.nombre;
+  /* Los atajos escriben en los campos de fecha, como en Pedidos: así el rango
+     elegido está siempre a la vista y se puede ajustar a mano. */
+  function marcarAtajo() {
+    const activo = fichas.find((f) => f.dataset.rango === ""
+      ? !desde.value && !hasta.value
+      : desde.value === menosDias(HOY, +f.dataset.rango) && hasta.value === HOY);
+    fichas.forEach((f) => f.setAttribute("aria-pressed", String(f === activo)));
+  }
+
+  fichas.forEach((f) => f.addEventListener("click", () => {
+    if (f.dataset.rango === "") { desde.value = ""; hasta.value = ""; }
+    else { desde.value = menosDias(HOY, +f.dataset.rango); hasta.value = HOY; }
+    marcarAtajo();
     pintar();
-    clearTimeout(quitando);
-    aviso.textContent = `Guardado. ${envio.guia} queda a tu nombre.`;
-    aviso.hidden = false;
-    quitando = setTimeout(() => { aviso.hidden = true; }, 4000);
+  }));
+
+  [desde, hasta].forEach((i) => i.addEventListener("change", () => { marcarAtajo(); pintar(); }));
+  buscar.addEventListener("input", pintar);
+  limpiar.addEventListener("click", () => {
+    desde.value = hasta.value = ""; buscar.value = "";
+    marcarAtajo();
+    pintar();
+  });
+
+  cuerpo.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-copiar]");
+    if (!b) return;
+    const guia = b.dataset.copiar;
+    try {
+      await navigator.clipboard.writeText(guia);
+      avisar(`Copiado: ${guia}. Pégalo en el rastreo de la paquetería o dáselo por teléfono.`);
+    } catch {
+      /* Sin permiso de portapapeles queda seleccionable, que es lo que se
+         puede ofrecer sin mentir. */
+      avisar(`No se pudo copiar. El número es ${guia}.`);
+    }
   });
 
   pintar();
