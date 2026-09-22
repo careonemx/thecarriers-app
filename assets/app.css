@@ -787,6 +787,57 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 .periodo__var--sube { color: var(--accent-claro); }
 .periodo__var--baja { color: #fca5a5; }
 
+/* ---------- Puntos de salida ----------
+   Una tarjeta por dirección. El predeterminado se marca con una barra del
+   acento a la izquierda: es el que se imprime como remitente, y tiene que
+   distinguirse sin leer. */
+.salidas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+
+.salida {
+  display: grid; align-content: start; gap: 12px;
+  position: relative; overflow: hidden;
+  padding: 18px 20px;
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900);
+}
+.salida--principal::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent);
+}
+.salida__cabeza { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.salida__cabeza h2 { font-size: 16px; }
+.salida__contacto { margin-top: 3px; color: var(--muted); font-size: 12px; }
+.salida__tel { white-space: nowrap; }
+
+.salida__direccion { font-style: normal; font-size: 13px; line-height: 1.55; }
+
+.salida__datos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.salida__datos dt { color: var(--muted); font-size: 11px; }
+.salida__datos dd { margin: 3px 0 0; font-size: 13px; }
+.salida__nota { margin-top: -4px; color: var(--muted); font-size: 12px; }
+
+.salida__pie {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding-top: 12px; border-top: 1px solid var(--hairline);
+}
+.salida__pie-sep { flex: 1; }
+
+/* Agregar: misma caja, sin relleno, para que se lea como un hueco que se
+   puede llenar y no como una tarjeta más con datos. */
+.salida--nueva {
+  align-content: center; justify-items: center; gap: 10px;
+  border-style: dashed; background: transparent; color: inherit;
+  font: inherit; text-align: center; cursor: pointer;
+  transition: border-color .16s var(--curva), background .16s var(--curva);
+}
+.salida--nueva:hover { border-color: var(--field); background: var(--hover); }
+.salida--nueva__mas {
+  display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 999px; border: 1px solid var(--hairline);
+  font-size: 19px; color: var(--muted);
+}
+.salida--nueva b { display: block; font-size: 14px; }
+.salida--nueva span span { color: var(--muted); font-size: 12px; }
+
 /* ---------- Barra de selección múltiple ----------
    Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando
    la tabla y no hay que llevarle la vista a otro lado. */

@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Puntos de salida · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css?v=9e323744">
+<script src="../assets/vigia.js?v=9e323744" defer></script>
+</head>
+<body data-seccion="origenes">
+<main class="contenido contenido--ancho">
+
+  <div class="encabezado" style="margin-bottom:24px">
+    <div>
+      <h1>Puntos de salida</h1>
+      <p>De aquí salen tus pedidos y aquí llega la paquetería a recogerlos.</p>
+    </div>
+  </div>
+
+  <div class="salidas" id="salidas"></div>
+
+  <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
+  <dialog class="dialogo" id="confirmar" aria-labelledby="confirmar-titulo"></dialog>
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js?v=9e323744";
+import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=9e323744";
+if (exigirSesion()) {
+  montar();
+
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+  const lista = document.getElementById("salidas");
+  const panel = document.getElementById("panel");
+
+  /* La dirección en una línea, como se lee en una etiqueta. */
+  const enUnaLinea = (c) => [
+    [c.calle, c.numExt].filter(Boolean).join(" ") + (c.numInt ? ` Int. ${c.numInt}` : ""),
+    c.colonia,
+    `${c.ciudad}, ${c.estado}`,
+    `CP ${c.cp}`,
+  ].filter(Boolean);
+
+  /* Lo que de verdad importa de un punto de salida no es su dirección: es si
+     alguien va a pasar por ahí y a qué hora. Eso sale de las recolecciones
+     ya programadas, no de un texto fijo. */
+  const agenda = (o) => {
+    const suyas = recolecciones.filter((r) => r.origen === o.id && r.fecha >= HOY)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const hoy = suyas.filter((r) => r.fecha === HOY);
+    if (hoy.length) {
+      return { tono: "ok", corto: `${hoy.length} hoy`,
+               detalle: hoy.map((r) => `${r.paqueteria} ${r.ventana}`).join(" · ") };
+    }
+    if (suyas.length) {
+      const p = suyas[0];
+      return { tono: "neutra", corto: fechaCorta(p.fecha),
+               detalle: `${p.paqueteria} ${p.ventana} · ${plural(p.piezas, "pieza", "piezas")}` };
+    }
+    return { tono: "aviso", corto: "Sin programar", detalle: "" };
+  };
+
+  function tarjeta(o) {
+    const c = o.campos;
+    const a = agenda(o);
+    return `
+      <article class="salida${o.predeterminado ? " salida--principal" : ""}" data-id="${esc(o.id)}">
+        <div class="salida__cabeza">
+          <div>
+            <h2>${esc(o.nombre)}</h2>
+            <p class="salida__contacto">${esc(c.nombre)} ${esc(c.apellido)} <span class="salida__tel">· ${esc(telefonoMX(c.telefono))}</span></p>
+          </div>
+          ${o.predeterminado ? '<span class="pastilla pastilla--ok">Predeterminado</span>' : ""}
+        </div>
+
+        <address class="salida__direccion">${enUnaLinea(c).map(esc).join("<br>")}</address>
+
+        <dl class="salida__datos">
+          <div><dt>Entrega a la paquetería</dt><dd>${esc(o.horario.abre)} a ${esc(o.horario.cierra)}</dd></div>
+          <div><dt>Recolección</dt><dd><span class="pastilla pastilla--${a.tono}">${esc(a.corto)}</span></dd></div>
+        </dl>
+        ${a.detalle ? `<p class="salida__nota">${esc(a.detalle)}</p>` : ""}
+
+        <div class="salida__pie">
+          <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar dirección</button>
+          ${o.predeterminado ? "" : '<button class="boton boton--sutil boton--chico" type="button" data-predeterminar>Hacer predeterminado</button>'}
+          <span class="salida__pie-sep"></span>
+          <button class="boton boton--sutil boton--chico" type="button" data-borrar
+            ${o.predeterminado ? 'disabled title="El predeterminado no se puede eliminar: primero nombra otro."' : ""}>
+            Eliminar
+          </button>
+        </div>
+      </article>`;
+  }
+
+  function pintar() {
+    lista.innerHTML = origenes.map(tarjeta).join("") + `
+      <button class="salida salida--nueva" type="button" data-nuevo>
+        <span class="salida--nueva__mas" aria-hidden="true">+</span>
+        <span><b>Agregar punto de salida</b>
+        <span>Otra bodega, una tienda o tu domicilio.</span></span>
+      </button>`;
+  }
+
+  /* ---------- El formulario ----------
+     Son los MISMOS campos, con las mismas etiquetas, que al editar la
+     dirección de un pedido. Una dirección es una dirección: dos formularios
+     distintos para lo mismo terminan validando distinto. */
+  const campo = (id, etiqueta, valor, extra = "", ayuda = "") => `
+    <label class="campo" data-campo="${id}">
+      <span>${etiqueta}</span>
+      <input id="org-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
+      ${ayuda ? `<span class="campo__ayuda">${ayuda}</span>` : ""}
+      <span class="campo__error" hidden></span>
+    </label>`;
+
+  function formulario(o) {
+    const c = o.campos;
+    return `
+      <form id="form-origen" novalidate class="campos">
+        ${campo("nombre-salida", "Nombre de este punto", o.nombre,
+                'required placeholder="Almacén Puebla"',
+                "Solo para reconocerlo aquí. No va en la etiqueta.")}
+
+        <p class="campos__titulo">Quién entrega el paquete</p>
+
+        <div class="campos campos--2">
+          ${campo("nombre", "Nombre de contacto", c.nombre, 'autocomplete="given-name" required')}
+          ${campo("apellido", "Apellido de contacto", c.apellido, 'autocomplete="family-name" required')}
+        </div>
+
+        ${campo("correo", "Correo electrónico", c.correo, 'type="email" autocomplete="email" placeholder="nombre@ejemplo.com"')}
+
+        <div class="campos campos--2">
+          <label class="campo" data-campo="telefono">
+            <span>Número de contacto</span>
+            <span class="campo-tel">
+              <label class="sr-only" for="org-lada">Código de país</label>
+              <select id="org-lada" name="lada">
+                ${ladas.map((l) => `<option value="${l.codigo}"${l.codigo === (c.lada ?? "+52") ? " selected" : ""}>${l.bandera} ${l.codigo}</option>`).join("")}
+              </select>
+              <input id="org-telefono" name="telefono" value="${esc(c.telefono ?? "")}"
+                     inputmode="tel" maxlength="10" placeholder="55 1234 5678" autocomplete="tel-national">
+            </span>
+            <span class="campo__error" hidden></span>
+          </label>
+          ${campo("compania", "Compañía (opcional)", c.compania, 'placeholder="Mi empresa"')}
+        </div>
+
+        <p class="campos__titulo">Dirección</p>
+
+        ${campo("calle", "Calle", c.calle, 'autocomplete="address-line1" required placeholder="Av. Reforma"')}
+
+        <div class="campos campos--2">
+          ${campo("numExt", "Número exterior", c.numExt, 'required placeholder="123"')}
+          ${campo("numInt", "Número interior (opcional)", c.numInt, 'placeholder="Bodega 4"')}
+        </div>
+
+        <div class="campos campos--corto-largo">
+          ${campo("cp", "Código postal", c.cp, 'inputmode="numeric" maxlength="5" autocomplete="postal-code" required',
+                  "Define la colonia, la ciudad y el estado.")}
+          <label class="campo" data-campo="colonia">
+            <span>Colonia</span>
+            <input id="org-colonia" name="colonia" list="org-colonias" value="${esc(c.colonia ?? "")}" required>
+            <datalist id="org-colonias"></datalist>
+            <span class="campo__error" hidden></span>
+          </label>
+        </div>
+
+        <div class="campos campos--2">
+          ${campo("estado", "Estado", c.estado, "required")}
+          ${campo("ciudad", "Ciudad o municipio", c.ciudad, "required")}
+        </div>
+
+        <label class="campo" data-campo="referencia">
+          <span>Referencia</span>
+          <textarea id="org-referencia" name="referencia" rows="2" maxlength="100"
+            placeholder="Portón blanco de reja, frente a la gasolinera.">${esc(c.referencia ?? "")}</textarea>
+          <span class="campo__pie">
+            <span class="campo__ayuda">Ayuda al repartidor a encontrar el domicilio.</span>
+            <span class="campo__contador" id="org-contador">0/100</span>
+          </span>
+        </label>
+
+        <p class="campos__titulo">Cuándo hay quién entregue</p>
+
+        <div class="campos campos--2">
+          <label class="campo" data-campo="abre"><span>Abre</span>
+            <input id="org-abre" name="abre" type="time" value="${esc(o.horario.abre)}" required>
+            <span class="campo__error" hidden></span></label>
+          <label class="campo" data-campo="cierra"><span>Cierra</span>
+            <input id="org-cierra" name="cierra" type="time" value="${esc(o.horario.cierra)}" required>
+            <span class="campo__error" hidden></span></label>
+        </div>
+        <p class="campo__ayuda" style="margin-top:-6px">
+          La recolección solo se puede programar dentro de esta ventana.
+        </p>
+      </form>`;
+  }
+
+  let editando = null;
+
+  function abrir(o) {
+    editando = o;
+    panel.innerHTML = `
+      <div class="panel__cabeza">
+        <div><h2 id="panel-titulo">${o.id ? "Editar punto de salida" : "Nuevo punto de salida"}</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Esta dirección se imprime como remitente en cada etiqueta.</p></div>
+        <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
+      </div>
+      <div class="panel__cuerpo scroll-fino">${formulario(o)}</div>
+      <div class="panel__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-panel>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-guardar>Guardar</button>
+      </div>`;
+    conectarFormulario();
+    panel.showModal();
+  }
+
+  /* El código postal manda: define colonia, ciudad y estado. Escribirlos a
+     mano es la forma más común de que no coincidan entre sí. */
+  function conectarFormulario() {
+    const cp = panel.querySelector("#org-cp");
+    const colonia = panel.querySelector("#org-colonia");
+    const lista = panel.querySelector("#org-colonias");
+    const estado = panel.querySelector("#org-estado");
+    const ciudad = panel.querySelector("#org-ciudad");
+
+    const porCP = () => {
+      const d = coloniasPorCP[cp.value.trim()];
+      lista.innerHTML = d ? d.colonias.map((x) => `<option value="${esc(x)}">`).join("") : "";
+      if (!d) return;
+      estado.value = d.estado;
+      ciudad.value = d.ciudad;
+      if (!d.colonias.includes(colonia.value)) colonia.value = d.colonias[0];
+    };
+    cp.addEventListener("input", porCP);
+    porCP();
+
+    const ref = panel.querySelector("#org-referencia");
+    const cont = panel.querySelector("#org-contador");
+    const contar = () => { cont.textContent = `${ref.value.length}/100`; };
+    ref.addEventListener("input", contar);
+    contar();
+  }
+
+  function guardar() {
+    const f = panel.querySelector("#form-origen");
+    const v = (n) => f.querySelector(`[name="${n}"]`).value.trim();
+
+    let falla = null;
+    for (const [n, etiqueta] of [["nombre-salida", "el nombre del punto"], ["nombre", "el nombre"],
+      ["apellido", "el apellido"], ["calle", "la calle"], ["numExt", "el número exterior"],
+      ["cp", "el código postal"], ["colonia", "la colonia"], ["estado", "el estado"], ["ciudad", "la ciudad"]]) {
+      const campo = f.querySelector(`[data-campo="${n}"]`);
+      const error = campo?.querySelector(".campo__error");
+      const vacio = !v(n);
+      if (error) { error.textContent = vacio ? `Falta ${etiqueta}.` : ""; error.hidden = !vacio; }
+      campo?.querySelector("input")?.setAttribute("aria-invalid", String(vacio));
+      if (vacio && !falla) falla = campo;
+    }
+    if (v("abre") >= v("cierra")) {
+      const campo = f.querySelector('[data-campo="cierra"]');
+      const error = campo.querySelector(".campo__error");
+      error.textContent = "La hora de cierre tiene que ser posterior a la de apertura.";
+      error.hidden = false;
+      falla = falla || campo;
+    }
+    if (falla) { falla.querySelector("input, select, textarea")?.focus(); return; }
+
+    const destino = editando.id ? origenes.find((o) => o.id === editando.id) : null;
+    const datos = {
+      nombre: v("nombre-salida"),
+      horario: { abre: v("abre"), cierra: v("cierra") },
+      campos: {
+        nombre: v("nombre"), apellido: v("apellido"), correo: v("correo"),
+        lada: v("lada"), telefono: v("telefono"), compania: v("compania"),
+        calle: v("calle"), numExt: v("numExt"), numInt: v("numInt"),
+        cp: v("cp"), colonia: v("colonia"), estado: v("estado"), ciudad: v("ciudad"),
+        referencia: v("referencia"),
+      },
+    };
+
+    if (destino) Object.assign(destino, datos);
+    else origenes.push({ id: `p${Date.now()}`, predeterminado: origenes.length === 0, ...datos });
+
+    panel.close();
+    pintar();
+  }
+
+  const vacio = () => ({
+    id: null, nombre: "", predeterminado: false,
+    horario: { abre: "09:00", cierra: "18:00" },
+    campos: { nombre: "", apellido: "", correo: "", lada: "+52", telefono: "", compania: "",
+              calle: "", numExt: "", numInt: "", cp: "", colonia: "", estado: "", ciudad: "", referencia: "" },
+  });
+
+  lista.addEventListener("click", (e) => {
+    if (e.target.closest("[data-nuevo]")) return abrir(vacio());
+    const tarjeta = e.target.closest(".salida[data-id]");
+    if (!tarjeta) return;
+    const o = origenes.find((x) => x.id === tarjeta.dataset.id);
+
+    if (e.target.closest("[data-editar]")) return abrir(o);
+
+    if (e.target.closest("[data-predeterminar]")) {
+      origenes.forEach((x) => { x.predeterminado = x === o; });
+      pintar();
+      return;
+    }
+
+    if (e.target.closest("[data-borrar]")) pedirConfirmacion(o);
+  });
+
+  /* Borrar un punto de salida con recolecciones programadas deja a un camión
+     yendo a una dirección que ya no existe. El diálogo lo dice antes, con el
+     número exacto, y la acción destructiva se nombra: "Sí, eliminar". */
+  const confirmar = document.getElementById("confirmar");
+
+  function pedirConfirmacion(o) {
+    const pendientes = recolecciones.filter((r) => r.origen === o.id && r.fecha >= HOY);
+    confirmar.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="confirmar-titulo">¿Eliminar ${esc(o.nombre)}?</h2></div>
+      <div class="dialogo__cuerpo">
+        ${pendientes.length
+          ? `<p class="aviso aviso--alerta">Tiene ${plural(pendientes.length, "recolección programada", "recolecciones programadas")}:
+               ${pendientes.map((r) => `${esc(r.paqueteria)} el ${esc(fechaCorta(r.fecha))}`).join(", ")}.
+               Habrá que programarlas otra vez desde otra dirección.</p>`
+          : "<p>No tiene recolecciones programadas.</p>"}
+        <p style="margin-top:10px;color:var(--muted);font-size:13px">
+          Las guías ya generadas conservan esta dirección como remitente: la etiqueta impresa no cambia.
+        </p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-no>Conservarlo</button>
+        <button class="boton boton--peligro" type="button" data-si>Sí, eliminar</button>
+      </div>`;
+    confirmar.showModal();
+
+    confirmar.onclick = (ev) => {
+      if (ev.target === confirmar || ev.target.closest("[data-no]")) return confirmar.close();
+      if (!ev.target.closest("[data-si]")) return;
+      origenes.splice(origenes.indexOf(o), 1);
+      if (!origenes.some((x) => x.predeterminado) && origenes[0]) origenes[0].predeterminado = true;
+      confirmar.close();
+      pintar();
+    };
+  }
+
+  panel.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-panel]")) return panel.close();
+    if (e.target.closest("[data-guardar]")) return guardar();
+    if (e.target === panel) panel.close();
+  });
+
+  pintar();
+}
+</script>
+</body>
+</html>

@@ -11,17 +11,70 @@ export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
 /**
- * El origen: de dónde sale la mercancía. Va en la etiqueta como remitente y
- * es lo que la paquetería usa para cotizar la zona y programar la recolección.
- * En el producto lo administra Ajustes → Orígenes y puede haber varios; aquí
- * hay uno solo, el predeterminado.
+ * Puntos de salida: de dónde sale la mercancía y a dónde llega la paquetería
+ * a recogerla. Son la misma dirección vista desde los dos lados.
+ *
+ * Uno es el predeterminado: el que se usa al cotizar y el que se imprime como
+ * remitente cuando nada dice lo contrario. Tiene que haber exactamente uno, y
+ * por eso no se puede borrar sin nombrar antes a otro.
+ *
+ * Los campos son LOS MISMOS que los de la dirección de un pedido, con los
+ * mismos nombres. Una dirección es una dirección: si el origen tuviera su
+ * propio juego de campos, habría dos formularios que validar y dos maneras
+ * de escribir una calle.
+ *
+ * `horario` es la ventana en que hay alguien para entregarle el paquete al
+ * repartidor. Sin eso, una recolección se programa a ciegas y el camión
+ * llega cuando la bodega está cerrada.
  */
-export const origen = {
-  nombre: "Distribuidora Monarca",
-  contacto: "Almacén Puebla",
-  calle: "Av. 11 Oriente", numExt: "2410", numInt: "Bodega 4",
-  colonia: "Azcárate", ciudad: "Puebla", estado: "Puebla", cp: "72501",
-  telefono: "222 431 9080",
+export const origenes = [
+  {
+    id: "puebla",
+    nombre: "Almacén Puebla",
+    predeterminado: true,
+    horario: { abre: "09:00", cierra: "18:00" },
+    campos: {
+      nombre: "Eduardo", apellido: "Cruz",
+      correo: "almacen@monarca.mx", lada: "+52", telefono: "2224319080",
+      compania: "Distribuidora Monarca",
+      calle: "Av. 11 Oriente", numExt: "2410", numInt: "Bodega 4",
+      cp: "72501", colonia: "Azcárate", estado: "Puebla", ciudad: "Puebla",
+      referencia: "Portón blanco de reja, frente a la gasolinera.",
+    },
+  },
+  {
+    id: "cdmx",
+    nombre: "Tienda Roma",
+    predeterminado: false,
+    horario: { abre: "11:00", cierra: "20:00" },
+    campos: {
+      nombre: "Renata", apellido: "Iglesias",
+      correo: "roma@monarca.mx", lada: "+52", telefono: "5551903377",
+      compania: "Distribuidora Monarca",
+      calle: "Colima", numExt: "158", numInt: "",
+      cp: "06700", colonia: "Roma Norte", estado: "Ciudad de México", ciudad: "Ciudad de México",
+      referencia: "",
+    },
+  },
+];
+
+/** El que se usa cuando nada dice lo contrario. */
+export const origenPredeterminado = () =>
+  origenes.find((o) => o.predeterminado) ?? origenes[0];
+
+/**
+ * El origen tal como lo necesita la etiqueta: una línea por renglón.
+ * Se deriva, no se duplica; si se guardaran los dos, un día no coincidirían.
+ */
+export const origenDeEtiqueta = (o = origenPredeterminado()) => {
+  const c = o.campos;
+  return {
+    nombre: c.compania || o.nombre,
+    contacto: o.nombre,
+    calle: c.calle, numExt: c.numExt, numInt: c.numInt,
+    colonia: c.colonia, ciudad: c.ciudad, estado: c.estado, cp: c.cp,
+    telefono: telefonoMX(c.telefono),
+  };
 };
 
 /** Cómo se traduce cada estado a color. */
@@ -80,12 +133,12 @@ const enviosBase = [
 ];
 
 export const recolecciones = [
-  { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, estado: "Confirmada", folio: "RC-8841" },
-  { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, estado: "Confirmada", folio: "RC-8842" },
-  { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, estado: "Por confirmar", folio: "RC-8845" },
-  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, estado: "Confirmada", folio: "RC-8846" },
-  { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, estado: "Recurrente", folio: "RC-8850" },
-  { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, estado: "Por confirmar", folio: "RC-8853" },
+  { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, estado: "Confirmada", folio: "RC-8841", origen: "puebla" },
+  { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, estado: "Confirmada", folio: "RC-8842", origen: "puebla" },
+  { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, estado: "Por confirmar", folio: "RC-8845", origen: "cdmx" },
+  { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, estado: "Confirmada", folio: "RC-8846", origen: "puebla" },
+  { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, estado: "Recurrente", folio: "RC-8850", origen: "puebla" },
+  { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, estado: "Por confirmar", folio: "RC-8853", origen: "cdmx" },
 ];
 
 /** Cumplimiento por paquetería sobre el periodo seleccionado. */
@@ -806,6 +859,10 @@ export const telefonoMX = (v) => {
     ? `${d.slice(0, 2)} ${d.slice(2, 6)} ${d.slice(6)}`
     : `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
 };
+
+/** Compatibilidad: la etiqueta ya pedía `origen`. Va aquí y no junto a los
+    demás porque necesita `telefonoMX`, que se define arriba. */
+export const origen = origenDeEtiqueta();
 
 /** Ladas que se ofrecen en el campo de teléfono. */
 export const ladas = [
