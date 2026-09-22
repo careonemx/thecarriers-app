@@ -680,14 +680,7 @@ if (exigirSesion()) {
         <button class="boton boton--fantasma" type="button">Abrir en ${esc(d.canal)}</button>
       </div>`;
 
-    panel.querySelectorAll("[data-cerrar-panel]").forEach((b) =>
-      b.addEventListener("click", () => panel.close()));
-    panel.addEventListener("click", (ev) => {
-      const editar = ev.target.closest("[data-editar]");
-      if (editar) return abrirEdicion(editar.dataset.editar);
-      const descartar = ev.target.closest("[data-descartar]");
-      if (descartar) { editados.delete(descartar.dataset.descartar); repintarDireccion(descartar.dataset.descartar); }
-    });
+    folioAbierto = folio;
     panel.showModal();
     // El foco al contenedor, no al primer botón: así el lector de pantalla
     // empieza por el título y nadie ve un anillo brillante sobre la ✕.
@@ -701,7 +694,55 @@ if (exigirSesion()) {
     history.pushState({ panel: true }, "", u);
   }
 
+  /* ---------- Cierre del panel ----------
+     Los manejadores se registran UNA vez, no dentro de abrirPanel: ahí se
+     acumulaba uno por cada apertura, y al tercer pedido abierto un clic en
+     "Editar dirección" disparaba tres veces.
+
+     El cierre es por capas. Si el formulario está abierto, el fondo y Escape
+     cierran PRIMERO el formulario y dejan el panel: salirse de todo de un
+     golpe tira lo que alguien estaba escribiendo sin avisar. */
+  let folioAbierto = null;
+  let empezoEnElFondo = false;
+
+  function cerrarUnaCapa() {
+    if (panel.querySelector("#form-direccion") && folioAbierto) {
+      repintarDireccion(folioAbierto);
+      return;
+    }
+    panel.close();
+  }
+
+  // Un clic cuyo destino es el propio <dialog> vino del fondo: el contenido
+  // está en sus hijos. Se exige que el botón se haya PULSADO ahí también,
+  // para no cerrar cuando alguien selecciona texto y suelta fuera.
+  panel.addEventListener("mousedown", (e) => { empezoEnElFondo = e.target === panel; });
+
+  panel.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-panel]")) return panel.close();
+
+    const editar = e.target.closest("[data-editar]");
+    if (editar) return abrirEdicion(editar.dataset.editar);
+
+    const descartar = e.target.closest("[data-descartar]");
+    if (descartar) {
+      editados.delete(descartar.dataset.descartar);
+      return repintarDireccion(descartar.dataset.descartar);
+    }
+
+    if (e.target === panel && empezoEnElFondo) cerrarUnaCapa();
+  });
+
+  // Escape lo maneja <dialog> por su cuenta y cerraría todo de un golpe.
+  panel.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!panel.querySelector("#form-direccion")) return; // que cierre el panel
+    e.preventDefault();
+    cerrarUnaCapa();
+  });
+
   panel.addEventListener("close", () => {
+    folioAbierto = null;
     const u = new URL(location.href);
     if (u.searchParams.has("pedido")) {
       u.searchParams.delete("pedido");
