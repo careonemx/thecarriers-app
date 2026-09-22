@@ -11,6 +11,55 @@ export const empresa = { nombre: "Distribuidora Monarca", iniciales: "DM" };
 export const usuario = { nombre: "Adrián Rodríguez", correo: "adrian@monarca.mx", iniciales: "AR" };
 
 /* =================================================================
+ * Novedades.
+ *
+ * Son avisos NUESTROS —lo que cambió en el producto, lo que va a estar
+ * caído—, no telemetría de las paqueterías. Por eso se pueden escribir: los
+ * escribimos nosotros. Lo que no se inventa aquí es el estado de un envío.
+ *
+ * `leido` no vive en el dato: vive en el navegador de cada quien, porque dos
+ * personas de la misma cuenta no leen lo mismo el mismo día.
+ * ================================================================= */
+
+export const avisos = [
+  { id: "orden-paqueterias", tipo: "novedad", fecha: "2026-09-19",
+    titulo: "Ya puedes ordenar tus paqueterías",
+    cuerpo: "En Configuración se arrastra la lista para decidir cuál se intenta primero, " +
+            "y cada una lleva el motivo de su puesto.",
+    enlace: { texto: "Ver el orden", href: "configuracion.html" } },
+
+  { id: "rastreo-publico", tipo: "novedad", fecha: "2026-09-15",
+    titulo: "Tracking abre el rastreo de la paquetería",
+    cuerpo: "Desde cada envío detenido se copia la guía y se abre la página pública " +
+            "de la paquetería, para no buscarla a mano.",
+    enlace: { texto: "Ir a Tracking", href: "excepciones.html" } },
+
+  { id: "mantenimiento-t1", tipo: "mantenimiento", fecha: "2026-09-12",
+    titulo: "T1 Envíos en mantenimiento el domingo",
+    cuerpo: "El domingo 27 de 2:00 a 6:00 no se podrán generar guías. Los pedidos que " +
+            "entren en ese rato quedan pendientes y se pueden generar después.",
+    enlace: null },
+];
+
+const CLAVE_LEIDOS = "tc:avisos-leidos";
+
+/** Los ids ya leídos. En modo privado devuelve vacío en vez de reventar. */
+export function avisosLeidos() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_LEIDOS) || "[]"); }
+  catch { return []; }
+}
+
+export function avisosSinLeer() {
+  const leidos = avisosLeidos();
+  return avisos.filter((a) => !leidos.includes(a.id));
+}
+
+export function marcarAvisosLeidos() {
+  try { localStorage.setItem(CLAVE_LEIDOS, JSON.stringify(avisos.map((a) => a.id))); }
+  catch { /* modo privado: se quedan sin leer, que es mejor que fallar */ }
+}
+
+/* =================================================================
  * El plan de TheCarriers.
  *
  * NO es lo mismo que Cobros. Ahí se concilia lo que cobró la paquetería por

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=3f1c6892">
-<script src="../assets/vigia.js?v=3f1c6892" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=12cc2402">
+<script src="../assets/vigia.js?v=12cc2402" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
@@ -39,12 +39,12 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=3f1c6892";
+import { montar, exigirSesion } from "../assets/app.js?v=12cc2402";
 import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
          resumenPeriodo, comparativaPeriodo,
          conexionesCaidas, reconectar, romperConexion,
          planApurado, planQuedan, planActual, suscripcion,
-         dineroMXN } from "../assets/datos.js?v=3f1c6892";
+         dineroMXN } from "../assets/datos.js?v=12cc2402";
 if (exigirSesion()) {
   montar();
 
@@ -164,8 +164,8 @@ if (exigirSesion()) {
     /* Con todo en cero, las dos zonas se colapsan en una línea. "Tu operación"
        se queda: no depende de que haya pendientes. */
     if (pendientes === 0 && recoleccionesHoy.length === 0) {
-      atencion.innerHTML = `<p class="nada-pendiente"><b>Nada pendiente.</b>
-        <span>Ningún pedido sin guía ni envío detenido.</span></p>${conexion}`;
+      atencion.innerHTML = `${conexion}<p class="nada-pendiente"><b>Nada pendiente.</b>
+        <span>Ningún pedido sin guía ni envío detenido.</span></p>`;
       return;
     }
 
@@ -174,7 +174,12 @@ if (exigirSesion()) {
     const urgentes = [...TARJETAS.atencion].sort((a, b) =>
       (antiguedadDe(b.clave)?.dias ?? -1) - (antiguedadDe(a.clave)?.dias ?? -1));
 
+    /* Las franjas van ARRIBA, no al final. Una conexión caída o un plan que se
+       acaba no son un pendiente más de la lista: paran el trabajo entero, y
+       atender pedidos sin saberlo es perder el rato. Lo que bloquea se lee
+       antes que lo que se hace. */
     atencion.innerHTML = `
+      ${conexion}
       <section class="zona">
         <h2 class="zona__titulo">Requiere tu atención</h2>
         <div class="tarjetas">${urgentes.map((t) => tarjeta(t, "alerta")).join("")}</div>
@@ -182,8 +187,7 @@ if (exigirSesion()) {
       <section class="zona">
         <h2 class="zona__titulo">Por hacer hoy</h2>
         <div class="tarjetas">${TARJETAS.hacer.map((t) => tarjeta(t, "pendiente")).join("")}</div>
-      </section>
-      ${conexion}`;
+      </section>`;
   }
 
   /* ---------- Tu operación ---------- */

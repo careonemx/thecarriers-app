@@ -1173,7 +1173,83 @@ tr.fila--principal td:first-child::before {
    Cuelga del avatar, que era un adorno. Lo de la cuenta —quién eres, qué plan
    pagas, salir— no es navegación de la operación y no compite con ella en la
    barra lateral. */
-.cuenta { position: relative; }
+/* Todo lo que no es navegación ni búsqueda se agrupa y se empuja al borde.
+   El buscador deja de crecer a los 420px, así que sin esto el resto se queda
+   pegado a él —a dos tercios de la barra— con un hueco muerto hasta el borde. */
+.superior__fin { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.solo-angosto { display: none; }
+
+/* ---------- Desplegables de la barra ----------
+   La campana y la cuenta comparten posición y comportamiento; solo cambia lo
+   que llevan dentro. */
+.cuenta, .colgante { position: relative; }
+
+.colgante__abrir {
+  display: grid; place-items: center; position: relative;
+  width: 34px; height: 34px;
+  border: 1px solid transparent; border-radius: 10px;
+  background: none; color: var(--muted); cursor: pointer;
+  transition: border-color .15s var(--ease-signal), background .15s var(--ease-signal),
+              color .15s var(--ease-signal);
+}
+.colgante__abrir svg { width: 19px; height: 19px; }
+.colgante__abrir:hover,
+.colgante__abrir[aria-expanded="true"] {
+  border-color: var(--hairline-fuerte); background: rgba(255, 255, 255, .05); color: var(--ink);
+}
+
+/* La cuenta la lleva el punto y aquí la cifra: son dos cosas distintas y por
+   eso se ven distintas. Lo que hay sin leer se puede contar; lo del plan no. */
+.colgante__punto {
+  position: absolute; top: 1px; right: 1px;
+  min-width: 15px; height: 15px; padding: 0 4px;
+  border: 2px solid var(--navy-900); border-radius: 999px;
+  background: var(--accent); color: #06231a;
+  font-size: 10px; font-weight: 700; line-height: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.colgante__panel {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  width: 360px; max-width: calc(100vw - 32px);
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  background: var(--navy-900); box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+}
+
+/* ---------- Novedades ---------- */
+.avisos__cabeza {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border-bottom: 1px solid var(--hairline);
+}
+.avisos__cabeza b { font-size: 13px; }
+.avisos__lista { max-height: min(60vh, 460px); overflow: auto; }
+.avisos__vacio { padding: 20px 14px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+.aviso-fila { padding: 13px 14px; }
+.aviso-fila + .aviso-fila { border-top: 1px solid var(--hairline); }
+
+/* Lo no leído se marca con una barra, no con un fondo: el fondo lo convierte
+   en un bloque de color y deja de poder leerse la jerarquía de dentro. */
+.aviso-fila--nuevo { position: relative; }
+.aviso-fila--nuevo::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent);
+}
+.aviso-fila__meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.aviso-fila__meta span:last-child { color: var(--muted); font-size: 11px; }
+.aviso-fila__tipo {
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  background: rgba(255, 255, 255, .07); color: var(--muted);
+}
+.aviso-fila__tipo--novedad { background: rgba(15, 157, 110, .16); color: var(--accent-claro); }
+.aviso-fila__tipo--mantenimiento { background: rgba(251, 191, 36, .14); color: #fde68a; }
+.aviso-fila b { display: block; font-size: 13px; line-height: 1.4; }
+.aviso-fila p { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.aviso-fila__ir {
+  display: inline-block; margin-top: 7px;
+  color: var(--accent-claro); font-size: 12px; text-decoration: none;
+}
+.aviso-fila__ir:hover { text-decoration: underline; }
 
 /* Un círculo con dos letras no se distingue de las insignias de al lado, que
    no hacen nada. La flecha dice que abre algo. */
@@ -1204,7 +1280,7 @@ tr.fila--principal td:first-child::before {
 
 .cuenta__menu {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
-  min-width: 232px; padding: 6px;
+  min-width: 232px; max-width: calc(100vw - 32px); padding: 6px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
   background: var(--navy-900); box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
 }
@@ -1223,6 +1299,17 @@ tr.fila--principal td:first-child::before {
 .cuenta__opcion svg { width: 17px; height: 17px; color: var(--muted); }
 .cuenta__opcion:hover { background: rgba(255, 255, 255, .06); }
 .cuenta__opcion:hover svg { color: var(--ink); }
+
+/* En una pantalla angosta, colgar de un botón que no está pegado al borde
+   saca el panel por la izquierda: la campana tiene la cuenta a su derecha, así
+   que 360px medidos desde ella caen fuera. Ahí el panel deja de colgar del
+   botón y se ancla a la ventana. */
+@media (max-width: 767px) {
+  .colgante__panel, .cuenta__menu {
+    position: fixed; top: calc(var(--superior) + 8px);
+    left: 16px; right: 16px; width: auto; max-width: none;
+  }
+}
 
 /* ---------- Consumo del plan ----------
    La pregunta es "¿me alcanza?". Lo que se lee primero es lo que QUEDA; el
@@ -1721,7 +1808,13 @@ tbody tr[data-fallido="true"] { background: rgba(248, 113, 113, .07); }
      una pantalla de teléfono el buscador es lo único de esa barra que sirve
      para algo. */
   .insignia-tienda { display: none; }
-  .superior .buscador { flex: 1 1 auto; min-width: 0; }
+  /* Con la campana y la cuenta en la barra, "Datos de ejemplo" dejaba al
+     buscador en 40px: un icono donde el comentario de arriba dice que está lo
+     único que sirve. El aviso se queda —es lo que evita tomar estos números
+     por reales— pero en una palabra. */
+  .solo-ancho { display: none; }
+  .solo-angosto { display: inline; }
+  .superior .buscador { flex: 1 1 auto; min-width: 120px; }
 
   /* El panel de hallazgos no se ancla al buscador: anclado, hereda su ancho
      —116px medidos— y no cabe ni un folio. Se sale a la pantalla completa,

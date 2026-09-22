@@ -10,7 +10,8 @@
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=3f1c6892";
+         avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=12cc2402";
 
 const CLAVE = "tc_sesion";
 
@@ -39,6 +40,7 @@ const icono = {
   plan: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10.5h18"/><path d="M7 15h4"/>',
   buscar: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   menu: '<path d="M4 8h16M4 16h16"/>',
+  campana: '<path d="M6 9a6 6 0 0 1 12 0c0 4 1.4 5.5 1.9 6H4.1C4.6 14.5 6 13 6 9z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
   cerrar: '<path d="m6 6 12 12M18 6 6 18"/>',
 };
 
@@ -149,7 +151,15 @@ function superior(titulo) {
       <input type="search" id="q" placeholder="Buscar guía, pedido o destinatario…" autocomplete="off">
     </div>
 
-    <span class="insignia-demo" title="${titulo}">Datos de ejemplo</span>
+    <!-- Todo lo que no es navegación ni búsqueda vive en el extremo derecho.
+         Sin agruparlo, el buscador deja de crecer a los 420px y el resto se
+         queda pegado a él, a dos tercios de la barra, con un hueco muerto
+         hasta el borde. -->
+    <div class="superior__fin">
+    <span class="insignia-demo" title="${titulo}"><span
+      class="solo-ancho">Datos de ejemplo</span><span class="solo-angosto">Ejemplo</span></span>
+
+    ${campana()}
 
     <!-- Lo de la cuenta —quién eres, qué plan pagas, salir— cuelga del avatar.
          "Cerrar sesión" estaba abajo en la barra lateral; aparecer en los dos
@@ -184,7 +194,124 @@ function superior(titulo) {
         </a>
       </div>
     </div>
+    </div>
   </header>`;
+}
+
+/**
+ * La campana.
+ *
+ * Es el único sitio donde el producto habla de sí mismo: lo que cambió, lo
+ * que va a estar caído. No compite con los pendientes de la operación, que
+ * viven en Inicio y en la barra lateral, y por eso no grita: un punto con la
+ * cuenta de lo que no se ha leído y nada más cuando no hay nada.
+ */
+function campana() {
+  const sinLeer = avisosSinLeer().length;
+  return `
+    <div class="colgante" data-colgante>
+      <button class="colgante__abrir" type="button" data-abrir
+        aria-haspopup="dialog" aria-expanded="false" aria-controls="panel-avisos">
+        <span class="sr-only">Novedades${sinLeer ? `, ${sinLeer} sin leer` : ", nada nuevo"}</span>
+        ${svg(icono.campana)}
+        ${sinLeer ? `<span class="colgante__punto" aria-hidden="true">${sinLeer}</span>` : ""}
+      </button>
+
+      <div class="colgante__panel avisos" id="panel-avisos" role="dialog"
+        aria-label="Novedades" hidden>
+        <div class="avisos__cabeza">
+          <b>Novedades</b>
+          ${sinLeer ? '<button class="boton boton--sutil boton--chico" type="button" data-leer-todo>Marcar como leídas</button>' : ""}
+        </div>
+        <div class="avisos__lista">${listaAvisos()}</div>
+      </div>
+    </div>`;
+}
+
+function listaAvisos() {
+  if (!avisos.length) {
+    return `<p class="avisos__vacio">Todavía no hay novedades.
+      Aquí avisaremos de lo que cambie y de lo que vaya a estar caído.</p>`;
+  }
+  const leidos = avisosLeidos();
+  const TONO = { novedad: "Novedad", mantenimiento: "Mantenimiento", aviso: "Aviso" };
+  return avisos.map((a) => `
+    <article class="aviso-fila${leidos.includes(a.id) ? "" : " aviso-fila--nuevo"}">
+      <p class="aviso-fila__meta">
+        <span class="aviso-fila__tipo aviso-fila__tipo--${a.tipo}">${TONO[a.tipo] ?? "Aviso"}</span>
+        <span>${fechaLarga(a.fecha)}</span>
+      </p>
+      <b>${a.titulo}</b>
+      <p>${a.cuerpo}</p>
+      ${a.enlace ? `<a class="aviso-fila__ir" href="${a.enlace.href}">${a.enlace.texto} →</a>` : ""}
+    </article>`).join("");
+}
+
+/**
+ * Los desplegables de la barra: la campana y la cuenta.
+ *
+ * Una sola función para los dos, y no dos copias, porque un desplegable que
+ * solo cierra con su propio botón deja al usuario atrapado y ese detalle se
+ * olvida en la segunda copia. Cierran con Escape, con un clic fuera y al
+ * salir el foco con el tabulador; con Escape el foco vuelve al botón que los
+ * abrió, o se quedaría perdido al final de la página.
+ *
+ * Abrir uno cierra el otro: dos paneles solapados en la misma esquina no se
+ * pueden leer.
+ */
+function colgantes(cuerpo) {
+  const todos = [...cuerpo.querySelectorAll("[data-colgante], .cuenta")].map((raiz) => {
+    const boton = raiz.querySelector("[data-abrir], [data-abrir-cuenta]");
+    const panel = raiz.querySelector(".colgante__panel, .cuenta__menu");
+    const ver = (abierto) => {
+      panel.hidden = !abierto;
+      boton.setAttribute("aria-expanded", String(abierto));
+    };
+    return { raiz, boton, panel, ver };
+  });
+
+  const cerrarTodos = (salvo) => todos.forEach((c) => c !== salvo && c.ver(false));
+
+  todos.forEach((c) => {
+    c.boton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const abrir = c.panel.hidden;
+      cerrarTodos(c);
+      c.ver(abrir);
+    });
+    c.raiz.addEventListener("focusout", (e) => {
+      if (!c.raiz.contains(e.relatedTarget)) c.ver(false);
+    });
+  });
+
+  addEventListener("click", (e) => {
+    todos.forEach((c) => {
+      if (!c.panel.hidden && !c.raiz.contains(e.target)) c.ver(false);
+    });
+  });
+
+  addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const abierto = todos.find((c) => !c.panel.hidden);
+    if (!abierto) return;
+    abierto.ver(false);
+    abierto.boton.focus();
+  });
+
+  /* Marcar como leídas repinta la lista y la campana en el sitio, sin
+     recargar: si la página se recargara, el panel se cerraría y no se vería
+     el resultado de lo que se acaba de pulsar. */
+  cuerpo.querySelector("[data-leer-todo]")?.addEventListener("click", (e) => {
+    /* Sin frenar aquí, el clic llega al cierre por clic fuera y el panel se
+       cierra: para entonces el botón ya se quitó del documento, así que
+       `raiz.contains(e.target)` es falso y el panel se toma por ajeno. Un
+       elemento que se borra a sí mismo deja de estar dentro de nada. */
+    e.stopPropagation();
+    marcarAvisosLeidos();
+    cuerpo.querySelector(".avisos__lista").innerHTML = listaAvisos();
+    cuerpo.querySelector(".colgante__punto")?.remove();
+    e.target.remove();
+  });
 }
 
 /** Monta el armazón alrededor del contenido que ya trae la página. */
@@ -220,37 +347,7 @@ export function montar() {
   cuerpo.querySelector("[data-cerrar-menu]")?.addEventListener("click", () => cambiar(false));
   addEventListener("keydown", (e) => e.key === "Escape" && cambiar(false));
 
-  /* Un menú que solo se cierra con su propio botón deja al usuario atrapado:
-     se cierra también con Escape, con un clic fuera y al salir el foco con el
-     tabulador. Al cerrarlo con Escape el foco vuelve al avatar, o se quedaría
-     perdido al final de la página. */
-  const cuenta = cuerpo.querySelector(".cuenta");
-  const abreCuenta = cuenta.querySelector("[data-abrir-cuenta]");
-  const menuCuenta = cuenta.querySelector(".cuenta__menu");
-
-  const verCuenta = (abierto) => {
-    menuCuenta.hidden = !abierto;
-    abreCuenta.setAttribute("aria-expanded", String(abierto));
-  };
-
-  abreCuenta.addEventListener("click", (e) => {
-    e.stopPropagation();
-    verCuenta(menuCuenta.hidden);
-  });
-
-  addEventListener("click", (e) => {
-    if (!menuCuenta.hidden && !cuenta.contains(e.target)) verCuenta(false);
-  });
-
-  addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || menuCuenta.hidden) return;
-    verCuenta(false);
-    abreCuenta.focus();
-  });
-
-  cuenta.addEventListener("focusout", (e) => {
-    if (!cuenta.contains(e.relatedTarget)) verCuenta(false);
-  });
+  colgantes(cuerpo);
 
   cuerpo.querySelector("[data-salir]").addEventListener("click", () => sesion.cerrar());
 
