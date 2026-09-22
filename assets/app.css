@@ -811,12 +811,8 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
 
 .salidas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 
-/* Una tabla larga necesita que SU caja sea la que se desplaza: la cabecera
-   pegajosa se mide contra el contenedor de scroll, y si el que se desplaza es
-   la página, `top: 0` no sujeta nada y los rótulos se pierden a la tercera
-   fila. Con veinte direcciones, "Entrega" y "Recolección" son dos horas
-   distintas que sin encabezado no se distinguen. */
-.tabla-caja--alta { max-height: min(62vh, 620px); overflow-y: auto; }
+.tarjeta--solo-pie { margin-top: 14px; }
+.tarjeta--solo-pie .tarjeta__pie { border-top: 0; }
 
 /* En la lista, el predeterminado se marca con la misma barra que en la
    tarjeta: es el mismo hecho y tiene que verse igual en las dos vistas. */

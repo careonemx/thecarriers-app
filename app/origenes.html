@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=4cc35e39">
-<script src="../assets/vigia.js?v=4cc35e39" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=b76b4168">
+<script src="../assets/vigia.js?v=b76b4168" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
@@ -16,6 +16,9 @@
     <div>
       <h1>Direcciones de Origen</h1>
       <p>De aquí salen tus pedidos y aquí llega la paquetería a recogerlos.</p>
+    </div>
+    <div class="encabezado__acciones" id="acciones">
+      <button class="boton boton--primario" type="button" data-nuevo>Agregar dirección</button>
     </div>
   </div>
 
@@ -44,9 +47,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=4cc35e39";
+import { montar, exigirSesion } from "../assets/app.js?v=b76b4168";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=4cc35e39";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=b76b4168";
 if (exigirSesion()) {
   montar();
 
@@ -135,6 +138,8 @@ if (exigirSesion()) {
     catch { return origenes.length > UMBRAL_LISTA ? "lista" : "tarjetas"; }
   })();
   let busca = "";
+  let pagina = 1;
+  let porPagina = 10;
 
   const barra = document.getElementById("barra");
   const vista = document.getElementById("vista");
@@ -188,7 +193,7 @@ if (exigirSesion()) {
 
   const listaHTML = (items) => `
     <section class="tarjeta">
-      <div class="tabla-caja tabla-caja--alta scroll-fino">
+      <div class="tabla-caja scroll-fino">
         <table>
           <caption class="sr-only">Direcciones de origen registradas.</caption>
           <thead><tr>
@@ -200,20 +205,11 @@ if (exigirSesion()) {
           <tbody>${items.map(filaLista).join("")}</tbody>
         </table>
       </div>
-      <div class="tarjeta__pie">
-        <button class="boton boton--primario boton--chico" type="button" data-nuevo>
-          Agregar dirección de origen</button>
-      </div>
     </section>`;
 
   const tarjetasHTML = (items) => `
     <div class="salidas">
       ${items.map(tarjeta).join("")}
-      <button class="salida salida--nueva" type="button" data-nuevo>
-        <span class="salida--nueva__mas" aria-hidden="true">+</span>
-        <span><b>Agregar dirección de origen</b>
-        <span>Otra bodega, una tienda o tu domicilio.</span></span>
-      </button>
     </div>`;
 
   /* Sin ninguna dirección no hay de dónde salir: no se puede cotizar, ni
@@ -240,11 +236,33 @@ if (exigirSesion()) {
       </div>
     </div>`;
 
+  const pieHTML = (total, ini, mostrados, paginas) => `
+    <div class="tarjeta__pie">
+      <span>${total
+        ? `Mostrando <b>${ini + 1}–${ini + mostrados}</b> de <b>${total}</b>`
+        : "Ninguna dirección"}</span>
+      <label class="filtros__etiqueta" for="por-pagina-origenes">
+        <select id="por-pagina-origenes" style="width:auto;margin-left:8px">
+          ${[10, 25, 50].map((n) =>
+            `<option value="${n}"${n === porPagina ? " selected" : ""}>${n} por página</option>`).join("")}
+        </select>
+      </label>
+      <span class="filtros__sep"></span>
+      <div class="paginacion"${paginas === 1 ? " hidden" : ""}>
+        <button type="button" data-ir="${pagina - 1}"${pagina === 1 ? " disabled" : ""}>‹</button>
+        ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) =>
+          `<button type="button" data-ir="${n}"${n === pagina ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
+        <button type="button" data-ir="${pagina + 1}"${pagina === paginas ? " disabled" : ""}>›</button>
+      </div>
+    </div>`;
+
   function pintar() {
     /* La barra solo aparece cuando sirve de algo: buscar entre tres
        direcciones es más lento que mirarlas. */
     const muchas = origenes.length > UMBRAL_LISTA;
-    barra.hidden = origenes.length === 0;
+    const vacia = origenes.length === 0;
+    barra.hidden = vacia;
+    document.getElementById("acciones").hidden = vacia;
     barra.querySelector(".campo-buscar").hidden = !muchas;
     barra.querySelectorAll("[data-modo]").forEach((b) =>
       b.setAttribute("aria-pressed", String(b.dataset.modo === modo)));
@@ -256,11 +274,34 @@ if (exigirSesion()) {
       ? `${items.length} de ${origenes.length}`
       : `${items.length} ${items.length === 1 ? "dirección" : "direcciones"}`;
 
-    vista.innerHTML = items.length === 0 ? sinResultadosHTML()
-      : modo === "lista" ? listaHTML(items) : tarjetasHTML(items);
+    if (items.length === 0) { vista.innerHTML = sinResultadosHTML(); return; }
+
+    const paginas = Math.max(1, Math.ceil(items.length / porPagina));
+    pagina = Math.min(pagina, paginas);
+    const ini = (pagina - 1) * porPagina;
+    const enPagina = items.slice(ini, ini + porPagina);
+
+    const cuerpo = modo === "lista" ? listaHTML(enPagina) : tarjetasHTML(enPagina);
+    const pie = pieHTML(items.length, ini, enPagina.length, paginas);
+    /* En lista el pie va DENTRO de la tarjeta, como en Pedidos. En cuadrícula
+       no hay tarjeta que lo contenga, así que va en la suya. */
+    vista.innerHTML = modo === "lista"
+      ? cuerpo.replace("</section>", `${pie}</section>`)
+      : `${cuerpo}<section class="tarjeta tarjeta--solo-pie">${pie}</section>`;
   }
 
-  entrada.addEventListener("input", () => { busca = sinAcentos(entrada.value.trim()); pintar(); });
+  vista.addEventListener("change", (e) => {
+    if (!e.target.matches("#por-pagina-origenes")) return;
+    porPagina = +e.target.value;
+    pagina = 1;
+    pintar();
+  });
+
+  entrada.addEventListener("input", () => {
+    busca = sinAcentos(entrada.value.trim());
+    pagina = 1;
+    pintar();
+  });
 
   barra.addEventListener("click", (e) => {
     const b = e.target.closest("[data-modo]");
@@ -469,6 +510,9 @@ if (exigirSesion()) {
       entrada.value = ""; busca = ""; pintar(); entrada.focus();
       return;
     }
+
+    const ir = e.target.closest("[data-ir]");
+    if (ir && !ir.disabled) { pagina = +ir.dataset.ir; pintar(); return; }
 
     const fila = e.target.closest("[data-id]");
     if (!fila) return;

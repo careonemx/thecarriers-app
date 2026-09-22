@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=4cc35e39">
+<link rel="stylesheet" href="assets/app.css?v=b76b4168">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=4cc35e39" defer></script>
+<script src="assets/vigia.js?v=b76b4168" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -66,6 +66,7 @@
     <a href="#mensajes">Avisos y vacíos</a>
     <a href="#datos">Historial y barras</a>
     <a href="#navegacion">Pestañas y diálogos</a>
+    <a href="#donde">Dónde va cada acción</a>
     <a href="#lote">Acciones en lote</a>
     <a href="#reglas">Reglas que no se negocian</a>
   </nav>
@@ -521,6 +522,34 @@
           <button class="boton boton--peligro" type="button" data-cerrar>Sí, cancelar</button>
         </div>
       </dialog>
+    </section>
+
+    <!-- =========================== DÓNDE =============================== -->
+    <section id="donde">
+      <h2>Dónde va cada acción</h2>
+      <p class="intro">
+        Un botón que cambia de sitio según la pantalla obliga a buscarlo cada vez.
+        Cada tipo de acción tiene un solo lugar, y no se negocia por pantalla.
+      </p>
+
+      <div class="muestra">
+        <div class="regla"><b>Principal de la pantalla</b><span>Arriba a la derecha, en <code>.encabezado__acciones</code>. Es la que crea o ejecuta aquello para lo que la pantalla existe: "Agregar dirección", "Programar recolección", "Exportar conciliación". Va en <code>.boton--primario</code> si crea algo y en <code>.boton--sutil</code> si es de apoyo.</span></div>
+        <div class="regla"><b>Sobre un registro</b><span>Dentro de su fila o tarjeta, a la izquierda. La principal en <code>.boton--fantasma</code>, el resto en <code>.boton--sutil</code>, y la destructiva separada al extremo derecho con un <code>flex:1</code> de por medio: no es una acción más de la fila, es la que no tiene vuelta atrás.</span></div>
+        <div class="regla"><b>Sobre varios</b><span>En la barra de selección, encima de la tabla. Cada una dice sobre cuántos aplica.</span></div>
+        <div class="regla"><b>Confirmar o cancelar</b><span>Abajo a la derecha del panel o del diálogo, en su pie. Cancelar a la izquierda de la confirmación, nunca al revés.</span></div>
+        <div class="regla"><b>Filtros y forma de ver</b><span>No son acciones y no van con ellas: viven en la barra de la sección que filtran, alineados a la derecha. Fichas para filtrar, conmutador para cambiar de vista.</span></div>
+        <div class="regla"><b>Paginación</b><span>En el pie de la tarjeta que contiene la lista, y siempre con el mismo orden: cuántos se muestran, cuántos por página, y los números a la derecha.</span></div>
+        <div class="regla"><b>Cuando no hay nada</b><span>La acción la lleva el estado vacío y la de arriba se oculta. Con la pantalla en blanco es de lo único que se puede hablar, y repetirla no gana nada.</span></div>
+      </div>
+
+      <h3 style="margin:22px 0 10px;font-size:14px">Cómo se nombran</h3>
+      <div class="muestra">
+        <div class="regla"><b>Verbo y objeto</b><span>"Agregar dirección", no "Nuevo" ni un "+" suelto. Cuatro palabras como máximo: el botón se lee de reojo.</span></div>
+        <div class="regla"><b>El objeto, en singular</b><span>"Agregar dirección" aunque la lista tenga veinte: se agrega una.</span></div>
+        <div class="regla"><b>Confirmar repite el verbo</b><span>"Sí, eliminar", no "Aceptar". Quien llega al diálogo por costumbre tiene que poder leer qué va a pasar en el propio botón.</span></div>
+        <div class="regla"><b>Cancelar nombra lo que conserva</b><span>Cuando hay algo que perder: "Conservarlo" en vez de "Cancelar", que no dice si cancela la acción o el registro.</span></div>
+        <div class="regla"><b>Sin modismos</b><span>"Editar dirección", no "Editar a mano". El modismo envejece mal y no se traduce.</span></div>
+      </div>
     </section>
 
     <!-- ============================ LOTE ============================= -->
