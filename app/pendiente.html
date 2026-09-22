@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Sin vestir · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="">
+<main class="contenido">
+  <div class="tarjeta" style="max-width:620px;margin-top:40px">
+    <div class="vacio">
+      <span class="vacio__icono">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:20px;height:20px"><path d="m4 20 4-1 10-10-3-3L5 16z"/><path d="m14.5 6.5 3 3"/></svg>
+      </span>
+      <h3 style="font-size:16px"><span id="nombre">Esta pantalla</span> todavía no está vestida</h3>
+      <p>
+        Ya existe y funciona en la versión del MVP. Aquí solo está pendiente aplicarle el
+        sistema de diseño, igual que se hizo con Pedidos.
+      </p>
+      <div class="vacio__acciones">
+        <a class="boton boton--primario" href="pedidos.html">Ir a Pedidos</a>
+        <a class="boton boton--sutil" href="inicio.html">Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+if (exigirSesion()) {
+  montar();
+  const p = new URLSearchParams(location.search).get("p");
+  if (p) document.getElementById("nombre").textContent = p.replace(/[<>&]/g, "");
+}
+</script>
+</body>
+</html>

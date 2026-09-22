@@ -9,7 +9,7 @@
  * La "sesión" es sessionStorage y acepta cualquier credencial: esto es
  * un prototipo de interfaz, no hay servidor ni autenticación real.
  * ================================================================= */
-import { empresa, usuario, detenidos } from "./datos.js";
+import { empresa, usuario, detenidos, sinGuia, tienda } from "./datos.js";
 
 const CLAVE = "tc_sesion";
 
@@ -20,6 +20,12 @@ export const sesion = {
 };
 
 const icono = {
+  inicio: '<path d="M4 10 12 4l8 6"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  pedidos: '<path d="M5 7h14l-1 13H6z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
+  origenes: '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  plantillas: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/><path d="M12.5 13h5"/>',
+  correcciones: '<path d="m4 20 4-1 10-10-3-3L5 16z"/><path d="m14.5 6.5 3 3"/>',
+  ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
   envios: '<path d="M3 5h18v14H3z"/><path d="M3 10h18M9 10v9"/>',
   excepciones: '<path d="M12 4 21 19H3z"/><path d="M12 10v4M12 17h.01"/>',
   recolecciones: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/>',
@@ -35,33 +41,61 @@ const svg = (d, clase = "") =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="${clase}">${d}</svg>`;
 
-const SECCIONES = [
-  { id: "envios", texto: "Envíos", href: "envios.html" },
-  { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
-  { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
-  { id: "desempeno", texto: "Desempeño", href: "desempeno.html" },
-  { id: "cobros", texto: "Cobros", href: "cobros.html" },
+/**
+ * El menú separa lo que ya existe del MVP de lo que estamos proponiendo.
+ * Mezclarlos haría creer que todo está construido; marcarlo deja ver de un
+ * vistazo qué es de Lalo y qué falta por decidir.
+ *
+ * `pendiente` significa que la pantalla existe en la app pero todavía no la
+ * hemos vestido: se navega a una nota, no a un 404.
+ */
+const GRUPOS = [
+  {
+    titulo: "Operación",
+    items: [
+      { id: "inicio", texto: "Inicio", href: "inicio.html" },
+      { id: "pedidos", texto: "Pedidos", href: "pedidos.html", cuenta: sinGuia.length },
+      { id: "origenes", texto: "Orígenes", href: "pendiente.html?p=Orígenes", pendiente: true },
+      { id: "plantillas", texto: "Plantillas", href: "pendiente.html?p=Plantillas", pendiente: true },
+      { id: "correcciones", texto: "Correcciones", href: "pendiente.html?p=Correcciones", pendiente: true },
+      { id: "ajustes", texto: "Configuración", href: "pendiente.html?p=Configuración", pendiente: true },
+    ],
+  },
+  {
+    titulo: "Propuesto",
+    items: [
+      { id: "envios", texto: "Envíos", href: "envios.html" },
+      { id: "excepciones", texto: "Excepciones", href: "excepciones.html", cuenta: detenidos.length },
+      { id: "recolecciones", texto: "Recolecciones", href: "recolecciones.html" },
+      { id: "desempeno", texto: "Desempeño", href: "desempeno.html" },
+      { id: "cobros", texto: "Cobros", href: "cobros.html" },
+    ],
+  },
 ];
 
 function lateral(activa) {
-  const items = SECCIONES.map((s) => `
-    <a class="nav-item" href="${s.href}"${s.id === activa ? ' aria-current="page"' : ""}>
-      ${svg(icono[s.id])}
-      <span>${s.texto}</span>
-      ${s.cuenta ? `<span class="nav-item__cuenta">${s.cuenta}</span>` : ""}
-    </a>`).join("");
+  const items = GRUPOS.map((g) => `
+    <p class="lateral__grupo">${g.titulo}</p>
+    ${g.items.map((s) => `
+      <a class="nav-item${s.pendiente ? " nav-item--pendiente" : ""}" href="${s.href}"${
+        s.id === activa ? ' aria-current="page"' : ""
+      }${s.pendiente ? ' title="Ya existe en la app; falta vestirla"' : ""}>
+        ${svg(icono[s.id])}
+        <span>${s.texto}</span>
+        ${s.cuenta ? `<span class="nav-item__cuenta">${s.cuenta}</span>` : ""}
+        ${s.pendiente ? '<span class="nav-item__marca" aria-hidden="true"></span>' : ""}
+      </a>`).join("")}`).join("");
 
   return `
   <aside class="lateral" id="lateral">
     <div class="lateral__marca">
-      <a href="envios.html" aria-label="The Carriers, inicio">
+      <a href="inicio.html" aria-label="The Carriers, inicio">
         <img src="../assets/brand/lockup-white.svg" alt="The Carriers" width="113" height="22">
       </a>
       <button class="boton boton--sutil lateral__cerrar" type="button" data-cerrar-menu aria-label="Cerrar menú">
         ${svg(icono.cerrar)}
       </button>
     </div>
-    <p class="lateral__grupo">Operación</p>
     ${items}
     <div class="lateral__pie">
       <a class="nav-item" href="../login.html" data-salir>${svg(icono.salir)}<span>Cerrar sesión</span></a>
@@ -79,6 +113,10 @@ function superior(titulo) {
       <span class="avatar">${empresa.iniciales}</span>
       <span>${empresa.nombre}</span>
     </button>
+
+    <span class="insignia-tienda" title="Canal de venta conectado">
+      <span class="insignia-tienda__punto"></span><b>${tienda.dominio}</b>
+    </span>
 
     <div class="buscador">
       <label class="sr-only" for="q">Buscar por guía, pedido o destinatario</label>

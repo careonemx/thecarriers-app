@@ -103,8 +103,72 @@ export const conDiferencia = envios.filter((e) => e.diferencia);
 export const dinero = (n) =>
   n == null ? "—" : n.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
+/** Con la moneda escrita. En una cifra grande y sola, "$180.00" es ambiguo. */
+export const dineroMXN = (n) => (n == null ? "—" : `${dinero(n)} MXN`);
+
 export const fechaCorta = (iso) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 
 export const diasDesde = (iso) =>
   Math.max(0, Math.round((new Date("2026-09-21T12:00:00") - new Date(iso + "T12:00:00")) / 86400000));
+
+/* =================================================================
+ * Pedidos — el módulo que ya existe en el MVP.
+ *
+ * Los datos siguen el modelo de la versión funcional: pedido que entra
+ * por un canal, con su cliente, su destino, su pago y —si ya se generó—
+ * su guía. Mismos totales del MVP: 7 pedidos, 4 sin enviar, 3 con guía,
+ * $180.00 MXN en el periodo.
+ * ================================================================= */
+
+export const tienda = {
+  dominio: "ceeq1p-jd.myshopify.com",
+  canal: "Shopify",
+  conectada: true,
+};
+
+export const pedidos = [
+  { folio: "#1007", fecha: "2026-09-21", total: 10,
+    cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
+    destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
+    pago: "Pagado", envio: { guia: "877543753572", paqueteria: "FedEx", estado: "Creada" } },
+
+  { folio: "#1006", fecha: "2026-09-17", total: 60,
+    cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
+    destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
+    pago: "Pagado", envio: { guia: "6822851033", paqueteria: "DHL", estado: "Creada" } },
+
+  { folio: "#1005", fecha: "2026-09-17", total: 50,
+    cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
+    destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
+    pago: "Pagado", envio: { guia: "877394716724", paqueteria: "FedEx", estado: "Creada" } },
+
+  { folio: "#1004", fecha: "2026-09-17", total: 30,
+    cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
+    destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
+    pago: "Pagado", envio: null },
+
+  { folio: "#1003", fecha: "2026-09-17", total: 10,
+    cliente: { nombre: "Arturo García", correo: "drianrgez@gmail.com", iniciales: "AG" },
+    destino: "Port Agrere 9 Geovillas del sur casa", ciudad: "Puebla, PUE 72495",
+    pago: "Pagado", envio: null },
+
+  // Un pedido al que le falla la generación de la guía. El MVP todavía no
+  // tiene este estado y es el que más duele: el pedido parece pendiente,
+  // pero nadie va a volver a intentarlo si no se dice.
+  { folio: "#1002", fecha: "2026-09-16", total: 15,
+    cliente: { nombre: "Mariana Ordaz", correo: "mariana@tallerlumbre.mx", iniciales: "MO" },
+    destino: "Av. Juárez 1804, Col. Centro", ciudad: "Monterrey, NL 64000",
+    pago: "Pagado", envio: null,
+    error: "La paquetería rechazó el código postal: 64000 no coincide con la colonia." },
+
+  { folio: "#1001", fecha: "2026-09-15", total: 5,
+    cliente: { nombre: "Grupo Aldama", correo: "compras@aldama.mx", iniciales: "GA" },
+    destino: "Calz. de Tlalpan 3020, Coyoacán", ciudad: "Ciudad de México, CDMX 04650",
+    pago: "Pendiente", envio: null },
+];
+
+export const sinGuia = pedidos.filter((p) => !p.envio);
+export const conGuia = pedidos.filter((p) => p.envio);
+export const conError = pedidos.filter((p) => p.error);
+export const ingresos = pedidos.reduce((s, p) => s + p.total, 0);

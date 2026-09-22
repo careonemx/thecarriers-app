@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Pedidos · The Carriers</title>
+<link rel="icon" href="../assets/brand/mark-white.svg">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body data-seccion="pedidos">
+<main class="contenido contenido--ancho">
+  <div class="encabezado">
+    <div>
+      <h1>Pedidos</h1>
+      <p>Los pedidos que entran por tus canales de venta. Desde aquí se genera la guía con tus propias cuentas de paquetería.</p>
+    </div>
+    <div class="encabezado__acciones">
+      <button class="boton boton--sutil" type="button" id="actualizar">Actualizar</button>
+      <button class="boton boton--fantasma" type="button" id="sincronizar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/></svg>
+        Sincronizar estatus
+      </button>
+    </div>
+  </div>
+
+  <div class="rejilla rejilla--4" style="margin-bottom:16px" id="metricas"></div>
+
+  <section class="tarjeta">
+    <div class="tarjeta__cabeza" style="padding-bottom:0;border-bottom:0">
+      <div class="pestanas" role="tablist" style="border-bottom:0">
+        <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="todos">Todos</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="sin-enviar">Sin enviar</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="enviados">Enviados</button>
+      </div>
+      <div class="conmutador" role="group" aria-label="Forma de ver la lista">
+        <button type="button" aria-pressed="true" data-modo="clasico">Clásico</button>
+        <button type="button" aria-pressed="false" data-modo="mosaico">Mosaico</button>
+      </div>
+    </div>
+
+    <div class="barra-seleccion" id="seleccion" hidden>
+      <span class="barra-seleccion__cuenta"><b data-n>0</b> seleccionados</span>
+      <span class="barra-seleccion__sep"></span>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar">Quitar selección</button>
+      <button class="boton boton--primario boton--chico" type="button" id="generar-lote">Generar guías</button>
+    </div>
+
+    <div class="tabla-caja scroll-fino" id="vista-tabla">
+      <table id="tabla">
+        <caption class="sr-only">Pedidos recibidos, con su estado de envío.</caption>
+        <thead><tr>
+          <th scope="col" style="width:38px"><input type="checkbox" id="todos-check" aria-label="Seleccionar todos los pedidos sin guía"></th>
+          <th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Destino</th>
+          <th scope="col">Total</th><th scope="col">Pago</th><th scope="col">Envío</th>
+          <th scope="col"><span class="sr-only">Acción</span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="mosaico" id="vista-mosaico" hidden></div>
+
+    <div class="vacio" data-sin-resultados hidden>
+      <h3 style="font-size:16px">Ningún pedido en esta vista</h3>
+      <p>Cambia de pestaña o quita la búsqueda de la barra superior.</p>
+    </div>
+
+    <div class="tarjeta__pie">
+      <span>Mostrando <b data-contador>0</b> de <b id="total">0</b> pedidos</span>
+      <div class="paginacion">
+        <button type="button" disabled>‹</button>
+        <button type="button" aria-current="page">1</button>
+        <button type="button">›</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { montar, exigirSesion } from "../assets/app.js";
+import { pedidos, sinGuia, conGuia, conError, ingresos,
+         dinero, dineroMXN, fechaCorta, diasDesde } from "../assets/datos.js";
+if (exigirSesion()) {
+  montar();
+
+  const ico = (d, w = 16) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+    style="width:${w}px;height:${w}px">${d}</svg>`;
+
+  const metrica = (e, v, n) =>
+    `<div class="metrica"><p class="metrica__etiqueta">${e}</p>
+     <p class="metrica__valor tabular">${v}</p><p class="metrica__nota">${n}</p></div>`;
+  document.getElementById("metricas").innerHTML =
+    metrica("Total de pedidos", pedidos.length, "En el periodo") +
+    metrica("Sin enviar", sinGuia.length, conError.length ? `${conError.length} con error de guía` : "Pendientes de guía") +
+    metrica("Enviados", conGuia.length, "Con guía generada") +
+    metrica("Ingresos", dineroMXN(ingresos), "Suma de los pedidos");
+
+  /* La columna de envío carga tres cosas distintas: la guía si existe, el
+     error si lo hubo, y —lo que el MVP todavía no dice— cuántos días lleva
+     el pedido pagado sin que nadie genere nada. */
+  function celdaEnvio(p) {
+    if (p.envio) {
+      return `<span class="pastilla pastilla--ok">${ico('<path d="m5 13 4 4L19 7"/>', 13)} ${p.envio.guia}</span>
+        <div style="margin-top:5px;font-size:12px"><b>${p.envio.paqueteria}</b>
+        <span class="apagado"> · ${p.envio.estado}</span></div>`;
+    }
+    if (p.error) {
+      return `<span class="pastilla pastilla--mal">No se pudo generar</span>
+        <div class="apagado" style="margin-top:5px;font-size:12px;max-width:34ch">${p.error}</div>`;
+    }
+    const d = diasDesde(p.fecha);
+    const tono = d >= 3 ? "mal" : d >= 1 ? "aviso" : "neutra";
+    return `<span class="pastilla pastilla--${tono}">Sin guía</span>
+      <div class="apagado" style="margin-top:5px;font-size:12px">${
+        d === 0 ? "Entró hoy" : `${d} ${d === 1 ? "día" : "días"} esperando`}</div>`;
+  }
+
+  /* Un pedido sin pagar no se envía. El botón se deshabilita y dice por qué,
+     en vez de dejar que alguien genere una guía que no debía. */
+  function celdaAccion(p) {
+    if (p.envio) {
+      return `<div class="grupo-botones" style="gap:6px;flex-wrap:nowrap">
+        <button class="boton boton--fantasma boton--chico" type="button">Rastrear</button>
+        <button class="boton boton--sutil boton--chico" type="button">Etiqueta</button></div>`;
+    }
+    if (p.pago !== "Pagado") {
+      return `<button class="boton boton--fantasma boton--chico" type="button" disabled
+        title="El pedido todavía no está pagado">Falta el pago</button>`;
+    }
+    return `<button class="boton boton--primario boton--chico" type="button">
+      ${p.error ? "Reintentar" : "Generar guía"}</button>`;
+  }
+
+  const cuerpo = document.querySelector("#tabla tbody");
+  cuerpo.innerHTML = pedidos.map((p) => `
+    <tr data-vista="${p.envio ? "enviados" : "sin-enviar"}" data-folio="${p.folio}">
+      <td>${p.envio ? "" : `<input type="checkbox" class="sel" aria-label="Seleccionar ${p.folio}"${
+        p.pago === "Pagado" ? "" : " disabled"}>`}</td>
+      <td><a class="mono" href="#${p.folio.slice(1)}">${p.folio}</a>
+          <div class="apagado" style="font-size:12px">${fechaCorta(p.fecha)}</div></td>
+      <td><div class="tarjeta-pedido__cliente">
+            <span class="avatar">${p.cliente.iniciales}</span>
+            <div><b>${p.cliente.nombre}</b><span>${p.cliente.correo}</span></div>
+          </div></td>
+      <td style="max-width:260px">${p.destino}
+          <div class="apagado" style="font-size:12px">${p.ciudad}</div></td>
+      <td class="tabular nowrap">${dinero(p.total)}</td>
+      <td><span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span></td>
+      <td>${celdaEnvio(p)}</td>
+      <td>${celdaAccion(p)}</td>
+    </tr>`).join("");
+
+  document.getElementById("vista-mosaico").innerHTML = pedidos.map((p) => `
+    <article class="tarjeta-pedido" data-vista="${p.envio ? "enviados" : "sin-enviar"}">
+      <div class="tarjeta-pedido__alto">
+        <span class="tarjeta-pedido__folio">${p.folio}</span>
+        <span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>
+      </div>
+      <div class="tarjeta-pedido__cliente">
+        <span class="avatar">${p.cliente.iniciales}</span>
+        <div><b>${p.cliente.nombre}</b><span>${p.ciudad}</span></div>
+      </div>
+      <div>${celdaEnvio(p)}</div>
+      <div class="tarjeta-pedido__pie">
+        <span class="tabular" style="font-weight:600">${dinero(p.total)}</span>
+        ${celdaAccion(p)}
+      </div>
+    </article>`).join("");
+
+  /* ---------- Vistas, búsqueda y selección ---------- */
+  const filas = [...cuerpo.rows];
+  const tarjetas = [...document.querySelectorAll(".tarjeta-pedido")];
+  const busqueda = document.getElementById("q");
+  const pestanas = [...document.querySelectorAll(".pestana")];
+  const contador = document.querySelector("[data-contador]");
+  const barra = document.getElementById("seleccion");
+  const todosCheck = document.getElementById("todos-check");
+  let vista = new URLSearchParams(location.search).get("vista") || "todos";
+
+  const coincide = (el, texto) =>
+    (vista === "todos" || el.dataset.vista === vista) &&
+    (!texto || el.textContent.toLowerCase().includes(texto));
+
+  function aplicar() {
+    const texto = (busqueda?.value || "").trim().toLowerCase();
+    let visibles = 0;
+    filas.forEach((f) => { const ok = coincide(f, texto); f.hidden = !ok; if (ok) visibles++; });
+    tarjetas.forEach((t) => { t.hidden = !coincide(t, texto); });
+    contador.textContent = visibles;
+    document.getElementById("total").textContent = pedidos.length;
+    document.querySelector("[data-sin-resultados]").hidden = visibles > 0;
+    revisarSeleccion();
+  }
+
+  function revisarSeleccion() {
+    const marcadas = filas.filter((f) => !f.hidden && f.querySelector(".sel:checked"));
+    barra.hidden = marcadas.length === 0;
+    barra.querySelector("[data-n]").textContent = marcadas.length;
+    document.getElementById("generar-lote").textContent =
+      `Generar ${marcadas.length} ${marcadas.length === 1 ? "guía" : "guías"}`;
+    const posibles = filas.filter((f) => !f.hidden && f.querySelector(".sel:not([disabled])"));
+    todosCheck.checked = posibles.length > 0 && marcadas.length === posibles.length;
+    todosCheck.indeterminate = marcadas.length > 0 && marcadas.length < posibles.length;
+  }
+
+  pestanas.forEach((b) => b.addEventListener("click", () => {
+    pestanas.forEach((o) => o.setAttribute("aria-selected", String(o === b)));
+    vista = b.dataset.vista;
+    aplicar();
+  }));
+  const inicial = pestanas.find((b) => b.dataset.vista === vista);
+  if (inicial) pestanas.forEach((o) => o.setAttribute("aria-selected", String(o === inicial)));
+
+  document.querySelectorAll(".conmutador button").forEach((b) =>
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".conmutador button")
+        .forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      const mosaico = b.dataset.modo === "mosaico";
+      document.getElementById("vista-tabla").hidden = mosaico;
+      document.getElementById("vista-mosaico").hidden = !mosaico;
+    }));
+
+  busqueda?.addEventListener("input", aplicar);
+  cuerpo.addEventListener("change", (e) => { if (e.target.matches(".sel")) revisarSeleccion(); });
+  todosCheck.addEventListener("change", () => {
+    filas.filter((f) => !f.hidden).forEach((f) => {
+      const c = f.querySelector(".sel:not([disabled])");
+      if (c) c.checked = todosCheck.checked;
+    });
+    revisarSeleccion();
+  });
+  document.getElementById("limpiar").addEventListener("click", () => {
+    filas.forEach((f) => { const c = f.querySelector(".sel"); if (c) c.checked = false; });
+    revisarSeleccion();
+  });
+
+  // Prototipo: las acciones muestran su estado de carga y se detienen ahí.
+  for (const id of ["sincronizar", "generar-lote"]) {
+    const b = document.getElementById(id);
+    b.addEventListener("click", () => {
+      const texto = b.innerHTML;
+      b.setAttribute("aria-busy", "true");
+      b.innerHTML = '<span class="girador"></span>Trabajando…';
+      setTimeout(() => { b.removeAttribute("aria-busy"); b.innerHTML = texto; }, 1400);
+    });
+  }
+
+  aplicar();
+}
+</script>
+</body>
+</html>

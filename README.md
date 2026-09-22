@@ -25,6 +25,10 @@ sistema.html               el sistema de diseño, renderizado
 login.html                 entrar
 recuperar.html             recuperar contraseña
 
+app/inicio.html            qué atender hoy, antes de las métricas
+app/pedidos.html           el módulo de pedidos del MVP, vestido
+app/pendiente.html         nota para las pantallas del MVP sin vestir
+
 app/envios.html            la tabla principal, con filtros y métricas
 app/envio.html             un envío: historial, destino y costos
 app/excepciones.html       lo detenido, ordenado por antigüedad
@@ -46,6 +50,32 @@ la guía cambia sola y los contrastes se recalculan al abrirla. De ahí se toma 
 
 La última sección, **Reglas que no se negocian**, recoge los defectos que ya costaron
 una corrección. Conviene leerla antes de agregar una pantalla.
+
+## Relación con el MVP
+
+Lalo construyó la primera versión funcional. Este prototipo **viste lo que ya existe**,
+no lo reemplaza: el módulo de Pedidos conserva su estructura —pestañas Todos / Sin
+enviar / Enviados, conmutador Clásico / Mosaico, insignia de la tienda conectada,
+Sincronizar estatus, casillas solo en lo pendiente, paginación— y le aplica el sistema.
+
+El menú lateral separa **Operación** (lo del MVP) de **Propuesto** (lo que falta por
+decidir). Los ítems con un punto ya existen en la app y solo están pendientes de vestir;
+llevan a una nota, no a un 404.
+
+Lo que se agregó al módulo de Pedidos, que el MVP no tenía:
+
+- **Antigüedad.** Un pedido no solo está "sin guía": lleva cuatro días esperando. Eso es
+  lo que cuesta dinero y es lo que dispara la pregunta del cliente.
+- **Error de generación.** Si la paquetería rechaza la guía, el pedido se veía igual que
+  uno recién llegado y nadie volvía a intentarlo. Ahora tiene su estado, su motivo y su
+  botón de reintentar.
+- **Pago pendiente.** Un pedido sin pagar no se envía: el botón queda deshabilitado y
+  dice por qué, en vez de dejar generar una guía que no debía existir.
+- **Selección múltiple con barra de acciones.** Las casillas ya estaban; faltaba qué
+  hacer con ellas. Seleccionar todo respeta las reglas: de cuatro sin enviar, marca tres.
+- **Inicio.** El MVP no tenía. No es un tablero de vanidad: lista qué atender hoy, y
+  separa los tres motivos por los que un pedido sigue sin guía, porque cada uno se
+  resuelve distinto.
 
 ## Cómo está armado
 

@@ -460,82 +460,6 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   .pulso { animation: pulso var(--dur, 3s) linear infinite; animation-delay: var(--retardo, 0s); }
 }
 
-/* -----------------------------------------------------------------
- * Adaptable
- * --------------------------------------------------------------- */
-.lateral__cerrar, .abrir-menu { display: none; }
-
-@media (max-width: 1023px) {
-  .armazon { grid-template-columns: minmax(0, 1fr); }
-  .lateral {
-    position: fixed; inset: 0 auto 0 0; z-index: 60; width: 272px;
-    transform: translateX(-100%); transition: transform .25s var(--curva);
-  }
-  .lateral[data-abierto="true"] { transform: none; }
-  .lateral__cerrar { display: inline-flex; margin-left: auto; }
-  .abrir-menu { display: inline-flex; }
-  .velo {
-    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6);
-    backdrop-filter: blur(2px);
-  }
-  .rejilla--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rejilla--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-/* -----------------------------------------------------------------
- * Acceso en angosto.
- *
- * El panel dividido no cabe por debajo de 1280, pero esconderlo entero
- * dejaba un formulario pelón sobre un fondo plano: sin marca, sin color
- * y sin la animación. Así que el arte no desaparece, se compacta y pasa
- * a ser la cabecera del formulario:
- *
- *   - el diagrama se queda, con sus pulsos, pero las fichas muestran
- *     solo el monograma; la geometría del SVG no cambia porque el alto
- *     de ficha y los huecos siguen siendo los mismos;
- *   - el resplandor verde pasa a verse sobre el fondo de la página;
- *   - se cae la bajada larga, que en un teléfono estorba antes del
- *     formulario.
- * --------------------------------------------------------------- */
-@media (max-width: 1279px) {
-  .auth { grid-template-columns: minmax(0, 1fr); }
-
-  .auth__arte {
-    padding: 40px 24px 0;
-    border-right: 0;
-    background: transparent; /* que el resplandor caiga sobre el fondo */
-  }
-  .auth__brillo { inset: -34% 0 auto 0; height: 560px; }
-  .auth__brillo--verde { inset: -8% 0 auto 0; height: 420px; }
-
-  .auth__panel {
-    max-width: 420px; gap: 26px;
-    align-items: center; text-align: center;
-  }
-  .auth__panel > img { align-self: center; }
-  /* balance reparte las líneas en vez de dejar una huérfana. */
-  .auth__contenido h2 { font-size: 23px; max-width: none; text-wrap: balance; }
-  .auth__contenido p { display: none; } /* la bajada larga estorba aquí */
-  .auth__lema { display: none; }
-
-  /* Solo monogramas: el nombre no cabe y el sentido del diagrama se
-     entiende igual — muchos entran, uno en medio, muchos salen. */
-  .mini-red { max-width: 300px; margin: 26px auto 0; }
-  .mini-red__col { flex: none; width: 42px; }
-  .mini-red__ficha { justify-content: center; padding: 0; }
-  .mini-red__nombre { display: none; }
-
-  .auth__formulario { padding: 30px 24px 48px; }
-}
-
-@media (max-width: 767px) {
-  .contenido { padding: 20px 16px 48px; }
-  .superior { padding: 0 16px; gap: 10px; }
-  .rejilla--2, .rejilla--3, .rejilla--4 { grid-template-columns: minmax(0, 1fr); }
-  .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
-  .encabezado h1 { font-size: 20px; }
-}
-
 /* =================================================================
  * Piezas que la plataforma va a necesitar.
  * Documentadas y renderizadas en sistema.html.
@@ -663,3 +587,180 @@ dialog.dialogo::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blu
 }
 @keyframes latir { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }
+
+/* ---------- Insignia de canal conectado ---------- */
+.insignia-tienda {
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 5px 11px; border: 1px solid var(--hairline); border-radius: 999px;
+  background: var(--navy-900); font-size: 12px; color: var(--muted);
+}
+.insignia-tienda__punto {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--accent); flex: none;
+}
+.insignia-tienda b { color: var(--ink); font-weight: 500; }
+
+/* ---------- Conmutador de vista ---------- */
+.conmutador {
+  display: inline-flex; padding: 2px; gap: 2px;
+  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--navy-900);
+}
+.conmutador button {
+  padding: 5px 13px; border: 0; border-radius: var(--r-sm); background: transparent;
+  color: var(--muted); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: background-color .15s var(--curva), color .15s var(--curva);
+}
+.conmutador button:hover { color: var(--ink); }
+.conmutador button[aria-pressed="true"] { background: rgba(255,255,255,.09); color: var(--ink); }
+
+/* ---------- Barra de selección múltiple ----------
+   Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando
+   la tabla y no hay que llevarle la vista a otro lado. */
+.barra-seleccion {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 18px; border-bottom: 1px solid var(--hairline);
+  background: rgba(15, 157, 110, 0.1);
+}
+.barra-seleccion__cuenta { font-weight: 600; }
+.barra-seleccion__sep { flex: 1; }
+
+/* ---------- Mosaico de pedidos ---------- */
+.mosaico { display: grid; gap: 12px; padding: 18px;
+           grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); }
+.tarjeta-pedido {
+  display: grid; gap: 11px; padding: 15px;
+  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--abyss);
+  transition: border-color .2s var(--curva);
+}
+.tarjeta-pedido:hover { border-color: var(--hairline-fuerte); }
+.tarjeta-pedido__alto { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tarjeta-pedido__folio { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
+.tarjeta-pedido__cliente { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.tarjeta-pedido__cliente div { min-width: 0; }
+.tarjeta-pedido__cliente b { display: block; font-weight: 500; }
+.tarjeta-pedido__cliente span { display: block; color: var(--muted); font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta-pedido__pie { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding-top: 11px; border-top: 1px solid var(--hairline); }
+
+/* ---------- Tarea del inicio ---------- */
+.tarea {
+  display: flex; align-items: center; gap: 14px; padding: 15px 18px;
+  border-bottom: 1px solid var(--hairline); transition: background-color .15s var(--curva);
+}
+.tarea:last-child { border-bottom: 0; }
+.tarea:hover { background: var(--hover); }
+.tarea__icono {
+  display: grid; place-items: center; width: 36px; height: 36px; flex: none;
+  border-radius: var(--r); border: 1px solid var(--hairline); background: rgba(255,255,255,.04);
+  color: var(--muted);
+}
+.tarea__icono svg { width: 17px; height: 17px; }
+.tarea--urge .tarea__icono { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #fca5a5; }
+.tarea--atender .tarea__icono { border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.12); color: #fde68a; }
+.tarea--ok .tarea__icono { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.12); color: var(--accent-claro); }
+.tarea__cuerpo { flex: 1; min-width: 0; }
+.tarea__cuerpo b { font-weight: 600; }
+.tarea__cuerpo p { margin-top: 2px; color: var(--muted); font-size: 13px; }
+
+/* Ítems del menú que existen en la app pero todavía no están vestidos. */
+.nav-item--pendiente { opacity: .62; }
+/* Un punto, no una palabra: "sin vestir" junto a "Configuración" no cabe en
+   236px y parte el ítem en dos líneas. El porqué va en el title del enlace. */
+.nav-item__marca {
+  margin-left: auto; flex: none; width: 6px; height: 6px; border-radius: 999px;
+  border: 1px solid var(--hairline-fuerte);
+}
+
+/* =================================================================
+ * Adaptable — SIEMPRE AL FINAL DEL ARCHIVO.
+ *
+ * Estas reglas tienen la misma especificidad que las de arriba, así que
+ * ganan solo por venir después. Si alguien agrega un componente nuevo
+ * al final, su regla base pisa el display:none de aquí y el componente
+ * reaparece en móvil. Ya pasó con la insignia de la tienda.
+ * ================================================================= */
+
+.lateral__cerrar, .abrir-menu { display: none; }
+
+@media (max-width: 1023px) {
+  .armazon { grid-template-columns: minmax(0, 1fr); }
+  .lateral {
+    position: fixed; inset: 0 auto 0 0; z-index: 60; width: 272px;
+    transform: translateX(-100%); transition: transform .25s var(--curva);
+  }
+  .lateral[data-abierto="true"] { transform: none; }
+  .lateral__cerrar { display: inline-flex; margin-left: auto; }
+  .abrir-menu { display: inline-flex; }
+  .velo {
+    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6);
+    backdrop-filter: blur(2px);
+  }
+  .rejilla--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* La barra superior no da para seis cosas. Se queda con lo que sirve en un
+     teléfono: abrir el menú, buscar y el aviso de que los datos son de ejemplo.
+     El conmutador de empresa se reduce a su avatar y la tienda conectada se va:
+     ya se ve en Inicio, y aquí empujaba al buscador fuera de la pantalla. */
+  .insignia-tienda { display: none; }
+  .superior__empresa { padding: 6px; }
+  .superior__empresa > span:last-child { display: none; }
+  .rejilla--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* -----------------------------------------------------------------
+ * Acceso en angosto.
+ *
+ * El panel dividido no cabe por debajo de 1280, pero esconderlo entero
+ * dejaba un formulario pelón sobre un fondo plano: sin marca, sin color
+ * y sin la animación. Así que el arte no desaparece, se compacta y pasa
+ * a ser la cabecera del formulario:
+ *
+ *   - el diagrama se queda, con sus pulsos, pero las fichas muestran
+ *     solo el monograma; la geometría del SVG no cambia porque el alto
+ *     de ficha y los huecos siguen siendo los mismos;
+ *   - el resplandor verde pasa a verse sobre el fondo de la página;
+ *   - se cae la bajada larga, que en un teléfono estorba antes del
+ *     formulario.
+ * --------------------------------------------------------------- */
+@media (max-width: 1279px) {
+  .auth { grid-template-columns: minmax(0, 1fr); }
+
+  .auth__arte {
+    padding: 40px 24px 0;
+    border-right: 0;
+    background: transparent; /* que el resplandor caiga sobre el fondo */
+  }
+  .auth__brillo { inset: -34% 0 auto 0; height: 560px; }
+  .auth__brillo--verde { inset: -8% 0 auto 0; height: 420px; }
+
+  .auth__panel {
+    max-width: 420px; gap: 26px;
+    align-items: center; text-align: center;
+  }
+  .auth__panel > img { align-self: center; }
+  /* balance reparte las líneas en vez de dejar una huérfana. */
+  .auth__contenido h2 { font-size: 23px; max-width: none; text-wrap: balance; }
+  .auth__contenido p { display: none; } /* la bajada larga estorba aquí */
+  .auth__lema { display: none; }
+
+  /* Solo monogramas: el nombre no cabe y el sentido del diagrama se
+     entiende igual — muchos entran, uno en medio, muchos salen. */
+  .mini-red { max-width: 300px; margin: 26px auto 0; }
+  .mini-red__col { flex: none; width: 42px; }
+  .mini-red__ficha { justify-content: center; padding: 0; }
+  .mini-red__nombre { display: none; }
+
+  .auth__formulario { padding: 30px 24px 48px; }
+}
+
+@media (max-width: 767px) {
+  .contenido { padding: 20px 16px 48px; }
+  .superior { padding: 0 16px; gap: 10px; }
+  .superior__empresa { display: none; }
+  /* Cuatro cifras cortas caben en dos columnas; una sola convierte el
+     encabezado en una escalera de cuatro pantallazos. */
+  .rejilla--2, .rejilla--3 { grid-template-columns: minmax(0, 1fr); }
+  .definiciones > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .encabezado h1 { font-size: 20px; }
+}
+
