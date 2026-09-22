@@ -802,7 +802,28 @@ a.tarjeta-cifra--alerta:hover { border-color: rgba(248, 113, 113, .45); }
    Una tarjeta por dirección. El predeterminado se marca con una barra del
    acento a la izquierda: es el que se imprime como remitente, y tiene que
    distinguirse sin leer. */
+/* Barra de la lista: buscar, cuántas hay y en qué forma verlas. El buscador
+   solo aparece cuando hay suficientes como para que buscar gane a mirar. */
+.salidas-barra {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;
+}
+.salidas-barra__sep { flex: 1; }
+
 .salidas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+
+/* Una tabla larga necesita que SU caja sea la que se desplaza: la cabecera
+   pegajosa se mide contra el contenedor de scroll, y si el que se desplaza es
+   la página, `top: 0` no sujeta nada y los rótulos se pierden a la tercera
+   fila. Con veinte direcciones, "Entrega" y "Recolección" son dos horas
+   distintas que sin encabezado no se distinguen. */
+.tabla-caja--alta { max-height: min(62vh, 620px); overflow-y: auto; }
+
+/* En la lista, el predeterminado se marca con la misma barra que en la
+   tarjeta: es el mismo hecho y tiene que verse igual en las dos vistas. */
+tr.fila--principal td:first-child { position: relative; }
+tr.fila--principal td:first-child::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent);
+}
 
 .salida {
   display: grid; align-content: start; gap: 12px;

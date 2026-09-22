@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=7d976a66">
-<script src="../assets/vigia.js?v=7d976a66" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=4cc35e39">
+<script src="../assets/vigia.js?v=4cc35e39" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
@@ -19,16 +19,34 @@
     </div>
   </div>
 
-  <div class="salidas" id="salidas"></div>
+  <div class="salidas-barra" id="barra" hidden>
+    <div class="campo-buscar" style="flex:1;max-width:420px">
+      <div class="buscador">
+        <label class="sr-only" for="buscar-origen">Buscar una dirección</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="buscar-origen" autocomplete="off"
+               placeholder="Buscar por nombre, calle, colonia o CP">
+      </div>
+    </div>
+    <span class="salidas-barra__sep"></span>
+    <span class="apagado" style="font-size:12px" id="cuenta-origen"></span>
+    <div class="conmutador" role="group" aria-label="Forma de ver la lista">
+      <button type="button" data-modo="tarjetas" aria-pressed="true">Tarjetas</button>
+      <button type="button" data-modo="lista" aria-pressed="false">Lista</button>
+    </div>
+  </div>
+
+  <div id="vista"></div>
 
   <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
   <dialog class="dialogo" id="confirmar" aria-labelledby="confirmar-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=7d976a66";
+import { montar, exigirSesion } from "../assets/app.js?v=4cc35e39";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=7d976a66";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=4cc35e39";
 if (exigirSesion()) {
   montar();
 
@@ -36,7 +54,6 @@ if (exigirSesion()) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
-  const lista = document.getElementById("salidas");
   const panel = document.getElementById("panel");
 
   /* La dirección en una línea, como se lee en una etiqueta. */
@@ -99,14 +116,159 @@ if (exigirSesion()) {
       </article>`;
   }
 
-  function pintar() {
-    lista.innerHTML = origenes.map(tarjeta).join("") + `
+  /* ---------- Cuántas hay cambia cómo se ven ----------
+
+     Con dos o tres direcciones, las tarjetas ganan: caben los datos que
+     importan —horario, si alguien va a pasar— y se leen de un vistazo.
+
+     Con veinte, esa misma tarjeta es un muro de cuatro mil píxeles y
+     encontrar una concreta obliga a recorrerlo entero. Ahí manda la lista:
+     una fila por dirección, densa y ordenable con la vista.
+
+     El modo arranca según cuántas hay y a partir de ahí lo decide quien
+     opera, porque su bodega la conoce mejor que un umbral. */
+  const UMBRAL_LISTA = 6;
+  const CLAVE_MODO = "tc:origenes-modo";
+
+  let modo = (() => {
+    try { return localStorage.getItem(CLAVE_MODO) || (origenes.length > UMBRAL_LISTA ? "lista" : "tarjetas"); }
+    catch { return origenes.length > UMBRAL_LISTA ? "lista" : "tarjetas"; }
+  })();
+  let busca = "";
+
+  const barra = document.getElementById("barra");
+  const vista = document.getElementById("vista");
+  const entrada = document.getElementById("buscar-origen");
+
+  const sinAcentos = (t) => String(t).toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  /* Se busca por lo que alguien recuerda de una dirección: cómo la llamó, la
+     calle, la colonia, la ciudad o el código postal. Y sin acentos, porque
+     nadie los teclea en un buscador. */
+  const coincide = (o) => {
+    if (!busca) return true;
+    const c = o.campos;
+    return sinAcentos([o.nombre, c.nombre, c.apellido, c.calle, c.numExt,
+                       c.colonia, c.ciudad, c.estado, c.cp].join(" ")).includes(busca);
+  };
+
+  function filaLista(o) {
+    const c = o.campos;
+    const a = agenda(o);
+    return `
+      <tr data-id="${esc(o.id)}"${o.predeterminado ? ' class="fila--principal"' : ""}>
+        <td>
+          <label class="marca-campo" title="Usar como remitente predeterminado">
+            <input type="radio" name="predeterminado" ${o.predeterminado ? "checked" : ""}
+              aria-label="Hacer predeterminada ${esc(o.nombre)}" data-predeterminar>
+          </label>
+        </td>
+        <td>
+          <b>${esc(o.nombre)}</b>
+          ${o.predeterminado ? ' <span class="pastilla pastilla--ok">Predeterminado</span>' : ""}
+          <div class="apagado" style="margin-top:3px;font-size:12px">
+            ${esc([c.calle, c.numExt].filter(Boolean).join(" "))}${c.numInt ? ` Int. ${esc(c.numInt)}` : ""},
+            ${esc(c.colonia)} · ${esc(c.ciudad)}, ${esc(c.estado)} ${esc(c.cp)}
+          </div>
+        </td>
+        <td>${esc(c.nombre)} ${esc(c.apellido)}
+          <div class="apagado" style="margin-top:3px;font-size:12px">${esc(telefonoMX(c.telefono))}</div></td>
+        <td class="tabular">${esc(o.horario.abre)} – ${esc(o.horario.cierra)}</td>
+        <td><span class="pastilla pastilla--${a.tono}">${esc(a.corto)}</span></td>
+        <td>
+          <div class="grupo-botones" style="gap:6px;flex-wrap:nowrap;justify-content:flex-end">
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar>Editar</button>
+            <button class="boton boton--sutil boton--chico" type="button" data-borrar
+              ${o.predeterminado ? 'disabled title="El predeterminado no se puede eliminar: primero nombra otro."' : ""}>Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  const listaHTML = (items) => `
+    <section class="tarjeta">
+      <div class="tabla-caja tabla-caja--alta scroll-fino">
+        <table>
+          <caption class="sr-only">Direcciones de origen registradas.</caption>
+          <thead><tr>
+            <th scope="col" style="width:40px"><span class="sr-only">Predeterminado</span></th>
+            <th scope="col">Dirección</th><th scope="col">Contacto</th>
+            <th scope="col">Entrega</th><th scope="col">Recolección</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr></thead>
+          <tbody>${items.map(filaLista).join("")}</tbody>
+        </table>
+      </div>
+      <div class="tarjeta__pie">
+        <button class="boton boton--primario boton--chico" type="button" data-nuevo>
+          Agregar dirección de origen</button>
+      </div>
+    </section>`;
+
+  const tarjetasHTML = (items) => `
+    <div class="salidas">
+      ${items.map(tarjeta).join("")}
       <button class="salida salida--nueva" type="button" data-nuevo>
         <span class="salida--nueva__mas" aria-hidden="true">+</span>
         <span><b>Agregar dirección de origen</b>
         <span>Otra bodega, una tienda o tu domicilio.</span></span>
-      </button>`;
+      </button>
+    </div>`;
+
+  /* Sin ninguna dirección no hay de dónde salir: no se puede cotizar, ni
+     generar una guía, ni programar una recolección. El vacío lo dice, en vez
+     de dejar una cuadrícula con un solo recuadro punteado. */
+  const vacioHTML = () => `
+    <div class="vacio">
+      <h3>Todavía no hay ninguna dirección de origen</h3>
+      <p>Es la dirección que se imprime como remitente en cada etiqueta y a la
+         que llega la paquetería a recoger. Sin al menos una, no se puede
+         cotizar ni generar guías.</p>
+      <div class="vacio__acciones">
+        <button class="boton boton--primario" type="button" data-nuevo>
+          Agregar la primera dirección</button>
+      </div>
+    </div>`;
+
+  const sinResultadosHTML = () => `
+    <div class="vacio">
+      <h3>Ninguna dirección coincide con “${esc(busca)}”</h3>
+      <p>Se busca por nombre, calle, colonia, ciudad o código postal.</p>
+      <div class="vacio__acciones">
+        <button class="boton boton--sutil" type="button" data-limpiar-busqueda>Quitar la búsqueda</button>
+      </div>
+    </div>`;
+
+  function pintar() {
+    /* La barra solo aparece cuando sirve de algo: buscar entre tres
+       direcciones es más lento que mirarlas. */
+    const muchas = origenes.length > UMBRAL_LISTA;
+    barra.hidden = origenes.length === 0;
+    barra.querySelector(".campo-buscar").hidden = !muchas;
+    barra.querySelectorAll("[data-modo]").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.modo === modo)));
+
+    if (origenes.length === 0) { vista.innerHTML = vacioHTML(); return; }
+
+    const items = origenes.filter(coincide);
+    document.getElementById("cuenta-origen").textContent = busca
+      ? `${items.length} de ${origenes.length}`
+      : `${items.length} ${items.length === 1 ? "dirección" : "direcciones"}`;
+
+    vista.innerHTML = items.length === 0 ? sinResultadosHTML()
+      : modo === "lista" ? listaHTML(items) : tarjetasHTML(items);
   }
+
+  entrada.addEventListener("input", () => { busca = sinAcentos(entrada.value.trim()); pintar(); });
+
+  barra.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-modo]");
+    if (!b || b.dataset.modo === modo) return;
+    modo = b.dataset.modo;
+    try { localStorage.setItem(CLAVE_MODO, modo); } catch { /* modo privado */ }
+    pintar();
+  });
 
   /* ---------- El formulario ----------
      Son los MISMOS campos, con las mismas etiquetas, que al editar la
@@ -301,21 +463,42 @@ if (exigirSesion()) {
               calle: "", numExt: "", numInt: "", cp: "", colonia: "", estado: "", ciudad: "", referencia: "" },
   });
 
-  lista.addEventListener("click", (e) => {
+  vista.addEventListener("click", (e) => {
     if (e.target.closest("[data-nuevo]")) return abrir(vacio());
-    const tarjeta = e.target.closest(".salida[data-id]");
-    if (!tarjeta) return;
-    const o = origenes.find((x) => x.id === tarjeta.dataset.id);
-
-    if (e.target.closest("[data-editar]")) return abrir(o);
-
-    if (e.target.closest("[data-predeterminar]")) {
-      origenes.forEach((x) => { x.predeterminado = x === o; });
-      pintar();
+    if (e.target.closest("[data-limpiar-busqueda]")) {
+      entrada.value = ""; busca = ""; pintar(); entrada.focus();
       return;
     }
 
-    if (e.target.closest("[data-borrar]")) pedirConfirmacion(o);
+    const fila = e.target.closest("[data-id]");
+    if (!fila) return;
+    const o = origenes.find((x) => x.id === fila.dataset.id);
+    if (!o) return;
+
+    if (e.target.closest("[data-editar]")) return abrir(o);
+    if (e.target.closest("[data-borrar]")) return pedirConfirmacion(o);
+  });
+
+  /* El predeterminado es uno de muchos, que es exactamente lo que un radio
+     dice por su cuenta: elegir uno desmarca el resto. Va por `change` y no
+     por `click` para que también funcione con el teclado. */
+  vista.addEventListener("change", (e) => {
+    if (!e.target.matches("[data-predeterminar]")) return;
+    const fila = e.target.closest("[data-id]");
+    const o = origenes.find((x) => x.id === fila.dataset.id);
+    origenes.forEach((x) => { x.predeterminado = x === o; });
+    pintar();
+  });
+
+  /* En tarjetas el predeterminado se cambia con un botón, no con un radio:
+     no hay una columna donde alinearlos y el botón dice el verbo. */
+  vista.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-predeterminar]");
+    if (!b) return;
+    const tarjeta = b.closest("[data-id]");
+    const o = origenes.find((x) => x.id === tarjeta.dataset.id);
+    origenes.forEach((x) => { x.predeterminado = x === o; });
+    pintar();
   });
 
   /* Borrar una dirección de origen con recolecciones programadas deja a un camión
@@ -358,6 +541,28 @@ if (exigirSesion()) {
     if (e.target.closest("[data-guardar]")) return guardar();
     if (e.target === panel) panel.close();
   });
+
+  /* Gancho de prototipo: ?muchos=20 genera direcciones en memoria para poder
+     ver y discutir cómo se comporta la pantalla con muchas. No se guarda
+     nada y basta recargar sin el parámetro para volver a lo de siempre. */
+  const muchos = +(new URLSearchParams(location.search).get("muchos") || 0);
+  if (muchos > 0) {
+    const ciudades = [["Monterrey", "Nuevo León", "64000"], ["Guadalajara", "Jalisco", "44160"],
+      ["Querétaro", "Querétaro", "76040"], ["Mérida", "Yucatán", "97050"],
+      ["Tijuana", "Baja California", "22014"], ["León", "Guanajuato", "37160"]];
+    for (let i = 0; i < muchos; i++) {
+      const [ciudad, estado, cp] = ciudades[i % ciudades.length];
+      origenes.push({
+        id: `demo${i}`, nombre: `Bodega ${ciudad} ${Math.floor(i / ciudades.length) + 1}`,
+        predeterminado: false, horario: { abre: "09:00", cierra: "18:00" },
+        campos: { nombre: "Contacto", apellido: `${i + 1}`, correo: "", lada: "+52",
+          telefono: String(5500000000 + i), compania: "Distribuidora Monarca",
+          calle: "Av. Principal", numExt: String(100 + i * 7), numInt: "",
+          cp, colonia: "Centro", estado, ciudad, referencia: "" },
+      });
+    }
+    modo = "lista";
+  }
 
   pintar();
 }

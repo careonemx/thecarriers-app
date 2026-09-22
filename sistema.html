@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=7d976a66">
+<link rel="stylesheet" href="assets/app.css?v=4cc35e39">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=7d976a66" defer></script>
+<script src="assets/vigia.js?v=4cc35e39" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -642,6 +642,12 @@
         <div class="regla"><b>El predeterminado no se borra</b><span>Tiene que haber exactamente uno: es el remitente que se imprime cuando nada dice lo contrario. Para quitarlo, primero se nombra otro.</span></div>
         <div class="regla"><b>Borrar dice qué se lleva</b><span>No "¿estás seguro?". Se enumeran las recolecciones programadas que habrá que rehacer, y se aclara que las guías ya impresas conservan la dirección vieja.</span></div>
         <div class="regla"><b>El diálogo es del sistema</b><span>Nunca <code>confirm()</code>. El del navegador no se puede escribir con la voz del producto, no se puede nombrar la acción destructiva y se ve fuera de lugar en una demostración.</span></div>
+        <div class="regla"><b>Cuántas hay cambia cómo se ven</b><span>Con dos o tres, las tarjetas: caben los datos que importan y se leen de un vistazo. Con veinte, esa misma tarjeta es un muro de cuatro mil píxeles; ahí manda la lista. El modo arranca según la cantidad y a partir de ahí lo decide quien opera.</span></div>
+        <div class="regla"><b>Buscar sin acentos</b><span>Nadie teclea "Mérida" en un buscador. Se normalizan los DOS lados antes de comparar, o la búsqueda falla justo con los nombres mexicanos.</span></div>
+        <div class="regla"><b>Uno de muchos es un radio</b><span>El predeterminado en una lista va con <code>input[type=radio]</code>: elegir uno desmarca el resto por su cuenta, sin JavaScript que lo explique, y funciona con el teclado.</span></div>
+        <div class="regla"><b>La cabecera se sujeta a su caja</b><span>Una tabla larga necesita que SU contenedor se desplace. Si el que se desplaza es la página, <code>top: 0</code> no sujeta nada y los rótulos se pierden a la tercera fila.</span></div>
+        <div class="regla"><b>El vacío es una pantalla, no un hueco</b><span>Sin ninguna dirección de origen no se puede cotizar ni generar guías. Eso se dice, en vez de dejar una cuadrícula con un solo recuadro punteado.</span></div>
+        <div class="regla"><b>El cero también se prueba</b><span>Con la lista vacía, una constante de módulo que la leía reventaba al cargar <code>datos.js</code> —que importa TODA la aplicación— y no se pintaba ni el menú. Un dato que puede no existir se protege donde se evalúa.</span></div>
         <div class="regla"><b>Datos inventados</b><span>Se avisa en pantalla. Sin tiempos simulados ni estados en vivo.</span></div>
       </div>
     </section>

@@ -58,15 +58,16 @@ export const origenes = [
   },
 ];
 
-/** El que se usa cuando nada dice lo contrario. */
+/** El que se usa cuando nada dice lo contrario. Null si no hay ninguno. */
 export const origenPredeterminado = () =>
-  origenes.find((o) => o.predeterminado) ?? origenes[0];
+  origenes.find((o) => o.predeterminado) ?? origenes[0] ?? null;
 
 /**
  * El origen tal como lo necesita la etiqueta: una línea por renglón.
  * Se deriva, no se duplica; si se guardaran los dos, un día no coincidirían.
  */
 export const origenDeEtiqueta = (o = origenPredeterminado()) => {
+  if (!o) return null;
   const c = o.campos;
   return {
     nombre: c.compania || o.nombre,
