@@ -56,6 +56,7 @@
   /* El trazo de los diagramas: la línea por la que corre el pulso verde.
      Escrito a mano era blanco al 14% y sobre blanco no existe. */
   --trazo: rgba(18, 28, 51, 0.22);
+  --trazo-fuerte: rgba(18, 28, 51, 0.26);
 
   /* El verde de marca da 3.3:1 sobre blanco y no sirve como texto: para
      leerlo hace falta un paso más oscuro, y como relleno de botón lleva
@@ -64,6 +65,15 @@
   --enlace: #0a7350;
   --accent-solido: var(--accent-600);
   --sobre-accent: #ffffff;
+
+  /* Superficie de marca: lo que está señalado como nuestro. Es el mismo papel
+     que en el sitio público, donde viste el nodo del diagrama y la ficha
+     elegida. Aquí no existía, así que todo lo seleccionado se vestía de gris y
+     la aplicación salía apagada al lado de su propia portada. */
+  --destacado: rgba(15, 157, 110, 0.1);
+  --destacado-fuerte: rgba(15, 157, 110, 0.16);
+  --destacado-borde: rgba(15, 157, 110, 0.32);
+  --destacado-borde-fuerte: rgba(15, 157, 110, 0.5);
 
   /* Estados. */
   --mal: #b42318;
@@ -75,6 +85,15 @@
 
   --sombra-tarjeta: 0 1px 2px rgba(18, 28, 51, 0.04),
                     0 12px 32px -20px rgba(18, 28, 51, 0.14);
+  --sombra-tarjeta-hover: 0 1px 2px rgba(18, 28, 51, 0.05),
+                          0 22px 48px -24px rgba(18, 28, 51, 0.2);
+
+  /* Lo que va marcado como nuestro se levanta con una sombra tibiamente verde,
+     no con un halo: sobre blanco un brillo de color se lee como un error de
+     impresión. La misma lección que el sitio público ya había aprendido para
+     el hover de sus tarjetas. */
+  --sombra-destacado: 0 1px 2px rgba(18, 28, 51, 0.05),
+                      0 18px 44px -26px rgba(15, 157, 110, 0.45);
 
   --lateral: 236px;
   --superior: 60px;
@@ -170,7 +189,8 @@ a { color: inherit; }
   transition: background-color .2s var(--curva), color .2s var(--curva);
 }
 .nav-item:hover { background: var(--hover); color: var(--ink); }
-.nav-item[aria-current="page"] { background: var(--hundido-fuerte); color: var(--ink); }
+.nav-item[aria-current="page"] { background: var(--destacado); color: var(--enlace); font-weight: 600; }
+.nav-item[aria-current="page"] svg { color: var(--accent); }
 .nav-item svg { width: 17px; height: 17px; flex: none; }
 .nav-item__cuenta {
   margin-left: auto; font-size: 11px; font-weight: 600;
@@ -442,7 +462,7 @@ select option { background: var(--pagina); }
 .boton--primario { background: var(--accent-solido); color: var(--sobre-accent); }
 .boton--primario:hover { filter: brightness(1.1); }
 .boton--fantasma { border-color: var(--hairline-fuerte); background: var(--hundido); color: var(--ink); }
-.boton--fantasma:hover { border-color: rgba(15,157,110,.6); background: var(--hundido-fuerte); }
+.boton--fantasma:hover { border-color: var(--destacado-borde-fuerte); background: var(--hundido-fuerte); }
 .boton--sutil { color: var(--muted); }
 .boton--sutil:hover { background: var(--hover); color: var(--ink); }
 .boton--bloque { width: 100%; }
@@ -469,7 +489,7 @@ select option { background: var(--pagina); }
 }
 .ficha-filtro:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
 .ficha-filtro[aria-pressed="true"] {
-  border-color: rgba(15,157,110,.5); background: rgba(15,157,110,.14); color: var(--enlace);
+  border-color: var(--destacado-borde-fuerte); background: var(--destacado-fuerte); color: var(--enlace);
 }
 /* Ficha que se quita: la pone la franja al enfocar un pendiente. Sin ella la
    lista se queda corta y nada en pantalla dice por qué. */
@@ -514,7 +534,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   font-size: 12px; font-weight: 500; white-space: nowrap;
 }
 .pastilla--info { border-color: var(--hairline-fuerte); background: var(--hundido-fuerte); color: var(--ink); }
-.pastilla--ok   { border-color: rgba(15,157,110,.45); background: rgba(15,157,110,.15); color: var(--enlace); }
+.pastilla--ok   { border-color: var(--destacado-borde-fuerte); background: var(--destacado); color: var(--enlace); }
 .pastilla--mal  { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
 .pastilla--aviso{ border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
 .pastilla--neutra { border-color: var(--hairline); background: var(--hundido); color: var(--muted); }
@@ -533,8 +553,8 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .vacio { padding: 56px 24px; text-align: center; }
 .vacio__icono {
   display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 16px;
-  border-radius: var(--r-lg); border: 1px solid rgba(15,157,110,.3);
-  background: rgba(15,157,110,.1); color: var(--enlace);
+  border-radius: var(--r-lg); border: 1px solid var(--destacado-borde);
+  background: var(--destacado); color: var(--enlace);
 }
 .vacio h3 { font-size: 16px; }
 .vacio p { margin: 8px auto 0; max-width: 46ch; color: var(--muted); }
@@ -556,7 +576,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
   border: 1px solid var(--hairline); background: var(--tarjeta); position: relative; z-index: 1;
 }
 .linea__punto i { width: 7px; height: 7px; border-radius: 999px; background: var(--muted); }
-.linea__evento--activo .linea__punto { border-color: rgba(15,157,110,.55); background: rgba(15,157,110,.16); }
+.linea__evento--activo .linea__punto { border-color: var(--destacado-borde-fuerte); background: var(--destacado-fuerte); }
 .linea__evento--activo .linea__punto i { background: var(--accent); }
 .linea__evento--mal .linea__punto { border-color: var(--mal-borde); background: var(--mal-fondo); }
 .linea__evento--mal .linea__punto i { background: var(--mal); }
@@ -647,7 +667,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .aviso--bloque > p { margin-top: 9px; }
 .aviso--info { border-color: var(--hairline); background: var(--hundido); color: var(--muted); }
 .aviso--mal { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
-.aviso--ok { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.1); color: var(--enlace); }
+.aviso--ok { border-color: var(--destacado-borde); background: var(--destacado); color: var(--enlace); }
 /* Ni error ni dato suelto: algo que sí se puede hacer y conviene mirar antes.
    Medido sobre la tarjeta: 8.9:1. */
 .aviso--alerta { border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
@@ -680,9 +700,9 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 }
 .mini-red__nodo {
   flex: none; margin: 0 2px; display: grid; place-items: center; gap: 7px; padding: 14px 12px;
-  border: 1px solid rgba(15,157,110,.4); border-radius: var(--r-lg);
-  background: var(--hundido); text-align: center;
-  box-shadow: 0 22px 60px -28px rgba(15,157,110,.9);
+  border: 1px solid var(--destacado-borde); border-radius: var(--r-lg);
+  background: var(--destacado); text-align: center;
+  box-shadow: var(--sombra-destacado);
 }
 .mini-red__nodo img { width: 26px; height: 26px; }
 .mini-red__nodo b { font-size: 12px; }
@@ -881,7 +901,7 @@ dialog.dialogo::backdrop { background: rgba(18, 28, 51, 0.5); backdrop-filter: b
   padding: 14px 16px 13px;
   border: 1px solid var(--hairline); border-radius: var(--r-lg);
   background: var(--tarjeta); box-shadow: var(--sombra-tarjeta); color: inherit; text-decoration: none;
-  transition: border-color .16s var(--curva), background .16s var(--curva),
+  transition: border-color .16s var(--curva), box-shadow .16s var(--curva),
               transform .16s var(--curva);
 }
 .tarjeta-cifra__n {
@@ -904,7 +924,7 @@ dialog.dialogo::backdrop { background: rgba(18, 28, 51, 0.5); backdrop-filter: b
 }
 
 a.tarjeta-cifra:hover {
-  border-color: var(--hairline-fuerte); background: var(--hundido);
+  border-color: var(--hairline-fuerte); box-shadow: var(--sombra-tarjeta-hover);
   transform: translateY(-1px);
 }
 a.tarjeta-cifra:hover .tarjeta-cifra__ir { color: var(--ink); }
@@ -1450,7 +1470,7 @@ tr.fila--principal td:first-child::before {
 .tarea__icono svg { width: 17px; height: 17px; }
 .tarea--urge .tarea__icono { border-color: var(--mal-borde); background: var(--mal-fondo); color: var(--mal); }
 .tarea--atender .tarea__icono { border-color: var(--aviso-borde); background: var(--aviso-fondo); color: var(--aviso); }
-.tarea--ok .tarea__icono { border-color: rgba(15,157,110,.4); background: rgba(15,157,110,.12); color: var(--enlace); }
+.tarea--ok .tarea__icono { border-color: var(--destacado-borde); background: var(--destacado); color: var(--enlace); }
 .tarea__cuerpo { flex: 1; min-width: 0; }
 .tarea__cuerpo b { font-weight: 600; }
 .tarea__cuerpo p { margin-top: 2px; color: var(--muted); font-size: 13px; }

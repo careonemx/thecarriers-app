@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=a44065df">
+<link rel="stylesheet" href="assets/app.css?v=deddf32a">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=a44065df" defer></script>
+<script src="assets/vigia.js?v=deddf32a" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -645,9 +645,11 @@
         o se rompe el render.
       </p>
       <div class="muestra" style="margin-top:14px">
-        <div class="regla"><b>Texto sobre verde</b><span>Va <code>--abyss</code>, no blanco. Blanco sobre el acento da 3.46:1 y reprueba AA. El hover <b>aclara</b>; si oscureciera, el texto oscuro se quedaría sin contraste.</span></div>
+        <div class="regla"><b>Texto sobre verde</b><span>Va blanco sobre <code>--accent-solido</code>, que es <code>accent-600</code>. Sobre el <code>--accent</code> intacto daría 3.46:1 y reprobaría: el relleno de botón es el verde oscuro, no el de marca.</span></div>
         <div class="regla"><b>Bordes de control</b><span><code>--field</code>, nunca <code>--hairline</code>. El decorativo no llega al 3:1 de 1.4.11.</span></div>
-        <div class="regla"><b>Piso de texto</b><span><code>white/50</code> sobre el fondo. Por debajo, reprueba.</span></div>
+        <div class="regla"><b>Piso de texto</b><span><code>--muted</code>. Por debajo reprueba, y su peor caso es sobre <code>--hundido</code>, no sobre la página.</span></div>
+        <div class="regla"><b>Un color, un token</b><span>El verde de marca llegó a estar escrito a mano en seis sitios con cinco opacidades distintas. Un color repetido a mano deja de ser el mismo color.</span></div>
+        <div class="regla"><b>Sobre blanco no hay halos</b><span>Un resplandor de color se lee como luz sobre un fondo oscuro y como una mancha sobre uno claro. En claro lo que levanta es la sombra, y apenas teñida.</span></div>
         <div class="regla"><b>Color solo, nunca</b><span>Toda pastilla lleva su texto. El color acompaña, no informa por su cuenta.</span></div>
         <div class="regla"><b>[hidden]</b><span>Necesita <code>!important</code>: varios componentes declaran <code>display:flex</code> y le ganan al atributo.</span></div>
         <div class="regla"><b>thead pegajoso</b><span><code>top: 0</code>, no la altura de la barra. <code>.tabla-caja</code> es contenedor de scroll y el sticky se mide contra ella.</span></div>
@@ -879,6 +881,14 @@ pinta("marca", [
   { nombre: "--enlace", valor: tk("--pagina"), texto: tk("--enlace"),
     nota: "El verde que sí se lee: enlaces, cifras de acento y estado correcto.",
     contra: { color: tk("--enlace"), min: 4.5, que: "sobre la página" } },
+  { nombre: "--destacado", valor: tk("--destacado"), texto: tk("--enlace"),
+    hexToken: tk("--destacado"),
+    nota: "Lo señalado como nuestro: sección del menú en la que estás, filtro puesto, estado correcto.",
+    contra: { color: tk("--enlace"), min: 4.5, que: "texto de enlace encima" } },
+  { nombre: "--destacado-fuerte", valor: tk("--destacado-fuerte"), texto: tk("--enlace"),
+    hexToken: tk("--destacado-fuerte"),
+    nota: "El mismo papel cuando además está pulsado o activo.",
+    contra: { color: tk("--enlace"), min: 4.5, que: "texto de enlace encima" } },
 ]);
 
 pinta("lineas", [
@@ -886,6 +896,10 @@ pinta("lineas", [
   { nombre: "--hairline-fuerte", valor: tk("--hairline-fuerte"), nota: "Bordes de botón fantasma." },
   { nombre: "--field", valor: tk("--field"), nota: "Borde de campo. Cumple el 3:1 de 1.4.11." },
   { nombre: "--hover", valor: tk("--hover"), nota: "Fila de tabla y ficha de menú bajo el cursor." },
+  { nombre: "--trazo", valor: tk("--trazo"), nota: "La línea de los diagramas, por la que corre el pulso." },
+  { nombre: "--trazo-fuerte", valor: tk("--trazo-fuerte"), nota: "El tramo del diagrama que hay que poder seguir." },
+  { nombre: "--destacado-borde", valor: tk("--destacado-borde"), nota: "Borde de lo señalado como nuestro." },
+  { nombre: "--destacado-borde-fuerte", valor: tk("--destacado-borde-fuerte"), nota: "El mismo, cuando está activo." },
 ]);
 
 // Un estado es un par: relleno tenue más texto legible encima. Se documenta el
