@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=deddf32a">
+<link rel="stylesheet" href="assets/app.css?v=923d07fd">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=deddf32a" defer></script>
+<script src="assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -64,6 +64,7 @@
     <a href="#tablas">Tablas</a>
     <a href="#contenedores">Tarjetas y métricas</a>
     <a href="#mensajes">Avisos y vacíos</a>
+    <a href="#reglas-orden">Reglas ordenadas</a>
     <a href="#datos">Historial y barras</a>
     <a href="#navegacion">Pestañas y diálogos</a>
     <a href="#donde">Dónde va cada acción</a>
@@ -458,6 +459,153 @@
         </div>
       </div>
       <span class="cls">.vacio .vacio__icono .vacio__acciones</span>
+
+      <h3>La instrucción</h3>
+      <p class="intro" style="margin-bottom:14px">
+        Lo que le toca a la persona cuando la paquetería no expone la acción. No sirve ninguno de
+        los otros: el <code>.dialogo</code> confirma acciones nuestras, <code>.franja--pendiente</code>
+        describe un problema y <code>.aviso</code> afirma un hecho. Ninguno dicta un procedimiento
+        que ejecuta otra persona por otro canal, que es donde la capa de en medio se hace visible
+        sin mentir. El dato que hay que citar va en monoespaciado y se selecciona de un clic: se
+        dicta por teléfono dígito por dígito.
+      </p>
+      <div style="display:grid;gap:12px">
+        <div class="instruccion instruccion--no">
+          <b>Estafeta no cancela guías desde aquí</b>
+          <ol>
+            <li class="instruccion__paso">Llama a Estafeta al 800 378 2338 y pide la cancelación de la guía <span class="instruccion__dato">6050000112233</span>. <button class="boton boton--sutil boton--chico" type="button">Copiar guía</button></li>
+            <li class="instruccion__paso">La guía queda sin usar. Si tu contrato cobra las guías emitidas, esta se te cobra.</li>
+          </ol>
+        </div>
+        <div class="instruccion instruccion--sin-registro">
+          <b>Sin registro de si Paquetexpress cancela recolecciones desde aquí</b>
+          <ol>
+            <li class="instruccion__paso">Llama a Paquetexpress al 800 727 8726 y cita el folio <span class="instruccion__dato">RC-8841</span>. <button class="boton boton--sutil boton--chico" type="button">Copiar folio</button></li>
+            <li class="instruccion__paso">La recolección se sigue contando hasta que el rastreo diga otra cosa.</li>
+            <li class="instruccion__paso">Si Paquetexpress sí cancela, márcalo en Paqueterías para que el botón aparezca la próxima vez. <button class="boton boton--sutil boton--chico" type="button">Confirmar con Paquetexpress</button></li>
+          </ol>
+        </div>
+      </div>
+      <span class="cls">.instruccion .instruccion--no .instruccion--sin-registro .instruccion__paso .instruccion__dato</span>
+      <p class="intro" style="margin-top:10px">
+        Los dos se ven distinto porque llevan a acciones distintas: “no lo hace” cierra el tema y va
+        en neutro; “sin registro de si lo hace” es una llamada que el comerciante puede hacer —él
+        tiene el ejecutivo de cuenta— y va en el amarillo de lo que sigue abierto, con el paso que
+        cierra el círculo. La acción nunca se ofrece con “sin registro”: ofrecer una acción que
+        quizá funcione es la forma más cara de averiguarlo. Y el dato que hay que dictar por
+        teléfono lleva <b>siempre</b> su botón de copiar: el componente existe para quitar esa
+        fricción, y un dato sin botón no la quita.
+      </p>
+    </section>
+
+    <!-- =========================== REGLAS =========================== -->
+    <section id="reglas-orden">
+      <h2>Reglas ordenadas</h2>
+      <p class="intro">
+        Un criterio humano que se recorre de arriba abajo: gana la primera que se cumple. Se usa
+        para el orden de paqueterías y para el de embalaje, con la misma mecánica de asa, puesto y
+        flechas. Un segundo modelo mental para el mismo problema es un modelo de más.
+      </p>
+
+      <div class="tarjeta" style="margin-top:14px">
+        <div class="orden__cabecera orden__cabecera--reglas" aria-hidden="true">
+          <span></span><span></span><span>Regla</span><span>Caja</span><span>Motivo</span><span></span>
+        </div>
+        <div class="orden orden--reglas">
+          <div class="orden__fila">
+            <span class="orden__asa" aria-hidden="true">
+              <svg viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="2.2" cy="3" r="1.25"/><circle cx="7.8" cy="3" r="1.25"/><circle cx="2.2" cy="8" r="1.25"/><circle cx="7.8" cy="8" r="1.25"/><circle cx="2.2" cy="13" r="1.25"/><circle cx="7.8" cy="13" r="1.25"/></svg>
+            </span>
+            <span class="orden__puesto">1</span>
+            <div class="orden__quien">
+              <b>Pedidos de una pieza</b>
+              <div class="condiciones">
+                <span class="condicion">Cantidad 1 pieza</span>
+                <span class="condicion">Destino foráneo</span>
+              </div>
+            </div>
+            <label class="campo orden__caja">
+              <span class="orden__et">Caja</span>
+              <select><option>Sobre</option></select>
+              <span class="apagado">30 × 22 × 2 cm</span>
+            </label>
+            <label class="campo orden__porque">
+              <span class="orden__et">Motivo</span>
+              <textarea rows="2">Una pieza cabe en sobre y no paga volumen.</textarea>
+            </label>
+            <div class="orden__mover">
+              <button class="boton boton--sutil boton--chico" type="button" disabled aria-label="Subir">↑</button>
+              <button class="boton boton--sutil boton--chico" type="button" aria-label="Bajar">↓</button>
+            </div>
+            <div class="cobro cobro--aviso">
+              <p class="cobro__cifra">Esta regla generó 214 guías en los últimos 30 días. En 62 se cobró por volumen, no por peso. Diferencia acumulada: $8,430.00.</p>
+              <p class="cobro__porque">Con Caja chica en vez de Caja mediana, esas 62 guías habrían costado $5,100.00 menos.</p>
+              <p class="cobro__porque">Calculado con divisor 5000. No está confirmado con la paquetería.</p>
+              <div class="grupo-botones">
+                <button class="boton boton--sutil boton--chico" type="button">Cambiar la caja de esta regla</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="orden__fila orden__fila--defecto">
+            <span></span>
+            <span class="orden__puesto">—</span>
+            <div class="orden__quien">
+              <b>Por defecto</b>
+              <div class="condiciones">
+                <span class="condicion">Cualquier pedido que no haya ganado arriba</span>
+              </div>
+            </div>
+            <label class="campo orden__caja">
+              <span class="orden__et">Caja</span>
+              <select><option>Sobre</option></select>
+              <span class="apagado">30 × 22 × 2 cm</span>
+            </label>
+            <label class="campo orden__porque">
+              <span class="orden__et">Motivo</span>
+              <textarea rows="2" placeholder="Sin motivo"></textarea>
+            </label>
+            <div class="orden__mover"></div>
+            <div class="cobro">
+              <p class="cobro__cifra">El 18 % de las guías de los últimos 30 días salió por esta regla: 39 de 214.</p>
+              <p class="cobro__porque">Es la medida de qué tan bien cubren las reglas de arriba.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span class="cls">.orden--reglas .orden__cabecera--reglas .orden__fila--defecto .orden__caja</span>
+
+      <h3>La condición</h3>
+      <div class="muestra">
+        <div class="condiciones">
+          <span class="condicion">Cantidad 1 a 3 piezas</span>
+          <span class="condicion">Costo $2,000.00 en adelante</span>
+          <span class="condicion">Contiene <b>MON-VEN-16</b></span>
+          <span class="condicion condicion--sin-dato">Contiene <b>MON-VEN-61</b></span>
+        </div>
+        <span class="cls">.condiciones .condicion .condicion--sin-dato</span>
+      </div>
+      <p class="intro" style="margin-top:10px">
+        Una condición es un enunciado con rango: <code>.pastilla</code> es un estado y
+        <code>.dato</code> es un par de etiqueta y valor, y no se lee bien como ninguno de los dos.
+        <code>--sin-dato</code> marca la que no se puede evaluar —su SKU no aparece en ningún pedido
+        reciente—, porque una condición que no se puede evaluar nunca se da por cumplida y un
+        silencio ahí es una regla que no gana y nadie sabe por qué.
+      </p>
+
+      <h3>El cobro</h3>
+      <div class="muestra">
+        <div class="cobro cobro--aviso">
+          <p class="cobro__cifra">Te cobran 6 kg</p>
+          <p class="cobro__porque">Pesa 4 kg, pero una caja de 40 × 30 × 25 cm se cobra como si pesara 6 kg.</p>
+        </div>
+        <span class="cls">.cobro .cobro__cifra .cobro__porque · --aviso --mal</span>
+      </div>
+      <p class="intro" style="margin-top:10px">
+        La consecuencia primero y el dato después. Estaba escrito tres veces con estilos en línea
+        dentro de Plantillas, y un patrón repetido a mano deja de ser el mismo patrón, igual que un
+        color. El tono lo pone lo que cuesta, no el componente.
+      </p>
     </section>
 
     <!-- ============================ DATOS ============================ -->
@@ -698,6 +846,40 @@
         <div class="regla"><b>El predeterminado no se borra</b><span>Tiene que haber exactamente uno: es el remitente que se imprime cuando nada dice lo contrario. Para quitarlo, primero se nombra otro.</span></div>
         <div class="regla"><b>Borrar dice qué se lleva</b><span>No "¿estás seguro?". Se enumeran las recolecciones programadas que habrá que rehacer, y se aclara que las guías ya impresas conservan la dirección vieja.</span></div>
         <div class="regla"><b>El diálogo es del sistema</b><span>Nunca <code>confirm()</code>. El del navegador no se puede escribir con la voz del producto, no se puede nombrar la acción destructiva y se ve fuera de lugar en una demostración.</span></div>
+        <div class="regla"><b>Tres valores, no dos</b><span>Lo que expone una paquetería es sí, no o <b>sin registro</b>. Un “no” es una afirmación sobre un tercero: dicho sin confirmar y siendo falso, deja al comerciante sin una función que sí tenía. Con “sin registro” la acción no se ofrece, igual que con “no”.</span></div>
+        <div class="regla"><b>Las dos ausencias no se nombran igual</b><span>“Estafeta no cancela guías desde aquí” cierra el tema. “Sin registro de si Estafeta cancela guías desde aquí” es una llamada que el comerciante puede hacer, y lleva el paso que cierra el círculo. Esconder la diferencia haría creer que la lista está completa.</span></div>
+        <div class="regla"><b>El hueco es del registro, no nuestro</b><span>“Sin registro de si…”, nunca “no hemos confirmado si…”. La interfaz describe y no conversa, y aquí no hace falta ninguna excepción: la afirmación honesta no es sobre lo que sabemos, es sobre lo que la matriz tiene guardado. Quien confirma aparece donde le toca, que es la acción.</span></div>
+        <div class="regla"><b>Una fila por paquetería, no por cuenta</b><span>El producto ordena y cotiza paqueterías que todavía no tienen cuenta. Con la matriz atada a las cuentas, ésas caen en “sin registro” sin ningún sitio donde resolverlo, y un “sin registro” que no se puede confirmar es indistinguible de un “no”. El paso de confirmar existe en todas las filas.</span></div>
+        <div class="regla"><b>Dos preguntas, dos respuestas</b><span>Si hay cuenta conectada y qué expone la paquetería son independientes, y juntarlas hace creer que conectar resuelve lo segundo. “Sin cuenta conectada” se resuelve conectando; “sin registro” se resuelve llamando.</span></div>
+        <div class="regla"><b>Gana la capa de la cuenta</b><span>Lo que el comerciante marca sobre su contrato manda sobre lo confirmado con la paquetería, porque dos cuentas de la misma no tienen los mismos servicios. Cuando las dos existen y difieren se dice: esconder una detrás de la otra deja sin explicar por qué el botón no está donde se leyó que debía estar.</span></div>
+        <div class="regla"><b>Una casilla que cuesta dice cuánto</b><span>El seguro sale de la matriz y se desglosa en su renglón, nunca dentro del precio de la guía. Sin registro del costo, la casilla dice dónde va a aparecer el importe. Callar la cifra no la hace menos cara.</span></div>
+        <div class="regla"><b>Dos cifras, dos sustantivos</b><span>Una regla enseña lo que ha cobrado —guías, en pasado— y lo que alcanza —pedidos, en presente—. Si comparten sustantivo se leen como una sola medición mal hecha. Y la del presente es un enlace al conjunto que cuenta: un número que se abre y deja la tabla delante no enseña un resultado, enseña los pedidos, y se pueden contar a mano.</span></div>
+        <div class="regla"><b>Lo específico arriba, lo general abajo</b><span>En una lista donde gana la primera que se cumple, una condición específica colocada debajo de una general no puede ganar jamás. Va en la cabeza de la tarjeta, no en la ayuda de un campo: sin la frase a la vista, alguien sube la general dentro de seis meses con el argumento razonable de que cubre más casos.</span></div>
+        <div class="regla"><b>Una solicitud por pareja</b><span>La recolección se pide por origen y por paquetería: no existe una solicitud que junte un paquete de DHL con uno de FedEx. La unidad de configuración es esa pareja y nada más, porque cualquier otra agrupación obligaría a explicar después por qué salieron cuatro solicitudes cuando se configuró una.</span></div>
+        <div class="regla"><b>Campo, no dimensión</b><span>La plataforma por la que se compró la guía es un campo de la regla. Como dimensión daría sesenta filas que nadie lee. La restricción que eso impone se asume con los ojos abiertos y <b>se nombra donde duele</b>: las guías que quedan fuera se enseñan con su motivo y su acción manual, nunca se barren a la solicitud equivocada. Una guía en una solicitud dirigida a la contraparte equivocada es una recolección que no va a ocurrir y un reclamo a quien no le toca.</span></div>
+        <div class="regla"><b>Sin piezas no es una falla</b><span>Un día en que la regla se disparó y no había guías no sale del denominador por comodidad: no salió solicitud, así que no hay a quién reclamarle. Contarlo como cita fallida mete un cero que no es culpa de la paquetería, y una tabla que sirve para exigir deja de servir en cuanto se le puede contestar “ese día no había nada que recoger”.</span></div>
+        <div class="regla"><b>La regla se afirma, no se fecha</b><span>“El porcentaje solo cuenta citas con piezas” va en el pie de forma permanente. Una nota del tipo “desde octubre se cuenta distinto” es arqueología a los seis meses; una afirmación de qué se cuenta se sostiene sola.</span></div>
+        <div class="regla"><b>Marcada, no cancelada</b><span>Donde la paquetería no expone la cancelación, lo único cierto que se puede hacer es dejar constancia de que se pidió por teléfono y <b>seguir contándola</b>. La fila dice “Cancelación solicitada” y debajo “Estafeta no ha confirmado la cancelación”: ahí no falta un dato de la matriz, falta una respuesta sobre esa recolección. Y el botón que cierra es fantasma, no primario, porque no completa la tarea: la completa una llamada.</span></div>
+        <div class="regla"><b>El prototipo tiene hora, no reloj</b><span>Igual que <code>HOY</code>, existe una hora fija. Hay decisiones que dependen de la hora del día —si el corte para cancelar ya pasó— y con el reloj real la misma pantalla se comporta distinto por la mañana que por la tarde, y entonces no se puede discutir en una reunión.</span></div>
+        <div class="regla"><b>Lo que no entra se dibuja apagado</b><span>Los modos que no están en esta versión se enseñan con su consecuencia y su razón, no se esconden. Esconderlos haría creer que el producto no los contempla; enseñarlos apagados dice qué viene.</span></div>
+        <div class="regla"><b>Una devolución cuelga de su pedido</b><span>No es un pedido nuevo: es un segundo envío del mismo, y el folio del pedido es la única llave que el comerciante, el comprador y la paquetería comparten. Por eso la primera columna de la tabla es el pedido y no la devolución, y por eso una recibida sin pedido amarrado no se puede cerrar.</span></div>
+        <div class="regla"><b>Quién emite y quién paga</b><span>Son las dos preguntas que separan los cinco mecanismos, y las que deciden si un costo entra en la conciliación. Una guía que el comprador compró entra en cero con su nota: meterla en el mismo cajón que las que emitimos mete un costo que no existe.</span></div>
+        <div class="regla"><b>El selector se construye con cero opciones</b><span>Lee la matriz y pinta lo que haya, incluido nada. Construirlo después obligaría a rehacer el bloque entero el día que una paquetería conteste, y ahora cuesta lo mismo con cero que con tres. Vacío no es una pantalla muerta: es donde vive el mecanismo que va a ser el más frecuente al principio.</span></div>
+        <div class="regla"><b>Las dos cosas juntas o ninguna</b><span>La guía del comprador pide número <b>y</b> paquetería: con una sola no se rastrea nada. Con las dos, el regreso se sigue con el enlace público que ya existe, sin ninguna integración nueva.</span></div>
+        <div class="regla"><b>Qué llegó, no quién lo recibió</b><span>Un campo necesita de dónde salir, y no hay modelo de usuarios. Además “quién” solo sirve para pedir cuentas, mientras que “qué llegó” es lo que sostiene la nota de crédito parcial, que es la razón por la que ese paso existe.</span></div>
+        <div class="regla"><b>Una cola que solo avanza con guía se llena de muertos</b><span>De autorizada se salta directo a recibida, porque el paquete que aparece en la bodega sin que nadie capturara nada existe. Y “sin retorno” cierra sin envío: forzar una guía que nadie va a usar ensucia el rastreo con envíos fantasma.</span></div>
+        <div class="regla"><b>Traducir no es predecir</b><span>La pastilla “Va de regreso” sale solo cuando la paquetería lo declaró con sus palabras, y el texto original se conserva a la vista. Lo que no existe es el aviso de “último intento”: sin intentos numerados del carrier sería un contador nuestro presentado como dato suyo, y el error es caro en las dos direcciones.</span></div>
+        <div class="regla"><b>El cargo se captura donde hace falta</b><span>El del retorno al remitente no se estima: se teclea de la factura, y se teclea en el diálogo donde entra en la resta. Mandar a alguien a otra pantalla a capturar una cifra que necesita en ésta es partir la tarea en dos viajes.</span></div>
+        <div class="regla"><b>Las cifras de ejemplo van a la escala de la pantalla</b><span>Un pie que dice 214 guías en una pantalla de 40 pedidos se contradice a la vista, y el aviso general de datos de ejemplo no salva dos números que se pelean dentro de la misma tarjeta.</span></div>
+        <div class="regla"><b>La acción no se ofrece a ver qué pasa</b><span>Ofrecer una acción que quizá funcione es la forma más cara de averiguarlo: se averigua con un paquete real. Donde no hay acción hay <code>.instruccion</code>, que dicta lo que le toca a la persona.</span></div>
+        <div class="regla"><b>Una sola fuente para lo que se elige</b><span>La lista de tarifas, el radio marcado y el botón que nombra la paquetería salen del mismo cálculo. Calculados por separado, el botón siguió nombrando a la paquetería que la lista ya había quitado por falta de cobertura.</span></div>
+        <div class="regla"><b>Gana la primera que se cumple</b><span>Sin puntajes, sin especificidad calculada, sin “la más restrictiva”. Un sistema de puntajes no se puede explicar a quien abre la pantalla a las siete de la mañana con doscientos pedidos, y una regla que no se puede explicar no se puede corregir.</span></div>
+        <div class="regla"><b>Un hecho físico gana a una comodidad</b><span>El veto quita la caja aunque sea la de la regla por defecto, y el pedido pasa a revisión manual. Seis copas no van en un sobre; una caja que rompe el producto cuesta más que una guía que no se generó sola esta noche.</span></div>
+        <div class="regla"><b>Lo que no se puede evaluar no se cumple</b><span>Si la línea del pedido no trae SKU, la condición por producto y el veto se saltan con aviso y el pedido pasa a la siguiente regla. Darlo por cumplido mete el producto en la caja equivocada sin que nadie se entere.</span></div>
+        <div class="regla"><b>Lo automático se ve como automático</b><span>Cada guía guarda si la generó una persona o una regla, y cuál. Sin eso, una guía con la paquetería equivocada no se puede diagnosticar: no se sabe si alguien la eligió o si una regla la eligió mal.</span></div>
+        <div class="regla"><b>Comprobar al confirmar, no bloquear al abrir</b><span>Sin modelo de usuarios ni reloj compartido, un arriendo con temporizador no protege de nada. Antes de emitir se revisa que el pedido siga sin guía y que no haya cambiado en el canal: eso protege de lo que cuesta dinero, que es la guía duplicada.</span></div>
+        <div class="regla"><b>Recotizar mientras se escribe</b><span>El número que importa se calcula con lo que se captura. Verlo al guardar es verlo después de emitir la guía, que es demasiado tarde.</span></div>
+        <div class="regla"><b>El fallo no cierra el panel</b><span>Cerrarlo obliga a recapturar peso, caja y seguro para volver a intentar lo mismo. Y el fallo deja rastro en la fila: uno que solo vive en un panel cerrado es un pedido que nadie va a volver a intentar.</span></div>
         <div class="regla"><b>Cuántas hay cambia cómo se ven</b><span>Con dos o tres, las tarjetas: caben los datos que importan y se leen de un vistazo. Con veinte, esa misma tarjeta es un muro de cuatro mil píxeles; ahí manda la lista. El modo arranca según la cantidad y a partir de ahí lo decide quien opera.</span></div>
         <div class="regla"><b>Buscar sin acentos</b><span>Nadie teclea "Mérida" en un buscador. Se normalizan los DOS lados antes de comparar, o la búsqueda falla justo con los nombres mexicanos.</span></div>
         <div class="regla"><b>Uno de muchos es un radio</b><span>El predeterminado en una lista va con <code>input[type=radio]</code>: elegir uno desmarca el resto por su cuenta, sin JavaScript que lo explique, y funciona con el teclado.</span></div>

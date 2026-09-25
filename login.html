@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Entrar · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=deddf32a">
-<script src="assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="assets/app.css?v=923d07fd">
+<script src="assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body>
 <div class="auth">
@@ -126,7 +126,7 @@
 </div>
 
 <script type="module">
-  import { sesion } from "./assets/app.js?v=deddf32a";
+  import { sesion } from "./assets/app.js?v=923d07fd";
 
   const form = document.getElementById("acceso");
   const error = document.getElementById("error");
@@ -143,7 +143,15 @@
       error.hidden = false;
       return;
     }
-    sesion.abrir(correo);
+    /* Sin poder guardar la sesión, entrar llevaría a una pantalla que rebota
+       aquí otra vez. Se dice qué pasa y qué hay que permitir, en vez de dejar
+       el botón mudo dando vueltas. */
+    if (!sesion.abrir(correo)) {
+      error.textContent = "Este navegador tiene bloqueado el almacenamiento del sitio y la sesión no " +
+        "se puede guardar. Permite los datos de sitio para este dominio, o sal del modo privado.";
+      error.hidden = false;
+      return;
+    }
     location.href = "app/" + (destino && /^[a-z-]+\.html$/.test(destino) ? destino : "inicio.html");
   });
 </script>

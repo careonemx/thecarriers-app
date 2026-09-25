@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=deddf32a">
-<script src="../assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
+<script src="../assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -24,6 +24,9 @@
   </div>
 
   <div class="rejilla rejilla--3" style="margin-bottom:16px" id="metricas"></div>
+
+  <!-- Lo que exige una acción va antes que lo que ya está resuelto. -->
+  <section class="zona" id="sueltas"></section>
 
   <section class="zona" id="reclamo"></section>
 
@@ -72,6 +75,7 @@
         <option value="completa">Completas</option>
         <option value="parcial">Incompletas</option>
         <option value="fallida">Sin cumplir</option>
+        <option value="sin-piezas">Sin piezas</option>
       </select>
 
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
@@ -81,13 +85,17 @@
     <div id="vista"></div>
   </section>
 
+  <dialog class="dialogo" id="dlg-cancelar" aria-labelledby="dlg-cancelar-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=deddf32a";
+import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
-         origenes, menosDias, HOY } from "../assets/datos.js?v=deddf32a";
+         origenes, menosDias, HOY,
+         parejasRecoleccion, guiasSinRecoleccion,
+         comoCancelar, marcarCancelacionSolicitada,
+         nombrarAusencia, capacidadDe, telefonoDe } from "../assets/datos.js?v=923d07fd";
 if (exigirSesion()) {
   montar();
 
@@ -151,6 +159,78 @@ if (exigirSesion()) {
     return true;
   }
 
+  /* ---------- Las guías que ninguna regla toma ----------
+     Arriba de la agenda porque lo que exige una acción va antes que lo que ya
+     está resuelto. Nombradas, con su motivo y con la acción al lado: nunca
+     barridas a una solicitud dirigida a la contraparte equivocada, que es una
+     recolección que no va a ocurrir y un reclamo a quien no le toca. */
+  function pintarSueltas() {
+    const caja = document.getElementById("sueltas");
+    const grupos = [];
+
+    for (const x of parejasRecoleccion()) {
+      if (!x.fuera.length) continue;
+      const porVia = {};
+      for (const p of x.fuera) (porVia[p.envio.via ?? "directo"] ||= []).push(p);
+      for (const [via, guias] of Object.entries(porVia)) {
+        grupos.push({ origen: x.origen, paqueteria: x.paqueteria, via, guias, regla: x.regla });
+      }
+    }
+
+    /* Y las que no tienen regla ninguna: también se programan a mano, pero por
+       otro motivo, y el motivo es lo que se escribe en cada fila. */
+    for (const x of parejasRecoleccion()) {
+      if (x.regla || !x.esperando) continue;
+      const guias = guiasSinRecoleccion({ origen: x.origen, paqueteria: x.paqueteria });
+      const porVia = {};
+      for (const p of guias) (porVia[p.envio.via ?? "directo"] ||= []).push(p);
+      for (const [via, g] of Object.entries(porVia)) {
+        grupos.push({ origen: x.origen, paqueteria: x.paqueteria, via, guias: g, regla: null });
+      }
+    }
+
+    /* La tarjeta solo existe cuando hay algo: un hueco decorado donde no falta
+       nada es ruido. */
+    if (!grupos.length) { caja.innerHTML = ""; return; }
+
+    caja.innerHTML = `
+      <div class="tarjeta">
+        <div class="tarjeta__cabeza">
+          <div>
+            <h2>Guías sin recolección que ninguna regla toma</h2>
+            <p class="apagado" style="font-size:12px;margin-top:3px">Se programan a mano.</p>
+          </div>
+        </div>
+        <div class="tabla-caja scroll-fino">
+          <table>
+            <caption class="sr-only">Guías que ninguna regla de recolección incluye.</caption>
+            <thead><tr>
+              <th scope="col">Paquetería</th><th scope="col">Comprada en</th>
+              <th scope="col">Origen</th><th scope="col">Piezas</th>
+              <th scope="col"><span class="sr-only">Acción</span></th>
+            </tr></thead>
+            <tbody>
+              ${grupos.map((g) => `<tr>
+                <td><b>${esc(g.paqueteria)}</b></td>
+                <td>${g.via === "directo" ? '<span class="apagado">Directo</span>' : esc(g.via)}</td>
+                <td>${esc(nombreOrigen(g.origen))}
+                  <div class="apagado" style="margin-top:3px;font-size:12px">${esc(
+                    g.regla
+                      ? `La regla de ${nombreOrigen(g.origen)} · ${g.paqueteria} pide recolección ${
+                          g.regla.via ? `a ${g.regla.via}` : "directa"}.`
+                      : `${nombreOrigen(g.origen)} · ${g.paqueteria} no tiene regla de recolección.`)}</div></td>
+                <td class="tabular">${g.guias.length}</td>
+                <td style="text-align:right">
+                  <button class="boton boton--fantasma boton--chico" type="button"
+                    data-programar="${g.guias.length}">Programar recolección de ${
+                      plural(g.guias.length, "pieza", "piezas")}</button></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   /* ---------- Lo que se puede reclamar ----------
      Se enseña solo cuando alguien está por debajo del 100%: si todas
      cumplieron, una tabla de cumplimiento es una tabla de ceros que ocupa
@@ -195,8 +275,11 @@ if (exigirSesion()) {
           </table>
         </div>
         <div class="tarjeta__pie">
-          <span>Una pieza se cuenta como recogida cuando su guía registra el primer
-                movimiento en la paquetería.</span>
+          <!-- La regla se afirma de forma permanente y sin fecharla: una nota del
+               tipo "desde octubre se cuenta distinto" es arqueología a los seis
+               meses, y una afirmación de qué se cuenta se sostiene sola. -->
+          <span>El porcentaje solo cuenta citas con piezas. Una pieza se cuenta como
+                recogida cuando su guía registra el primer movimiento en la paquetería.</span>
         </div>
       </div>`;
   }
@@ -228,16 +311,20 @@ if (exigirSesion()) {
             ${plural(dia.length, "recolección", "recolecciones")}</span>
         </th>
       </tr>
-      ${dia.map((r) => `<tr>
-        <td><b>${esc(r.paqueteria)}</b></td>
+      ${dia.map((r) => {
+        const c = comoCancelar(r);
+        return `<tr data-folio="${esc(r.folio)}">
+        <td><b>${esc(r.paqueteria)}</b>${c.clave === "pedida"
+          ? ' <span class="pastilla pastilla--aviso">Cancelación solicitada</span>' : ""}
+          ${c.clave === "pedida" ? `<div class="apagado" style="margin-top:3px;font-size:12px">${
+            esc(r.paqueteria)} no ha confirmado la cancelación.</div>` : ""}</td>
         <td>${r.via ? esc(r.via) : "<span class=\"apagado\">Directo</span>"}</td>
         <td>${esc(nombreOrigen(r.origen))}</td>
         <td class="tabular">${esc(r.ventana)}</td>
         <td class="tabular">${r.piezas}</td>
         <td class="mono apagado">${esc(r.folio)}</td>
-        <td style="text-align:right">
-          <button class="boton boton--sutil boton--chico" type="button">Cancelar</button></td>
-      </tr>`).join("")}`).join("");
+        <td style="text-align:right">${accionCancelarHTML(r, c)}</td>
+      </tr>`; }).join("")}`).join("");
 
     return `
       <div class="tabla-caja scroll-fino">
@@ -257,6 +344,117 @@ if (exigirSesion()) {
           ${lista.reduce((s, r) => s + r.piezas, 0)} piezas</span>
       </div>`;
   }
+
+  /* ---------- Las dos cancelaciones ----------
+     Desactivar la regla es nuestro y vive en Configuración. Cancelar una
+     recolección YA SOLICITADA sale de la matriz, porque depende de que la
+     paquetería lo exponga, y cuando no lo expone lo único que queda es una
+     llamada. Las dos ausencias se ven igual y no se nombran igual. */
+  function accionCancelarHTML(r, c) {
+    if (c.clave === "pedida") {
+      return '<span class="apagado" style="font-size:12px">Pendiente de confirmación</span>';
+    }
+    if (c.clave === "boton") {
+      return `<button class="boton boton--sutil boton--chico" type="button"
+                data-cancelar="${esc(r.folio)}">Cancelar recolección</button>
+        ${c.corte ? `<div class="apagado" style="margin-top:3px;font-size:12px">Se puede
+          cancelar hasta las ${esc(c.corte)}.</div>` : ""}`;
+    }
+    return `<button class="boton boton--sutil boton--chico" type="button"
+              data-instruccion="${esc(r.folio)}">Ver qué hacer</button>
+      ${c.vencido ? `<div class="apagado" style="margin-top:3px;font-size:12px">El corte para
+        cancelar fue a las ${esc(c.corte)}.</div>` : ""}`;
+  }
+
+  const dlgCancelar = document.getElementById("dlg-cancelar");
+
+  /* El diálogo del sistema de siempre: cancelar nombra lo que conserva. */
+  function abrirCancelacion(r) {
+    dlgCancelar.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-cancelar-titulo">¿Cancelar la recolección ${esc(r.folio)}?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p>${esc(r.paqueteria)} deja de venir por las ${plural(r.piezas, "pieza", "piezas")} de
+          ${esc(nombreOrigen(r.origen))} el ${esc(corta(r.fecha))}.</p>
+        <p style="margin-top:8px">Las guías vuelven a contar como sin recolección, así que la
+          siguiente ejecución de la regla las incluye sola.</p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-cancelar>Conservarla como está</button>
+        <button class="boton boton--peligro" type="button" data-si-cancelar="${esc(r.folio)}">Sí, cancelar</button>
+      </div>`;
+    dlgCancelar.showModal();
+  }
+
+  /* Donde la paquetería no la expone: una instrucción, no una confirmación. El
+     botón que cierra es fantasma y no primario, porque no completa la tarea:
+     la completa una llamada. */
+  function abrirInstruccion(r) {
+    const modo = capacidadDe(r.paqueteria, "cancelaRecoleccion").valor === "no" ? "no" : "sin-registro";
+    const tel = telefonoDe(r.paqueteria);
+    dlgCancelar.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-cancelar-titulo">Cancelar la recolección ${esc(r.folio)}</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <div class="instruccion instruccion--${modo}">
+          <b>${esc(nombrarAusencia(r.paqueteria, "cancelaRecoleccion"))}</b>
+          <ol>
+            <li class="instruccion__paso">Llama a ${esc(r.paqueteria)}${tel ? ` al ${esc(tel)}` : ""}.</li>
+            <li class="instruccion__paso">Cita el folio
+              <span class="instruccion__dato">${esc(r.folio)}</span>.
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-copiar="${esc(r.folio)}">Copiar folio</button></li>
+            <li class="instruccion__paso">Esta recolección queda marcada como cancelación
+              solicitada y se sigue contando hasta que el rastreo diga otra cosa.</li>
+            ${modo === "sin-registro" ? `<li class="instruccion__paso">Si ${esc(r.paqueteria)}
+              sí cancela recolecciones, márcalo en Paqueterías para que el botón aparezca la
+              próxima vez.
+              <a class="boton boton--sutil boton--chico"
+                 href="paqueterias.html?paqueteria=${encodeURIComponent(r.paqueteria)}&capacidad=cancelaRecoleccion"
+              >Confirmar con ${esc(r.paqueteria)}</a></li>` : ""}
+          </ol>
+        </div>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-cancelar>Conservarla como está</button>
+        <button class="boton boton--fantasma" type="button"
+                data-marcar-pedida="${esc(r.folio)}">Marcar cancelación solicitada</button>
+      </div>`;
+    dlgCancelar.showModal();
+  }
+
+  dlgCancelar.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-cancelar]")) return dlgCancelar.close();
+
+    const copiar = e.target.closest("[data-copiar]");
+    if (copiar) {
+      navigator.clipboard?.writeText(copiar.dataset.copiar).then(() => {
+        const antes = copiar.textContent;
+        copiar.textContent = "Folio copiado";
+        setTimeout(() => { copiar.textContent = antes; }, 1800);
+      }, () => { /* sin permiso: el folio sigue a la vista */ });
+      return;
+    }
+
+    const si = e.target.closest("[data-si-cancelar]");
+    if (si) {
+      const i = recolecciones.findIndex((x) => x.folio === si.dataset.siCancelar);
+      recolecciones.splice(i, 1);
+      dlgCancelar.close();
+      return pintar();
+    }
+
+    const pedida = e.target.closest("[data-marcar-pedida]");
+    if (pedida) {
+      /* Marcada, no cancelada: la paquetería no lo ha confirmado y seguir
+         contándola es lo único cierto que se puede hacer. */
+      marcarCancelacionSolicitada(pedida.dataset.marcarPedida);
+      dlgCancelar.close();
+      pintar();
+    }
+  });
 
   /* ---------- Historial: qué pasó de verdad ---------- */
   function historialHTML() {
@@ -295,9 +493,12 @@ if (exigirSesion()) {
                   <div class="apagado" style="margin-top:3px;font-size:11px">${esc(r.ventana)}</div></td>
                 <td>${r.via ? esc(r.via) : '<span class="apagado">Directo</span>'}</td>
                 <td>${esc(nombreOrigen(r.origen))}</td>
-                <td class="tabular">${r.piezas}</td>
-                <td class="tabular"${r.recogidas < r.piezas ? ' style="color:var(--mal)"' : ""}>${r.recogidas}</td>
-                <td><span class="pastilla pastilla--${res.tono}">${esc(res.texto)}</span></td>
+                <td class="tabular">${res.clave === "sin-piezas" ? "—" : r.piezas}</td>
+                <td class="tabular"${res.clave !== "sin-piezas" && r.recogidas < r.piezas
+                  ? ' style="color:var(--mal)"' : ""}>${res.clave === "sin-piezas" ? "—" : r.recogidas}</td>
+                <td><span class="pastilla pastilla--${res.tono}">${esc(res.texto)}</span>
+                  ${res.nota ? `<div class="apagado nota-celda" style="margin-top:3px;font-size:12px">${
+                    esc(res.nota)}</div>` : ""}</td>
               </tr>`;
             }).join("")}
           </tbody>
@@ -305,7 +506,7 @@ if (exigirSesion()) {
       </div>
       <div class="tarjeta__pie">
         <span>Mostrando <b>${ini + 1}–${ini + enPagina.length}</b> de <b>${lista.length}</b> ·
-          ${lista.reduce((s, r) => s + r.recogidas, 0)} de
+          ${lista.reduce((s, r) => s + (r.recogidas ?? 0), 0)} de
           ${lista.reduce((s, r) => s + r.piezas, 0)} piezas recogidas</span>
         <label class="filtros__etiqueta" for="por-pagina-reco">
           <select id="por-pagina-reco" style="width:auto;margin-left:8px">
@@ -324,6 +525,8 @@ if (exigirSesion()) {
   }
 
   function pintar() {
+    document.querySelectorAll("[data-vista]").forEach((b) =>
+      b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
     mando.hidden = vista !== "historial";
     /* El resultado solo existe en el historial: una recolección que todavía
        no ocurre no tiene ninguno. */
@@ -356,6 +559,7 @@ if (exigirSesion()) {
       metrica("Recolecciones sin cumplir", fallidas,
               fallidas ? "La paquetería no se presentó" : "Sin incidencias");
 
+    pintarSueltas();
     pintarReclamo();
   }
 
@@ -374,6 +578,37 @@ if (exigirSesion()) {
   zona.addEventListener("click", (e) => {
     const ir = e.target.closest("[data-ir]");
     if (ir && !ir.disabled) { pagina = +ir.dataset.ir; pintar(); }
+
+    const cancelar = e.target.closest("[data-cancelar]");
+    if (cancelar) {
+      return abrirCancelacion(recolecciones.find((r) => r.folio === cancelar.dataset.cancelar));
+    }
+    const instruccion = e.target.closest("[data-instruccion]");
+    if (instruccion) {
+      return abrirInstruccion(recolecciones.find((r) => r.folio === instruccion.dataset.instruccion));
+    }
+  });
+
+  /* La extraordinaria llega prellenada con las piezas que se quedaron: el
+     sistema no la programa solo, porque pedir un camión tiene costo en algunos
+     contratos y una consecuencia comercial que el sistema no conoce. */
+  document.getElementById("sueltas").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-programar]");
+    if (!b) return;
+    const n = +b.dataset.programar;
+    dlgCancelar.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-cancelar-titulo">Programar recolección de ${plural(n, "pieza", "piezas")}</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p class="aviso aviso--info">La solicitud llega prellenada con las piezas que se
+          quedaron. En el prototipo la acción llega hasta aquí: falta el endpoint de la
+          paquetería.</p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--primario" type="button" data-cerrar-cancelar>Entendido</button>
+      </div>`;
+    dlgCancelar.showModal();
   });
   zona.addEventListener("change", (e) => {
     if (!e.target.matches("#por-pagina-reco")) return;
@@ -390,7 +625,29 @@ if (exigirSesion()) {
       pintar();
     }));
 
+  /* Los atajos desde Configuración. Un aviso que promete "ver las tres citas"
+     y deja la lista entera delante obliga a buscarlas a mano, que es lo que el
+     aviso existía para ahorrar. */
+  const url = new URLSearchParams(location.search);
+  const pareja = url.get("pareja");
+  if (pareja) {
+    const [origen, paqueteria] = pareja.split("|");
+    fPaq.value = paqueteria;
+    fOrg.value = nombreOrigen(origen);
+    vista = "historial";
+    fRes.value = "fallida";
+  }
+  const sueltas = url.get("sueltas");
+  if (sueltas) {
+    const [origen, paqueteria] = sueltas.split("|");
+    fPaq.value = paqueteria;
+    fOrg.value = nombreOrigen(origen);
+  }
+
   pintar();
+
+  /* El destino del atajo de las guías sueltas es la tarjeta, no la agenda. */
+  if (sueltas) document.getElementById("sueltas").scrollIntoView({ block: "center" });
 }
 </script>
 </body>

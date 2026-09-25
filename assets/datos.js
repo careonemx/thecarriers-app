@@ -283,6 +283,32 @@ export const enlaceRastreo = (paqueteria, guia) => {
 };
 
 /* =================================================================
+ * Teléfonos de atención.
+ *
+ * Es el dato que citan todas las instrucciones de la capa intermedia: donde la
+ * paquetería no expone una acción, lo único que queda es una llamada, y una
+ * instrucción que dice "llama a Estafeta" sin el número obliga a buscarlo en
+ * otra pestaña justo cuando hay un paquete parado.
+ *
+ * OJO: igual que las URL de rastreo, hay que confirmarlos con cada paquetería
+ * antes de publicar. Un número que no contesta es peor que no ponerlo.
+ * ================================================================= */
+export const TELEFONO_PAQUETERIA = {
+  "DHL": "800 765 6345",
+  "Estafeta": "800 378 2338",
+  "FedEx": "800 900 1100",
+  "Redpack": "800 013 3737",
+  "Paquetexpress": "800 727 8726",
+  "UPS": "800 622 0000",
+  "99minutos": "800 999 6468",
+  "AMPM": "800 267 6000",
+  "T1 Envíos": "800 801 2020",
+};
+
+/** Null sin número confirmado: la instrucción se queda sin ese paso. */
+export const telefonoDe = (paqueteria) => TELEFONO_PAQUETERIA[paqueteria] ?? null;
+
+/* =================================================================
  * Reglas de selección de paquetería.
  *
  * No son un árbol de condiciones: son un ORDEN DE PREFERENCIA con
@@ -428,16 +454,23 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
  * llegue la factura.
  * ================================================================= */
 
-/** Divisor volumétrico. Es el que usan DHL, FedEx, Estafeta y UPS en México. */
+/**
+ * Divisor volumétrico. 5000 es el que se ha visto funcionar con DHL, FedEx,
+ * Estafeta y UPS en México, pero no está confirmado con ninguna: por eso deja
+ * de ser una constante y pasa a `CAPACIDADES.divisorVolumetrico`, donde cada
+ * cuenta dice el suyo y de dónde salió. Este valor es el que se usa mientras
+ * la celda esté sin confirmar, y la cotización lo dice.
+ */
 export const FACTOR_VOLUMETRICO = 5000;
 
-export const pesoVolumetrico = (largo, ancho, alto) =>
-  Math.round(((largo * ancho * alto) / FACTOR_VOLUMETRICO) * 100) / 100;
+export const pesoVolumetrico = (largo, ancho, alto, divisor = FACTOR_VOLUMETRICO) =>
+  Math.round(((largo * ancho * alto) / divisor) * 100) / 100;
 
 /** El que se paga: el mayor de los dos, no el real. */
-export function pesoCobrado(p) {
-  const vol = pesoVolumetrico(p.largo, p.ancho, p.alto);
-  return { real: p.peso, volumetrico: vol, cobrado: Math.max(p.peso, vol), porVolumen: vol > p.peso };
+export function pesoCobrado(p, divisor = FACTOR_VOLUMETRICO) {
+  const real = p.peso;
+  const vol = pesoVolumetrico(p.largo, p.ancho, p.alto, divisor);
+  return { real, volumetrico: vol, cobrado: Math.max(real, vol), porVolumen: vol > real };
 }
 
 export const plantillas = [
@@ -485,7 +518,9 @@ const enviosBase = [
     estado: "En tránsito", original: "Shipment in transit", destino: "Monterrey, NL",
     cliente: "Laura Méndez", fecha: "2026-09-19", peso: 2.4, cotizado: 189.00, facturado: 189.00 },
   { guia: "782394001122", canal: "Mercado Libre", paqueteria: "FedEx", pedido: "#10419",
-    estado: "Detenido", original: "Delivery exception — incorrect address", destino: "Guadalajara, JAL",
+    /* La paquetería declaró el retorno con sus palabras. Traducirlo no es
+       predecir: el paquete ya viene de vuelta exista o no el registro. */
+    estado: "Detenido", original: "Delivery exception — return to shipper scheduled", destino: "Guadalajara, JAL",
     cliente: "Comercializadora Vega", fecha: "2026-09-18", peso: 5.1, cotizado: 264.00, facturado: 264.00,
     motivo: "Domicilio incompleto", detenidoDesde: "2026-09-19", responsable: "Karla T." },
   { guia: "6050000112233", canal: "Tiendanube", paqueteria: "Estafeta", pedido: "#10417",
@@ -502,7 +537,8 @@ const enviosBase = [
     estado: "Entregado", original: "IN_TRANSIT", destino: "Mérida, YUC",
     cliente: "Rocío Pat", fecha: "2026-09-15", peso: 0.8, cotizado: 98.00, facturado: 98.00 },
   { guia: "PX-220914", canal: "Shopify", paqueteria: "Paquetexpress", pedido: "#10409",
-    estado: "Con incidencia", original: "DESTINATARIO AUSENTE", destino: "Tijuana, BC",
+    estado: "Con incidencia",
+    original: "Rechazado por el destinatario. En proceso de retorno al remitente.", destino: "Tijuana, BC",
     cliente: "Iván Cordero", fecha: "2026-09-16", peso: 4.0, cotizado: 210.00, facturado: 245.00,
     motivo: "Destinatario ausente, segundo intento", detenidoDesde: "2026-09-18", responsable: "Sin asignar",
     diferencia: "Reexpedición: 35.00 no cotizados" },
@@ -513,12 +549,32 @@ const enviosBase = [
     estado: "Entregado", original: "delivered", destino: "Cancún, QROO",
     cliente: "Hotelería del Caribe", fecha: "2026-09-14", peso: 12.4, cotizado: 480.00, facturado: 480.00 },
   { guia: "EY-9930021", canal: "Amazon", paqueteria: "Redpack", via: "EnviaYa", pedido: "#10403",
-    estado: "Detenido", original: "hold_at_location", destino: "Toluca, MEX",
+    /* Y uno que NO lo declara: sin él no se ve que la pastilla solo sale con
+       los que sí, ni que sobre éste no hay ningún aviso de último intento
+       porque no se puede tener sin intentos numerados del carrier. */
+    estado: "Detenido", original: "Delivery exception — customer not available", destino: "Toluca, MEX",
     cliente: "Refacciones del Valle", fecha: "2026-09-15", peso: 6.7, cotizado: 233.00, facturado: 233.00,
-    motivo: "Retenido en sucursal, falta documento", detenidoDesde: "2026-09-17", responsable: "Karla T." },
+    motivo: "Destinatario ausente", detenidoDesde: "2026-09-17", responsable: "Karla T." },
   { guia: "6050000998877", canal: "Tienda propia", paqueteria: "Estafeta", pedido: "#10401",
     estado: "Generada", original: "—", destino: "Veracruz, VER",
     cliente: "Pescadería del Golfo", fecha: "2026-09-19", peso: 2.0, cotizado: 143.00, facturado: null },
+  /* Cuatro guías de DHL compradas en Skydropx, todas de Almacén Puebla y sin
+     recolección: son las que la regla directa de esa pareja NO va a tomar. Sin
+     ellas, la consecuencia de que `via` sea un campo y no una dimensión no se
+     puede enseñar, y se descubriría con un camión vacío. */
+  { guia: "SK-880011", canal: "Shopify", paqueteria: "DHL", via: "Skydropx", pedido: "#10431",
+    estado: "Generada", original: "label_created", destino: "Puebla, PUE",
+    cliente: "Ferretería Aguilar", fecha: "2026-09-20", peso: 2.2, cotizado: 141.00, facturado: null },
+  { guia: "SK-880012", canal: "Shopify", paqueteria: "DHL", via: "Skydropx", pedido: "#10432",
+    estado: "Generada", original: "label_created", destino: "Querétaro, QRO",
+    cliente: "Deportes Lira", fecha: "2026-09-20", peso: 1.4, cotizado: 115.00, facturado: null },
+  { guia: "SK-880013", canal: "WooCommerce", paqueteria: "DHL", via: "Skydropx", pedido: "#10433",
+    estado: "Generada", original: "label_created", destino: "León, GTO",
+    cliente: "Calzado Marbel", fecha: "2026-09-21", peso: 3.8, cotizado: 190.00, facturado: null },
+  { guia: "SK-880014", canal: "Shopify", paqueteria: "DHL", via: "Skydropx", pedido: "#10434",
+    estado: "Generada", original: "label_created", destino: "Monterrey, NL",
+    cliente: "Muebles Anáhuac", fecha: "2026-09-21", peso: 5.6, cotizado: 246.00, facturado: null },
+
   { guia: "EM-556677", canal: "WooCommerce", paqueteria: "DHL", via: "Envíame", pedido: "#10399",
     estado: "En tránsito", original: "in_transit", destino: "Saltillo, COAH",
     cliente: "Talleres Herrera", fecha: "2026-09-16", peso: 9.2, cotizado: 298.00, facturado: 341.00,
@@ -556,6 +612,9 @@ export const recolecciones = [
   { fecha: "2026-09-21", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 14, recogidas: null, estado: "Confirmada", folio: "RC-8841", origen: "puebla" },
   { fecha: "2026-09-21", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 9, recogidas: null, estado: "Confirmada", folio: "RC-8842", origen: "puebla" },
   { fecha: "2026-09-23", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 6, recogidas: null, estado: "Por confirmar", folio: "RC-8845", origen: "cdmx" },
+  /* De hoy, y con el corte de cancelación de FedEx ya pasado: es la que enseña
+     que un "sí" con corte se comporta distinto según la hora. */
+  { fecha: "2026-09-21", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 5, recogidas: null, estado: "Confirmada", folio: "RC-8844", origen: "cdmx" },
   { fecha: "2026-09-23", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 4, recogidas: null, estado: "Confirmada", folio: "RC-8846", via: "Skydropx", origen: "puebla" },
   { fecha: "2026-09-24", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 12, recogidas: null, estado: "Recurrente", folio: "RC-8850", origen: "puebla" },
   { fecha: "2026-09-25", paqueteria: "UPS", ventana: "14:00 – 18:00", piezas: 3, recogidas: null, estado: "Por confirmar", folio: "RC-8853", origen: "cdmx" },
@@ -565,7 +624,19 @@ export const recolecciones = [
   { fecha: "2026-09-19", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 8, recogidas: 0, estado: "Confirmada", folio: "RC-8839", origen: "puebla" },
   { fecha: "2026-09-18", paqueteria: "FedEx", ventana: "09:00 – 13:00", piezas: 5, recogidas: 5, estado: "Confirmada", folio: "RC-8834", via: "T1 Envíos", origen: "cdmx" },
   { fecha: "2026-09-17", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 9, recogidas: 9, estado: "Confirmada", folio: "RC-8830", origen: "puebla" },
-  { fecha: "2026-09-17", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 7, recogidas: 4, estado: "Confirmada", folio: "RC-8831", origen: "puebla" },
+  { fecha: "2026-09-17", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 7, recogidas: 0, estado: "Confirmada", folio: "RC-8831", origen: "puebla" },
+  /* Tercera falla seguida de Estafeta en Puebla. Tres seguidas son el material
+     del reclamo, y por eso se muestran juntas en la fila de la regla. */
+  { fecha: "2026-09-13", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 6, recogidas: 0, estado: "Confirmada", folio: "RC-8818", origen: "puebla" },
+
+  /* ---- Días en los que la regla se disparó y no había nada que recoger ----
+     NO son fallas: no salió solicitud porque no había guías al corte. Contarlas
+     como cita fallida mete un cero que no es culpa de la paquetería, y una
+     tabla que sirve para exigir deja de servir en cuanto se le puede contestar
+     "ese día no había nada que recoger". */
+  { fecha: "2026-09-20", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 0, recogidas: null, resultado: "sin-piezas", estado: "Recurrente", folio: "RC-8843", origen: "puebla" },
+  { fecha: "2026-09-16", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 0, recogidas: null, resultado: "sin-piezas", estado: "Recurrente", folio: "RC-8828", origen: "puebla" },
+  { fecha: "2026-09-06", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 0, recogidas: null, resultado: "sin-piezas", estado: "Recurrente", folio: "RC-8795", origen: "puebla" },
   { fecha: "2026-09-16", paqueteria: "Redpack", ventana: "11:00 – 17:00", piezas: 6, recogidas: 6, estado: "Confirmada", folio: "RC-8827", origen: "puebla" },
   { fecha: "2026-09-15", paqueteria: "DHL", ventana: "10:00 – 14:00", piezas: 13, recogidas: 13, estado: "Recurrente", folio: "RC-8822", origen: "puebla" },
   { fecha: "2026-09-15", paqueteria: "Estafeta", ventana: "13:00 – 18:00", piezas: 10, recogidas: 10, estado: "Confirmada", folio: "RC-8823", origen: "puebla" },
@@ -583,14 +654,22 @@ export const recolecciones = [
 
 /** Lo que pasó con una recolección. Null en `recogidas` = todavía no toca. */
 export function resultadoRecoleccion(r) {
+  /* Un día en que la regla se disparó y no había guías. No es una falla y no
+     se parece a una: no salió solicitud, así que no hay a quién reclamarle. */
+  if (r.resultado === "sin-piezas") {
+    return { clave: "sin-piezas", texto: "Sin piezas", tono: "neutra",
+             nota: "No salió solicitud: no había guías sin recolección al corte." };
+  }
   if (r.recogidas === null) return { clave: "programada", texto: r.estado, tono: r.estado === "Por confirmar" ? "aviso" : "ok" };
   if (r.recogidas === 0) return { clave: "fallida", texto: "No se presentó", tono: "mal" };
   if (r.recogidas < r.piezas) return { clave: "parcial", texto: `Incompleta · ${r.recogidas} de ${r.piezas}`, tono: "aviso" };
   return { clave: "completa", texto: "Completa", tono: "ok" };
 }
 
-export const recoleccionesPasadas = () => recolecciones.filter((r) => r.recogidas !== null);
-export const recoleccionesProximas = () => recolecciones.filter((r) => r.recogidas === null);
+export const recoleccionesPasadas = () =>
+  recolecciones.filter((r) => r.recogidas !== null || r.resultado === "sin-piezas");
+export const recoleccionesProximas = () =>
+  recolecciones.filter((r) => r.recogidas === null && r.resultado !== "sin-piezas");
 
 /**
  * Cumplimiento por paquetería sobre las que ya pasaron. Ordenado de peor a
@@ -601,6 +680,9 @@ export function cumplimientoRecolecciones(dias = null) {
   const porPaqueteria = {};
   for (const r of recoleccionesPasadas()) {
     if (desde && r.fecha < desde) continue;
+    /* El porcentaje solo cuenta citas CON piezas. Un día sin piezas contado
+       como cita programada mete un cero que no es culpa de la paquetería. */
+    if (r.resultado === "sin-piezas") continue;
     const p = (porPaqueteria[r.paqueteria] ||= { paqueteria: r.paqueteria, programadas: 0, recogidas: 0, citas: 0, fallidas: 0, parciales: 0 });
     p.programadas += r.piezas;
     p.recogidas += r.recogidas;
@@ -637,6 +719,19 @@ export const destinosRed = [
 export const dinero = (n) =>
   n == null ? "—" : n.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
 
+/**
+ * Enumera en español, con la "e" que sustituye a "y" antes de i- o hi-:
+ * "Sobre e interior", no "Sobre y interior". Se nombra, no se cuenta: "2
+ * cajas" no dice cuáles, y cuáles es justo lo que hace falta saber.
+ */
+export const enumerarEs = (nombres) => {
+  const xs = nombres.filter(Boolean);
+  if (xs.length <= 1) return xs[0] ?? "";
+  const ultimo = xs[xs.length - 1];
+  const union = /^(i|hi)(?!e)/i.test(ultimo) ? " e " : " y ";
+  return xs.slice(0, -1).join(", ") + union + ultimo;
+};
+
 /** Con la moneda escrita. En una cifra grande y sola, "$180.00" es ambiguo. */
 export const dineroMXN = (n) => (n == null ? "—" : `${dinero(n)} MXN`);
 
@@ -648,9 +743,27 @@ export const fechaLarga = (iso) =>
 export const fechaCorta = (iso) =>
   new Date(iso + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 
+/** Con el mes escrito. Dentro de una frase corrida, "14 ago 2026" se lee como
+    la abreviatura de una tabla y no como una fecha. */
+export const fechaEnTexto = (iso) =>
+  new Date(iso + "T12:00:00").toLocaleDateString("es-MX",
+    { day: "numeric", month: "long", year: "numeric" });
+
 /** El "hoy" del prototipo. Los datos son fijos, así que la fecha también:
  *  si usáramos el reloj real, mañana todo llevaría un día más esperando. */
 export const HOY = "2026-09-21";
+
+/**
+ * La hora del prototipo. Existe por la misma razón que `HOY`: hay decisiones
+ * que dependen de la hora del día —si el corte para cancelar ya pasó— y con el
+ * reloj real la misma pantalla se comporta distinto por la mañana que por la
+ * tarde, y entonces no se puede discutir en una reunión.
+ *
+ * Elegida después del corte de FedEx (16:00) a propósito: es lo que hace que
+ * el caso "el corte ya pasó" se pueda ver en la recolección de hoy, mientras
+ * la del 23 todavía lo tiene por delante.
+ */
+export const AHORA = "16:30";
 
 export const diasDesde = (iso) =>
   Math.max(0, Math.round((new Date(HOY + "T12:00:00") - new Date(iso + "T12:00:00")) / 86400000));
@@ -677,6 +790,19 @@ export const tienda = {
   canal: "Shopify",
   conectada: true,
 };
+
+/**
+ * Una dirección de entrega completa, escrita y no deducida del destino.
+ *
+ * Deducirla dejaba la colonia en blanco, y entonces todos los pedidos nuevos
+ * salían con el aviso de "Falta la colonia": un aviso que sale en todas las
+ * filas deja de señalar nada. Los campos son los MISMOS que los del origen y
+ * los del formulario de edición, con los mismos nombres.
+ */
+const domicilio = (nombre, apellido, calle, numExt, colonia, ciudad, estado, cp, telefono) => ({
+  nombre, apellido, correo: "", lada: "+52", telefono, compania: "",
+  calle, numExt, numInt: "", cp, colonia, estado, ciudad, referencia: "",
+});
 
 const pedidosBase = [
   { folio: "#1007", fecha: "2026-09-21", total: 10, canal: "Shopify",
@@ -773,6 +899,141 @@ const pedidosBase = [
     cliente: { nombre: "Grupo Aldama", correo: "compras@aldama.mx", iniciales: "GA" },
     destino: "Calz. de Tlalpan 3020, Coyoacán", ciudad: "Ciudad de México, CDMX 04650",
     pago: "Pendiente", envio: null },
+
+  /* ---------------------------------------------------------------
+   * Pedidos con artículos de verdad.
+   *
+   * El resto del ejemplo lleva una línea sintética —"Artículo del pedido",
+   * sin SKU, una pieza— y con eso no se puede enseñar funcionando ninguna
+   * condición de embalaje, ningún veto ni la revisión manual. Estos catorce
+   * traen SKU, nombre y cantidad, que es lo que el canal manda.
+   *
+   * Los que NO disparan cada condición son tan necesarios como los que sí:
+   * una condición que se cumple siempre no se distingue de una que no se
+   * evalúa. Por eso están #1012 con dos piezas, #1017 con tazas pero sin el
+   * ventilador y #1023 con la línea sin SKU.
+   *
+   * `pesoCanal` y `medidasCanal` son DOS CAMPOS y no se ponen juntos, porque
+   * de eso depende cuál de los dos motivos de revisión manual se puede
+   * demostrar. Con los dos, mandan los del pedido y no se evalúa ninguna
+   * regla: el pedido sale de la cadena en el primer paso —solo `#1012`—. Con
+   * el peso solo, la regla sí elige caja y después hay peso que comparar
+   * contra ella: es el único camino por el que el tope se dispara, y lo lleva
+   * `#1014`. Un pedido con veto nunca puede demostrar el tope, porque se queda
+   * sin caja antes de que haya peso que medir.
+   * ------------------------------------------------------------- */
+  { folio: "#1010", fecha: "2026-09-20", total: 189, canal: "Shopify",
+    cliente: { nombre: "Lucía Ferrer", correo: "lucia.ferrer@correo.mx", iniciales: "LF" },
+    destino: "Blvd. Atlixco 320", ciudad: "Puebla, PUE 72190", pago: "Pagado", envio: null,
+    campos: domicilio("Lucía", "Ferrer", "Blvd. Atlixco", "320", "La Paz", "Puebla", "Puebla", "72190", "2223318844"),
+    articulos: [{ nombre: "Pluma de metal grabada", sku: "MON-PLU-01", cantidad: 1, precio: 189 }] },
+
+  { folio: "#1011", fecha: "2026-09-20", total: 2100, canal: "Shopify",
+    cliente: { nombre: "Diego Fuentes", correo: "diego.fuentes@correo.mx", iniciales: "DF" },
+    destino: "Av. Ejército Nacional 612", ciudad: "Ciudad de México, CDMX 11529", pago: "Pagado", envio: null,
+    campos: domicilio("Diego", "Fuentes", "Av. Ejército Nacional", "612", "Ampliación Granada", "Ciudad de México", "Ciudad de México", "11529", "5544019022"),
+    articulos: [{ nombre: "Audífonos inalámbricos", sku: "MON-AUD-BT", cantidad: 1, precio: 2100 }] },
+
+  { folio: "#1012", fecha: "2026-09-19", total: 458, canal: "WooCommerce",
+    cliente: { nombre: "Norma Espinoza", correo: "norma.espinoza@correo.mx", iniciales: "NE" },
+    destino: "Av. Vallarta 1440", ciudad: "Guadalajara, JAL 44160", pago: "Pagado", envio: null,
+    campos: domicilio("Norma", "Espinoza", "Av. Vallarta", "1440", "Americana", "Guadalajara", "Jalisco", "44160", "3312907744"),
+    pesoCanal: 0.9, medidasCanal: { largo: 24, ancho: 18, alto: 12 },
+    articulos: [{ nombre: "Taza de cerámica 360 ml", sku: "MON-TAZ-360", cantidad: 2, precio: 229 }] },
+
+  { folio: "#1013", fecha: "2026-09-19", total: 1047, canal: "Shopify",
+    cliente: { nombre: "Laura Méndez", correo: "laura.mendez@correo.mx", iniciales: "LM" },
+    destino: "Versalles 88", ciudad: "Ciudad de México, CDMX 06600", pago: "Pagado", envio: null,
+    origen: "cdmx",
+    campos: domicilio("Laura", "Méndez", "Versalles", "88", "Juárez", "Ciudad de México", "Ciudad de México", "06600", "5528114455"),
+    articulos: [{ nombre: "Playera negra talla M", sku: "MON-PLY-NEG-M", cantidad: 3, precio: 349 }] },
+
+  /* El canal reportó el peso pero no las medidas: la regla elige caja y el
+     peso del pedido la desborda. Es el segundo motivo de revisión manual, el
+     que sin un pedido así no se podría ver nunca. */
+  { folio: "#1014", fecha: "2026-09-18", total: 4188, canal: "Shopify",
+    cliente: { nombre: "Uniformes del Centro", correo: "compras@uniformesdelcentro.mx", iniciales: "UC" },
+    destino: "Blvd. Adolfo López Mateos 2210", ciudad: "León, GTO 37160", pago: "Pagado", envio: null,
+    campos: domicilio("Ismael", "Durán", "Blvd. Adolfo López Mateos", "2210", "Jardines del Moral", "León", "Guanajuato", "37160", "4777102255"),
+    pesoCanal: 16.8, revisionDesde: "2026-09-18",
+    articulos: [{ nombre: "Playera negra talla M", sku: "MON-PLY-NEG-M", cantidad: 12, precio: 349 }] },
+
+  { folio: "#1015", fecha: "2026-09-18", total: 1290, canal: "Shopify",
+    cliente: { nombre: "Iván Salas", correo: "ivan.salas@correo.mx", iniciales: "IS" },
+    destino: "Av. Ejército Nacional 980", ciudad: "Ciudad de México, CDMX 11529", pago: "Pagado", envio: null,
+    campos: domicilio("Iván", "Salas", "Av. Ejército Nacional", "980", "Ampliación Granada", "Ciudad de México", "Ciudad de México", "11529", "5539227788"),
+    articulos: [{ nombre: 'Ventilador de pedestal 16"', sku: "MON-VEN-16", cantidad: 1, precio: 1290 }] },
+
+  { folio: "#1016", fecha: "2026-09-17", total: 1748, canal: "Shopify",
+    cliente: { nombre: "Casa Bernal", correo: "hola@casabernal.mx", iniciales: "CB" },
+    destino: "Calle 60 318", ciudad: "Mérida, YUC 97050", pago: "Pagado", envio: null,
+    campos: domicilio("Teresa", "Bernal", "Calle 60", "318", "Alcalá Martín", "Mérida", "Yucatán", "97050", "9991440066"),
+    articulos: [
+      { nombre: 'Ventilador de pedestal 16"', sku: "MON-VEN-16", cantidad: 1, precio: 1290 },
+      { nombre: "Taza de cerámica 360 ml", sku: "MON-TAZ-360", cantidad: 2, precio: 229 },
+    ] },
+
+  { folio: "#1017", fecha: "2026-09-17", total: 687, canal: "WooCommerce",
+    cliente: { nombre: "Rocío Ibarra", correo: "rocio.ibarra@correo.mx", iniciales: "RI" },
+    destino: "Versalles 140", ciudad: "Ciudad de México, CDMX 06600", pago: "Pagado", envio: null,
+    campos: domicilio("Rocío", "Ibarra", "Versalles", "140", "Juárez", "Ciudad de México", "Ciudad de México", "06600", "5521330099"),
+    articulos: [{ nombre: "Taza de cerámica 360 ml", sku: "MON-TAZ-360", cantidad: 3, precio: 229 }] },
+
+  /* El par que más importa: el mismo producto vetado, con salida y sin ella.
+     #1018 gana la regla de una pieza, que apunta al Sobre; el veto se lo
+     quita, y la regla por defecto apunta también al Sobre. Sin caja, no se
+     genera solo. #1019 lleva el mismo producto y sale limpio porque gana
+     antes una regla que apunta a otra caja. */
+  { folio: "#1018", fecha: "2026-09-16", total: 1480, canal: "Shopify",
+    cliente: { nombre: "Comercializadora Vega", correo: "compras@vega.mx", iniciales: "CV" },
+    destino: "Av. Ejército Nacional 218", ciudad: "Ciudad de México, CDMX 11529", pago: "Pagado", envio: null,
+    campos: domicilio("Alonso", "Vega", "Av. Ejército Nacional", "218", "Ampliación Granada", "Ciudad de México", "Ciudad de México", "11529", "5511884466"),
+    revisionDesde: "2026-09-16",
+    articulos: [{ nombre: "Juego de 6 copas", sku: "MON-CRI-6", cantidad: 1, precio: 1480 }] },
+
+  { folio: "#1019", fecha: "2026-09-16", total: 3370, canal: "Shopify",
+    cliente: { nombre: "Abastecedora Lomas", correo: "pedidos@abastlomas.mx", iniciales: "AL" },
+    destino: "Av. Constituyentes 715", ciudad: "Querétaro, QRO 76040", pago: "Pagado", envio: null,
+    campos: domicilio("Marisol", "Peña", "Av. Constituyentes", "715", "Villas del Sol", "Querétaro", "Querétaro", "76040", "4421990033"),
+    articulos: [
+      { nombre: "Juego de 6 copas", sku: "MON-CRI-6", cantidad: 1, precio: 1480 },
+      { nombre: "Licuadora 800 W", sku: "MON-LIC-800", cantidad: 1, precio: 1890 },
+    ] },
+
+  { folio: "#1020", fecha: "2026-09-15", total: 2300, canal: "Shopify",
+    cliente: { nombre: "Hotel Miramar", correo: "compras@miramar.mx", iniciales: "HM" },
+    destino: "Colima 240", ciudad: "Ciudad de México, CDMX 06700", pago: "Pagado", envio: null,
+    origen: "cdmx",
+    campos: domicilio("Gerardo", "Nava", "Colima", "240", "Roma Norte", "Ciudad de México", "Ciudad de México", "06700", "5545772211"),
+    articulos: [{ nombre: "Cobertor queen size", sku: "MON-COB-QS", cantidad: 2, precio: 1150 }] },
+
+  /* Dos vetos sobre el mismo SKU, y los dos aplican: «Pedidos de una pieza» le
+     da Sobre y «Pedido caro» le da Caja chica. Ninguna regla apunta a una caja
+     que le quede, y por eso este pedido enseña que un producto puede tener más
+     de una caja prohibida, que el motivo tiene que nombrarlas todas y que el
+     diálogo de borrar una plantilla tiene que contarlas. Sin `pesoCanal` a
+     propósito: cae en el paso de los vetos y nunca llega al del tope. */
+  { folio: "#1021", fecha: "2026-09-14", total: 12400, canal: "Shopify",
+    cliente: { nombre: "Electro Sureste", correo: "ventas@electrosureste.mx", iniciales: "ES" },
+    destino: "Blvd. Manuel Ávila Camacho 1180", ciudad: "Veracruz, VER 94299", pago: "Pagado", envio: null,
+    campos: domicilio("Ramiro", "Ocaña", "Blvd. Manuel Ávila Camacho", "1180", "Costa de Oro", "Veracruz", "Veracruz", "94299", "2291660044"),
+    revisionDesde: "2026-09-14",
+    articulos: [{ nombre: "Pantalla de 55 pulgadas", sku: "MON-TV-55", cantidad: 1, precio: 12400 }] },
+
+  { folio: "#1022", fecha: "2026-09-12", total: 2100, canal: "Mercado Libre",
+    cliente: { nombre: "Bruno Lazcano", correo: "bruno.lazcano@correo.mx", iniciales: "BL" },
+    destino: "Av. Constitución 1420", ciudad: "Monterrey, NL 64000", pago: "Pagado", envio: null,
+    campos: domicilio("Bruno", "Lazcano", "Av. Constitución", "1420", "Centro", "Monterrey", "Nuevo León", "64000", "8118330077"),
+    articulos: [{ nombre: "Audífonos inalámbricos", sku: "MON-AUD-BT", cantidad: 1, precio: 2100 }] },
+
+  /* La línea llega sin SKU. Ni la condición por producto ni el veto se pueden
+     evaluar, y una condición que no se puede evaluar nunca se da por
+     cumplida: la regla se salta con aviso y el pedido pasa a la siguiente. */
+  { folio: "#1023", fecha: "2026-09-10", total: 698, canal: "Amazon",
+    cliente: { nombre: "Paulina Cortés", correo: "paulina.cortes@correo.mx", iniciales: "PC" },
+    destino: "Av. Vallarta 980", ciudad: "Guadalajara, JAL 44160", pago: "Pagado", envio: null,
+    campos: domicilio("Paulina", "Cortés", "Av. Vallarta", "980", "Americana", "Guadalajara", "Jalisco", "44160", "3314880011"),
+    articulos: [{ nombre: "Playera negra talla M", sku: null, cantidad: 2, precio: 349 }] },
 ];
 
 /* -----------------------------------------------------------------
@@ -793,6 +1054,7 @@ const totalesPorFolio = {
   "#10422": 1480, "#10419": 2360, "#10417": 640, "#10415": 3120, "#10413": 890,
   "#10411": 410, "#10409": 1250, "#10407": 760, "#10405": 5400, "#10403": 2180,
   "#10401": 980, "#10399": 3450,
+  "#10431": 720, "#10432": 460, "#10433": 1180, "#10434": 2340,
 };
 
 /**
@@ -884,8 +1146,21 @@ const CLAVE_IMPRESAS = "tc:impresas";
 const leerMapa = (clave) => {
   try { return JSON.parse(sessionStorage.getItem(clave) || "{}"); } catch { return {}; }
 };
+/* Devuelve si de verdad guardó. En modo privado no guarda, y un aviso que dice
+   "Guardado." cuando nada se guardó afirma algo que no pasó: es peor que no
+   tener aviso, porque el comerciante se va convencido de que su cambio existe. */
 const escribirMapa = (clave, valor) => {
-  try { sessionStorage.setItem(clave, JSON.stringify(valor)); } catch { /* modo privado */ }
+  try { sessionStorage.setItem(clave, JSON.stringify(valor)); return true; }
+  catch { return false; }
+};
+
+/** Si el navegador deja escribir. Lo consultan los avisos antes de afirmar. */
+export const seGuarda = () => {
+  try {
+    sessionStorage.setItem("tc:prueba", "1");
+    sessionStorage.removeItem("tc:prueba");
+    return true;
+  } catch { return false; }
 };
 
 /** Deja constancia de una guía recién creada. */
@@ -900,6 +1175,20 @@ export function guardarGuia(folio, envio) {
 for (const [folio, envio] of Object.entries(leerMapa(CLAVE_GUIAS))) {
   const pedido = pedidos.find((x) => x.folio === folio);
   if (pedido && !pedido.envio) pedido.envio = envio;
+}
+
+/**
+ * Borra la constancia de una guía cancelada.
+ *
+ * Solo alcanza a las que se crearon en esta sesión: las que el pedido ya traía
+ * de fábrica son el punto de partida del prototipo y volverían a aparecer al
+ * recargar. Es la misma asimetría que ya tiene `guardarGuia`, que tampoco pisa
+ * las de fábrica.
+ */
+export function olvidarGuia(folio) {
+  const mapa = leerMapa(CLAVE_GUIAS);
+  delete mapa[folio];
+  return escribirMapa(CLAVE_GUIAS, mapa);
 }
 
 /** Qué guías ya se mandaron a imprimir. Reimprimir se permite; a ciegas, no. */
@@ -921,9 +1210,12 @@ export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
  * si cada una tuviera el suyo, tarde o temprano la cifra diría cinco y al
  * hacer clic saldrían cuatro, y entonces no se puede confiar en ninguna.
  *
- * Los tres primeros son trabajo por hacer; los tres siguientes, problemas.
+ * Los dos primeros son trabajo por hacer; los demás, problemas.
  * "Pagados sin guía" excluye los que fallaron y los que esperan corrección
  * porque ésos no se arreglan generando: cada uno tiene su propio camino.
+ *
+ * "Pedidos en revisión manual" se agrega abajo, junto a las reglas de
+ * embalaje, porque su predicado depende de ellas y aquí todavía no existen.
  * ================================================================= */
 
 const necesitaRecoleccion = (p) =>
@@ -1011,19 +1303,402 @@ export const canalesVenta = [
 export const CANALES_DISPONIBLES = ["Mercado Libre", "Amazon", "WooCommerce", "TiendaNube"];
 
 /**
- * Las plataformas por las que se compran las guías. NO son paqueterías: son
- * quien las revende, y confundirlas hacía que Skydropx apareciera al lado de
- * DHL como si fueran lo mismo.
+ * Las cuentas por las que se compran las guías: las directas con cada
+ * paquetería y las de las plataformas que las revenden. `tipo` distingue unas
+ * de otras, porque sin esa marca Skydropx aparecía al lado de DHL como si
+ * fueran lo mismo.
+ *
+ * Las tres cuentas de paquetería ya estaban en `conexiones` pero no aquí, y
+ * esta lista es la que dibuja las tarjetas: DHL, Estafeta y FedEx se veían
+ * conectadas en Inicio y no existían en Paqueterías. Lo que expone cada cuenta
+ * vive dentro de su tarjeta, de modo que sin ellas no tenía dónde ir.
  */
 export const cuentasEnvio = [
-  { id: "t1", nombre: "T1 Envíos", detalle: "Cuenta 128616096",
-    que: "Las guías de todas las paqueterías se compran a través de esta cuenta.",
+  { id: "dhl", tipo: "paqueteria", nombre: "DHL", detalle: "Cuenta 9540213",
+    que: "Las guías de DHL se compran directamente con esta cuenta.",
+    desde: "Conectada el 14 de marzo de 2026",
+    campos: [
+      { et: "Número de cuenta", valor: "9540213" },
+      { et: "Llave de API", valor: "•••• guardada" },
+    ] },
+  { id: "estafeta", tipo: "paqueteria", nombre: "Estafeta", detalle: "Cuenta 0117702",
+    que: "Las guías de Estafeta se compran directamente con esta cuenta.",
+    desde: "Conectada el 14 de marzo de 2026",
+    campos: [
+      { et: "Número de cuenta", valor: "0117702" },
+      { et: "Usuario", valor: "monarca_api" },
+      { et: "Contraseña", valor: "•••• guardada" },
+    ] },
+  { id: "fedex", tipo: "paqueteria", nombre: "FedEx", detalle: "Cuenta 602113448",
+    que: "Las guías de FedEx se compran directamente con esta cuenta.",
+    desde: "Conectada el 28 de abril de 2026",
+    campos: [
+      { et: "Número de cuenta", valor: "602113448" },
+      { et: "Llave de API", valor: "•••• guardada" },
+    ] },
+  { id: "t1", tipo: "plataforma", nombre: "T1 Envíos", detalle: "Cuenta 128616096",
+    que: "Las guías de las paqueterías sin cuenta propia se compran a través de esta.",
     desde: "Conectada el 2 de abril de 2026",
     campos: [
       { et: "Cuenta", valor: "128616096" },
       { et: "Token", valor: "•••• se renueva automáticamente" },
     ] },
 ];
+
+/* =================================================================
+ * La matriz de capacidades.
+ *
+ * Qué expone cada paquetería. UNA FILA POR PAQUETERÍA QUE EL PRODUCTO PUEDE
+ * OFRECER, no por cuenta conectada: el orden de preferencia y `cotizar()`
+ * trabajan con UPS, Paquetexpress, 99minutos y AMPM, que no tienen cuenta, y
+ * con la matriz atada a las cuentas esas cuatro caían en "sin registro" sin
+ * ningún sitio donde resolverlo. Un "sin registro" que no se puede confirmar
+ * es indistinguible de un "no", que es la distinción por la que esto existe.
+ *
+ * Cada celda tiene TRES valores —sí, no y sin registro— y DOS CAPAS:
+ *
+ *   producto  lo que la paquetería expone en general, confirmado con ella
+ *   cuenta    lo que el contrato del comerciante trae, marcado por él
+ *
+ * Gana la de cuenta, porque dos cuentas de la misma paquetería no tienen
+ * contratados los mismos servicios. Cuando las dos existen y difieren, la
+ * pantalla lo dice: esconder una detrás de la otra deja sin explicar por qué
+ * el botón no está donde el comerciante leyó que debía estar.
+ *
+ * "Sin registro" se redacta como hueco del REGISTRO y nunca en primera
+ * persona: `sistema.html` prohíbe que la interfaz converse, y aquí no hace
+ * falta ninguna excepción. La afirmación honesta no es sobre lo que sabemos,
+ * es sobre lo que la matriz tiene guardado, y una celda vacía es un hecho
+ * comprobable. Quien confirma aparece donde le toca, que es la acción.
+ * ================================================================= */
+
+/** Las paqueterías que el producto conoce: las del orden de preferencia y las
+    que salen en `cotizar()`. La matriz tiene una fila por cada una, siempre. */
+export const PAQUETERIAS_DEL_PRODUCTO = [
+  "DHL", "Estafeta", "FedEx", "Paquetexpress", "Redpack",
+  "UPS", "99minutos", "AMPM", "T1 Envíos",
+];
+
+/** Modalidades de guía de retorno. La diferencia la paga el comprador: una
+    exige impresora en casa y la otra no. */
+export const MODALIDADES_RETORNO = {
+  pdf: { etiqueta: "Guía de retorno en PDF",
+         nota: "Se manda al correo del comprador. Tiene que imprimirla." },
+  codigo: { etiqueta: "Código en sucursal",
+            nota: "El comprador recibe un código y en el mostrador le imprimen la guía." },
+  recoleccion: { etiqueta: "Recolección en el domicilio del comprador",
+                 nota: "Se programa una recolección en la dirección de entrega." },
+};
+
+/**
+ * Las nueve filas, en el idioma de quien opera y nunca con la clave del objeto.
+ *
+ * `accion` es la frase con la que se nombra la ausencia, y es una sola para
+ * toda la plataforma: un botón que existe en una pantalla y no en otra para la
+ * misma paquetería sería un producto que se contradice a sí mismo.
+ */
+export const CAPACIDADES_FILAS = [
+  { clave: "cancelaRecoleccion", tipo: "tres",
+    etiqueta: "Cancelar una recolección ya solicitada",
+    accion: "cancela recolecciones desde aquí", corta: "cancela recolecciones",
+    extra: { clave: "corte", etiqueta: "Hora límite para cancelar", tipo: "time" } },
+  { clave: "sumaPiezas", tipo: "tres",
+    etiqueta: "Sumar piezas a una solicitud confirmada",
+    accion: "acepta sumar piezas a una solicitud confirmada" },
+  { clave: "diasAnticipacion", tipo: "numero",
+    etiqueta: "Días de anticipación para programar", unidad: "días" },
+  { clave: "cancelaGuia", tipo: "tres",
+    etiqueta: "Cancelar una guía ya emitida",
+    accion: "cancela guías desde aquí", corta: "cancela guías" },
+  { clave: "guiaRetorno", tipo: "tres",
+    etiqueta: "Emitir guía de retorno",
+    accion: "emite guías de retorno",
+    extra: { clave: "modalidad", etiqueta: "Modalidad", tipo: "modalidad" } },
+  { clave: "caducidadRetorno", tipo: "numero",
+    etiqueta: "Días que vive una guía de retorno sin usar", unidad: "días" },
+  { clave: "intentosNumerados", tipo: "tres",
+    etiqueta: "Reporta el intento de entrega numerado",
+    accion: "reporta el intento de entrega numerado" },
+  { clave: "costoSeguro", tipo: "tres",
+    etiqueta: "Costo del seguro",
+    accion: "asegura envíos desde aquí", corta: "asegura envíos",
+    extra: { clave: "tarifa", etiqueta: "Porcentaje y mínimo", tipo: "tarifa" } },
+  { clave: "divisorVolumetrico", tipo: "numero",
+    etiqueta: "Divisor del peso volumétrico" },
+];
+
+export const VALORES_CAPACIDAD = { si: "Sí", no: "No", "sin-registro": "Sin registro" };
+
+/* Ninguna paquetería emite guías de retorno el día del lanzamiento, y las
+   celdas no dicen todas lo mismo a propósito: si todas dijeran "sí", la mitad
+   de la interfaz de la capa intermedia no se podría ver.
+
+   `producto` en null es un hueco declarado del registro, no una ausencia. */
+export const CAPACIDADES = {
+  "DHL": {
+    cancelaRecoleccion: { producto: { valor: "si", corte: null, fecha: "2026-08-14" } },
+    sumaPiezas: { producto: { valor: "no", fecha: "2026-08-14" } },
+    diasAnticipacion: { producto: { valor: 5, fecha: "2026-08-14" } },
+    /* Las dos capas difieren a propósito: DHL cancela guías en general y esta
+       cuenta no. Es el caso que hace visible la línea de "gana la de cuenta". */
+    cancelaGuia: { producto: { valor: "si", fecha: "2026-08-14" },
+                   cuenta: { valor: "no", fecha: "2026-09-03" } },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: { valor: "si", pct: 1.5, minimo: 35, fecha: "2026-08-14" } },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "Estafeta": {
+    cancelaRecoleccion: { producto: { valor: "no", corte: null, fecha: "2026-07-30" } },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: { valor: 3, fecha: "2026-07-30" } },
+    cancelaGuia: { producto: { valor: "no", fecha: "2026-07-30" } },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: { valor: "no", fecha: "2026-07-30" } },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "FedEx": {
+    cancelaRecoleccion: { producto: { valor: "si", corte: "16:00", fecha: "2026-09-02" } },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: { valor: 5, fecha: "2026-09-02" } },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  /* Sin cuenta conectada y es el ejemplo textual de todo el documento: si su
+     fila no existiera, "Confirmar con Paquetexpress" no tendría a dónde ir. */
+  "Paquetexpress": {
+    cancelaRecoleccion: { producto: null },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: null },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: { valor: "no", modalidad: null, fecha: "2026-08-21" } },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "Redpack": {
+    cancelaRecoleccion: { producto: null },
+    /* La marcó el comerciante sobre su propio contrato y está mal: al intentar
+       sumar piezas, Redpack lo rechaza. El fallo ofrece quitarle el registro
+       ahí mismo, porque un dedazo suyo convertiría la matriz en una fuente de
+       errores permanente. */
+    sumaPiezas: { producto: null, cuenta: { valor: "si", fecha: "2026-09-03" } },
+    diasAnticipacion: { producto: null, cuenta: { valor: 3, fecha: "2026-09-03" } },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "UPS": {
+    cancelaRecoleccion: { producto: null },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: null },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  /* Sin cuenta y con un "no" confirmado: es el caso que demuestra que las dos
+     preguntas son independientes, y que conectar no resuelve la segunda. */
+  "99minutos": {
+    cancelaRecoleccion: { producto: { valor: "no", corte: null, fecha: "2026-08-28" } },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: null },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "AMPM": {
+    cancelaRecoleccion: { producto: null },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: null },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+  "T1 Envíos": {
+    cancelaRecoleccion: { producto: null },
+    sumaPiezas: { producto: null },
+    diasAnticipacion: { producto: null },
+    cancelaGuia: { producto: null },
+    guiaRetorno: { producto: null },
+    caducidadRetorno: { producto: null },
+    intentosNumerados: { producto: null },
+    costoSeguro: { producto: null },
+    divisorVolumetrico: { producto: { valor: 5000 } },
+  },
+};
+
+/* Lo que el comerciante marca en esta sesión. sessionStorage, igual que las
+   guías: al cerrar la pestaña la demostración vuelve a empezar limpia. */
+const CLAVE_CAPACIDADES = "tc:capacidades";
+
+for (const [paqueteria, celdas] of Object.entries(leerMapa(CLAVE_CAPACIDADES))) {
+  if (!CAPACIDADES[paqueteria]) continue;
+  for (const [clave, celda] of Object.entries(celdas)) {
+    CAPACIDADES[paqueteria][clave] = { ...CAPACIDADES[paqueteria][clave], ...celda };
+  }
+}
+
+/**
+ * Deja constancia de lo que el comerciante marcó sobre su propio contrato.
+ *
+ * Escribe SIEMPRE en la capa de cuenta: la de producto se confirma con la
+ * paquetería y no es suya. `cambios` en null quita el registro de cuenta y
+ * devuelve la celda a lo que diga el producto.
+ */
+export function marcarCapacidad(paqueteria, clave, cambios) {
+  const celda = CAPACIDADES[paqueteria]?.[clave] ?? { producto: null };
+  const nueva = { ...celda, cuenta: cambios === null ? null : { ...(celda.cuenta ?? {}), ...cambios } };
+  if (CAPACIDADES[paqueteria]) CAPACIDADES[paqueteria][clave] = nueva;
+  const mapa = leerMapa(CLAVE_CAPACIDADES);
+  mapa[paqueteria] = { ...(mapa[paqueteria] || {}), [clave]: nueva };
+  escribirMapa(CLAVE_CAPACIDADES, mapa);
+  return nueva;
+}
+
+const filaCapacidad = (clave) => CAPACIDADES_FILAS.find((f) => f.clave === clave);
+
+/* Una capa cuenta como registro cuando existe y trae valor. En las de tres
+   valores, "sin-registro" escrito a mano es lo mismo que no tener capa. */
+const capaValida = (capa) =>
+  !!capa && capa.valor != null && capa.valor !== "sin-registro";
+
+/**
+ * La celda resuelta: el valor que manda, de qué capa sale y qué dicen las dos.
+ *
+ * Una paquetería que no está en la matriz devuelve un hueco, nunca un "sí":
+ * inventar lo que no se conoce es justo lo que esto existe para evitar.
+ */
+export const capacidadDe = (paqueteria, clave) => {
+  const celda = CAPACIDADES[paqueteria]?.[clave] ?? {};
+  const fila = filaCapacidad(clave);
+  const producto = capaValida(celda.producto) ? celda.producto : null;
+  const cuenta = capaValida(celda.cuenta) ? celda.cuenta : null;
+  const manda = cuenta ?? producto;
+  return {
+    ...(manda ?? {}),
+    valor: manda?.valor ?? (fila?.tipo === "numero" ? null : "sin-registro"),
+    fuente: cuenta ? "cuenta" : producto ? "producto" : null,
+    producto, cuenta,
+    /* Solo difieren cuando las DOS existen y no coinciden: una capa de cuenta
+       sobre un producto en blanco no contradice nada. */
+    difieren: !!(producto && cuenta && producto.valor !== cuenta.valor),
+  };
+};
+
+/** La única pregunta que decide si una acción se dibuja. */
+export const ofrece = (paqueteria, clave) => capacidadDe(paqueteria, clave).valor === "si";
+
+/** Sin registro: ninguna de las dos capas tiene valor. */
+export const sinRegistro = (paqueteria, clave) => !capacidadDe(paqueteria, clave).fuente;
+
+/** Tres frases distintas porque significan tres cosas distintas. */
+export const procedenciaDe = (paqueteria, clave) => {
+  const c = capacidadDe(paqueteria, clave);
+  if (c.fuente === "producto") return `Confirmado con ${paqueteria} el ${fechaEnTexto(c.fecha)}.`;
+  if (c.fuente === "cuenta") return `Lo marcaste tú el ${fechaEnTexto(c.fecha)}, sobre tu cuenta.`;
+  return "Sin registro.";
+};
+
+/** Por qué el control no dice lo que la paquetería expone en general. */
+export const porQueDifiere = (paqueteria, clave) => {
+  const c = capacidadDe(paqueteria, clave);
+  if (!c.difieren) return null;
+  /* Sin el "desde aquí" de la frase de ausencia: ahí se habla de lo que la
+     pantalla ofrece, y aquí de lo que la paquetería hace en general. */
+  const fila = filaCapacidad(clave);
+  const accion = fila?.corta ?? fila?.accion ?? "expone esta acción";
+  return c.producto.valor === "si"
+    ? `${paqueteria} en general sí ${accion}. En tu cuenta no, y eso es lo que manda.`
+    : `${paqueteria} en general no ${accion}. En tu cuenta sí, y eso es lo que manda.`;
+};
+
+/**
+ * Cómo se nombra que la acción no esté. Las dos ausencias no se nombran igual:
+ * "no lo hace" cierra el tema y "sin registro" es una llamada que el
+ * comerciante puede hacer.
+ */
+export const nombrarAusencia = (paqueteria, clave) => {
+  const accion = filaCapacidad(clave)?.accion ?? "expone esta acción";
+  return capacidadDe(paqueteria, clave).valor === "no"
+    ? `${paqueteria} no ${accion}`
+    : `Sin registro de si ${paqueteria} ${accion}`;
+};
+
+/** Lo que se lee en la cabeza de la ficha, sin abrir nada. */
+export const resumenCapacidades = (paqueteria) => {
+  const total = CAPACIDADES_FILAS.length;
+  const faltan = CAPACIDADES_FILAS.filter((f) => sinRegistro(paqueteria, f.clave)).length;
+  if (!faltan) return `Las ${total} capacidades tienen registro.`;
+  return `${faltan} de ${total} capacidades sin registro.`;
+};
+
+/** El divisor de esa paquetería, o el que se ha visto funcionar mientras no
+    haya registro. Se pide por paquetería y no una fija: el día que una difiera,
+    una cifra calculada con la de otra es una cifra de otra. */
+export const divisorDe = (paqueteria) =>
+  capacidadDe(paqueteria, "divisorVolumetrico").valor ?? FACTOR_VOLUMETRICO;
+
+/**
+ * Lo que cuesta asegurar, o por qué no se puede decir.
+ *
+ * Una casilla que cuesta dinero sin decir cuánto tiene el mismo defecto que una
+ * guía sin precio, y callar la cifra no la hace menos cara.
+ */
+export function costoSeguroDe(paqueteria, valorDeclarado = 0) {
+  const c = capacidadDe(paqueteria, "costoSeguro");
+  if (c.valor !== "si") return { valor: c.valor, importe: null, pct: null, minimo: null };
+  const pct = c.pct ?? 0;
+  const minimo = c.minimo ?? 0;
+  return {
+    valor: "si", pct, minimo,
+    importe: Math.max(minimo, Math.round(valorDeclarado * (pct / 100) * 100) / 100),
+  };
+}
+
+/**
+ * Las paqueterías que el producto ofrece sin cuenta conectada.
+ *
+ * Existen como lista propia porque la pantalla contesta DOS preguntas y se
+ * tienen que leer como dos: si hay cuenta, y qué expone la paquetería. Son
+ * independientes —hay paqueterías con cuenta que no exponen nada y sin cuenta
+ * que exponen todo—, y juntarlas hace creer que conectar resuelve lo segundo.
+ *
+ * Llevan nombre y teléfono y nada más: sin cuenta no hay credenciales que
+ * plegar, pero sí hay capacidades que registrar, y el teléfono es lo que cita
+ * cada instrucción.
+ */
+export const paqueteriasSinCuenta = PAQUETERIAS_DEL_PRODUCTO
+  .filter((n) => !cuentasEnvio.some((c) => c.nombre === n))
+  .map((nombre) => ({
+    id: nombre.toLowerCase().replace(/[^a-z0-9]/g, ""),
+    nombre,
+    telefono: telefonoDe(nombre),
+  }));
+
+/** Si esa paquetería tiene cuenta conectada. Sin cuenta se puede ordenar y
+    cotizar, pero nunca puede salir elegida: no hay con qué comprar la guía. */
+export const tieneCuenta = (paqueteria) =>
+  cuentasEnvio.some((c) => c.nombre === paqueteria);
 
 const CLAVE_CAIDA = "tc:conexion-caida";
 
@@ -1304,7 +1979,10 @@ function detalleGenerico(p) {
     formaPago: p.pago === "Pagado" ? "Tarjeta de crédito" : "Pendiente",
     pagoOriginal: p.pago === "Pagado" ? "paid" : "pending",
     pedidosPrevios: 0, gastadoPrevio: 0,
-    articulos: [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }],
+    /* La línea sintética es el relleno de los pedidos viejos del ejemplo, no
+       un valor por omisión deseable: sobre ella no se puede evaluar ninguna
+       condición por producto. Cuando el pedido trae sus líneas, mandan ellas. */
+    articulos: p.articulos ?? [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }],
     direccion,
     /* Si el pedido dice que su dirección no está lista, el panel tiene que
        enseñar qué se propone cambiar. Sin esto, la lista mandaba a un panel
@@ -1321,6 +1999,36 @@ function detalleGenerico(p) {
     pesoEstimado: 1.5,
   };
 }
+
+/** Las piezas del pedido: unidades, no líneas. Tres del mismo artículo ocupan
+    el mismo espacio que tres artículos distintos. */
+export const piezasDe = (articulos = []) => articulos.reduce((n, a) => n + a.cantidad, 0);
+
+/**
+ * El nombre del producto tal como vino en la última línea de pedido que lo
+ * trajo. No hay catálogo, así que es lo único que hay para que un SKU
+ * tecleado se pueda leer como un producto y no como una clave.
+ */
+export const nombreDeSKU = (sku) => {
+  if (!sku) return null;
+  const vistos = pedidos
+    .filter((p) => p.articulos?.some((a) => a.sku === sku))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const linea = vistos[0]?.articulos.find((a) => a.sku === sku);
+  return linea ? { nombre: linea.nombre, pedidos: vistos.length } : null;
+};
+
+/** Los SKU que de verdad aparecieron en los pedidos del periodo. Es contra
+    esto —y no contra un catálogo que no existe— que se revisa un SKU tecleado. */
+export const skusVistos = (dias = 30) => {
+  const desde = menosDias(HOY, dias);
+  const set = new Set();
+  for (const p of pedidos) {
+    if (p.fecha < desde) continue;
+    for (const a of p.articulos ?? []) if (a.sku) set.add(a.sku);
+  }
+  return [...set].sort();
+};
 
 /** El detalle completo de un pedido, listo para pintar. */
 export const detalleDe = (folio) => {
@@ -1449,6 +2157,24 @@ export const precioDe = (paqueteria, peso) => {
   return t ? Math.round((t.base + peso * 31) * 100) / 100 : null;
 };
 
+/**
+ * La tarifa de UNA paquetería, con su servicio y su plazo.
+ *
+ * `cotizar` recorta a las cuatro más baratas, y la que propone el orden de
+ * preferencia puede no estar entre ellas: sin esto, la lista de tarifas
+ * escondía justo la opción que el sistema propone, y entonces el radio que
+ * llega marcado no existía en la lista.
+ */
+export const tarifaDe = (paqueteria, peso) => {
+  const t = TARIFAS[paqueteria];
+  if (!t) return null;
+  return {
+    paqueteria, servicio: t.servicio, dias: t.dias,
+    precio: precioDe(paqueteria, peso),
+    aTiempo: desempeno.find((d) => d.paqueteria === paqueteria)?.aTiempo ?? null,
+  };
+};
+
 export const cotizar = (peso) =>
   Object.entries(TARIFAS)
     .map(([paqueteria, t]) => ({
@@ -1522,12 +2248,48 @@ const DESENLACES = {
     reintentable: false }),
 };
 
+/**
+ * Lo que cambió en el canal mientras el panel estaba abierto.
+ *
+ * Fijo por folio, como los desenlaces del lote: un prototipo donde el cambio
+ * aparece unas veces sí y otras no no se puede discutir en una reunión. Es lo
+ * que comprueba la emisión antes de mandar una etiqueta a una dirección que
+ * el comprador ya corrigió.
+ */
+export const CAMBIOS_EN_CANAL = {
+  "#1017": [
+    { campo: "Dirección", antes: "Juárez", despues: "Condesa" },
+    { campo: "Artículos", antes: "3 piezas", despues: "4 piezas" },
+  ],
+};
+
+/**
+ * La guía que una regla generó mientras el panel estaba abierto.
+ *
+ * Es el caso que de verdad cuesta dinero —dos guías son dos paquetes y dos
+ * cobros—, y sin un pedido así en los datos la comprobación al confirmar no se
+ * puede enseñar funcionando.
+ */
+export const GENERADA_MIENTRAS_TANTO = {
+  "#1013": { guia: "TC71013", paqueteria: "Estafeta", servicio: "Terrestre",
+             costo: 143.00, hora: "11:04", regla: "Generar la guía al marcarse el pago" },
+};
+
 /** Motivo por el que un pedido NO entra al lote, o null si sí entra. */
 export const motivoOmision = (p) => {
   if (p.envio) return "Ya tiene guía";
   if (p.pago !== "Pagado") return "No está pagado";
   // REQ-03: la validación local va antes de gastar una llamada al carrier.
   if (p.error || p.requiereCorreccion) return "Requiere corrección de dirección";
+  /* Sin caja no hay medidas que declarar, y el lote no es sitio para elegirla:
+     un lote donde se puede cambiar la caja de cada pedido es la pantalla de
+     detalle otra vez, dibujada peor y sin sitio para el porqué. */
+  const caja = embalajeDe(p.folio);
+  if (caja?.revision) {
+    return caja.revision.clave === "veto"
+      ? "Ninguna caja quedó disponible"
+      : "El pedido no cabe en su caja";
+  }
   return null;
 };
 
@@ -1548,3 +2310,998 @@ export const simularGeneracion = (p, peso, intento = 1) => {
     guia: "TC" + String(70000 + Number(p.folio.replace(/\D/g, ""))),
   };
 };
+
+/* =================================================================
+ * Reglas de embalaje.
+ *
+ * Cuando la guía se genera sola, alguien tiene que decir en qué caja va. Una
+ * sola plantilla para todo cuesta dinero en las dos direcciones: con la caja
+ * chica para todo, los pedidos grandes salen con medidas falsas y la
+ * paquetería cobra la diferencia al facturar; con la mediana para todo, cada
+ * pedido de un artículo paga volumen que no ocupa.
+ *
+ * La gramática es una condición y un embalaje. Las condiciones dentro de una
+ * regla se unen con Y, nunca con O: para una alternativa se escribe otra
+ * regla, porque nadie que empaca cajas debe tener que pensar en paréntesis.
+ * Las reglas están ordenadas y gana la primera que se cumple —sin puntajes y
+ * sin especificidad calculada—, porque una regla que no se puede explicar a
+ * las siete de la mañana no se puede corregir.
+ * ================================================================= */
+
+/** Dónde entrega. `local` es el mismo estado del que sale el paquete: el
+    esfuerzo de embalaje de una entrega en la ciudad no es el de un foráneo. */
+export const DESTINOS = { local: "Local", foraneo: "Foráneo", extendida: "Zona extendida" };
+
+/* La sigla con la que el canal escribe el estado en el destino. Está escrita y
+   no deducida porque "Ciudad de México" no empieza por CDMX y cualquier regla
+   de tres letras la daba por foránea desde su propia bodega. */
+const SIGLA_ESTADO = {
+  "Puebla": "PUE", "Ciudad de México": "CDMX", "Jalisco": "JAL", "Nuevo León": "NL",
+  "Guanajuato": "GTO", "Querétaro": "QRO", "Yucatán": "YUC", "Veracruz": "VER",
+  "Quintana Roo": "QROO", "Coahuila": "COAH", "Baja California": "BC", "México": "MEX",
+};
+
+/* Los códigos postales en los que ya nos cobraron zona extendida. No es la
+   lista de la paquetería —esa no la tenemos— sino la nuestra, y por eso es
+   corta: se alimenta de las facturas, no de un catálogo. */
+const ZONAS_EXTENDIDAS = ["29320", "77500", "25230"];
+
+export function destinoDe(pedido) {
+  const cp = (String(pedido.ciudad || "").match(/\b(\d{5})\b/) || [])[1] || pedido.campos?.cp || "";
+  if (ZONAS_EXTENDIDAS.includes(cp)) return "extendida";
+  const sigla = (String(pedido.ciudad || "").split(",")[1] || "").trim().replace(/\s*\d{5}$/, "");
+  const casa = origenes.find((o) => o.id === pedido.origen) ?? origenPredeterminado();
+  return casa && sigla && sigla === SIGLA_ESTADO[casa.campos.estado] ? "local" : "foraneo";
+}
+
+/**
+ * Las condiciones que se pueden escribir, y de qué depende cada una.
+ *
+ * Las de cantidad, costo, canal y destino se evalúan con lo que el pedido ya
+ * trae. La de producto necesita que la línea traiga SKU, que es cosa del
+ * canal y no de un catálogo nuestro. La de peso necesita un catálogo con peso
+ * por SKU, que es el único dato que no existe en ninguna parte del sistema:
+ * va visible y apagada, porque lo que falta también se ve.
+ */
+export const CONDICIONES_EMBALAJE = [
+  { clave: "cantidad", etiqueta: "Cantidad de productos",
+    ayuda: "Cuenta piezas, no líneas del pedido." },
+  { clave: "costo", etiqueta: "Costo del pedido", ayuda: "" },
+  { clave: "contiene", etiqueta: "Contiene un producto",
+    ayuda: "El SKU tal como lo manda tu canal en la línea del pedido. Sirve para decir " +
+           "«el producto grande solo» o «el producto grande acompañado»." },
+  { clave: "canal", etiqueta: "Canal de venta",
+    ayuda: "Mercado Libre y Amazon tienen requisitos de empaque propios." },
+  { clave: "destino", etiqueta: "Destino", ayuda: "" },
+  { clave: "peso", etiqueta: "Peso del pedido", fuera: true,
+    ayuda: "Hace falta un catálogo con el peso por SKU. Tus canales reportan el SKU, " +
+           "pero no el peso. No entra en esta versión." },
+];
+
+/**
+ * El orden es la regla. La última es la de por defecto: su condición está
+ * vacía, siempre se cumple, y no se puede borrar ni mover, de modo que ningún
+ * pedido se queda sin caja por falta de cobertura.
+ *
+ * Que la de por defecto apunte al Sobre y no a una caja es deliberado: es lo
+ * que hace posible que un veto deje a un pedido sin ninguna caja, que es el
+ * caso que decide el diseño entero de la revisión manual.
+ */
+export const reglasEmbalaje = [
+  /* Las de producto arriba y las genéricas abajo, y no al revés: gana la
+     primera que se cumple, así que una condición específica colocada debajo de
+     una general no puede ganar jamás. Con «Pedidos de una pieza» encima,
+     «Ventilador solo» nunca sale y el ventilador viaja en sobre; y con «Pedido
+     caro» encima de «Cristalería acompañada», las copas acaban en la caja que
+     el motivo de esa misma regla dice que las rompió tres veces. */
+  { id: "r-ventilador-solo", nombre: "Ventilador solo", plantilla: "caja-mediana",
+    condiciones: { contiene: { sku: "MON-VEN-16", de: 0, a: 0 } },
+    porque: "El ventilador solo cabe de canto en la mediana y no necesita más hueco." },
+
+  { id: "r-ventilador-acompanado", nombre: "Ventilador acompañado", plantilla: "caja-grande",
+    condiciones: { contiene: { sku: "MON-VEN-16", de: 1, a: 5 } },
+    porque: "Con el ventilador dentro, lo que lo acompañe necesita la caja grande." },
+
+  { id: "r-cristaleria", nombre: "Cristalería acompañada", plantilla: "caja-mediana",
+    condiciones: { contiene: { sku: "MON-CRI-6", de: 1, a: 5 } },
+    porque: "Las copas necesitan relleno alrededor. En una caja chica se rompieron tres veces." },
+
+  { id: "r-una-pieza", nombre: "Pedidos de una pieza", plantilla: "sobre",
+    condiciones: { cantidad: { de: 1, a: 1 } },
+    porque: "Una pieza cabe en sobre y no paga volumen." },
+
+  { id: "r-caro", nombre: "Pedido caro", plantilla: "caja-chica",
+    condiciones: { costo: { de: 2000, a: null } },
+    porque: "Arriba de dos mil pesos va en caja con relleno aunque quepa en un sobre." },
+
+  /* Nunca gana: «Pedidos de una pieza» ya cubre sus condiciones y está más
+     arriba. Se queda en el ejemplo porque una regla que no gana nunca es un
+     defecto real que el comerciante merece ver, y no se puede enseñar sin una. */
+  { id: "r-una-pieza-local", nombre: "Una pieza a entrega local", plantilla: "caja-chica",
+    condiciones: { cantidad: { de: 1, a: 1 }, destino: ["local"] },
+    porque: "En entrega local la caja vuelve y no importa que abulte." },
+
+  /* Desactivada: no participa en el orden, y el estado se ve en la fila. Su
+     SKU tampoco aparece en ningún pedido reciente, de modo que enseña las dos
+     cosas a la vez. La regla no se desactiva sola por eso: el SKU puede volver. */
+  { id: "r-ventilador-repuesto", nombre: "Ventilador de repuesto", plantilla: "caja-grande",
+    activa: false,
+    condiciones: { contiene: { sku: "MON-VEN-61", de: 0, a: 5 } },
+    porque: "Misma caja que el ventilador nuevo." },
+
+  { id: "defecto", nombre: "Por defecto", plantilla: "sobre", defecto: true,
+    condiciones: {},
+    porque: "Cualquier pedido que no haya ganado arriba." },
+];
+
+/**
+ * Los vetos. No asignan caja: descartan candidatas, y por eso son una lista
+ * aparte y no una fila más del orden. Una fila con número de puesto que no
+ * asigna nada hace que el número mienta.
+ *
+ * Una fila es un par de producto y caja prohibida, de modo que un mismo SKU
+ * puede tener más de una, y borrar una plantilla puede contarlas.
+ */
+export const vetosEmbalaje = [
+  { id: "v-copas-sobre", sku: "MON-CRI-6", plantilla: "sobre",
+    porque: "Seis copas no van en un sobre." },
+  { id: "v-tv-sobre", sku: "MON-TV-55", plantilla: "sobre",
+    porque: "La pantalla no entra." },
+  { id: "v-tv-chica", sku: "MON-TV-55", plantilla: "caja-chica",
+    porque: "La pantalla no entra." },
+];
+
+/**
+ * Lo que cada regla ha cobrado, sobre lo que ya ocurrió. Es histórico y no se
+ * calcula en pantalla: un probador que corre sobre datos de ejemplo enseña un
+ * resultado que nadie puede comprobar.
+ *
+ * Las cifras van a la ESCALA del prototipo. Un pie que dice 214 guías en una
+ * pantalla de 40 pedidos se contradice a la vista, y el aviso general de datos
+ * de ejemplo no salva dos números que se pelean dentro de la misma tarjeta.
+ * Suman 39, y la de por defecto sale al 18 %.
+ *
+ * `alternativa` solo existe donde de verdad hay una caja más chica en la que
+ * esas guías habrían cabido. Sin ella no se sugiere nada: una sugerencia vale
+ * lo que ahorra.
+ */
+export const efectoEmbalaje = {
+  "r-ventilador-solo": { guias: 2, porVolumen: 0, diferencia: 0, alternativa: null },
+  "r-ventilador-acompanado": { guias: 1, porVolumen: 1, diferencia: 96, alternativa: null },
+  "r-cristaleria": { guias: 9, porVolumen: 4, diferencia: 612,
+                     alternativa: { plantilla: "caja-chica", ahorro: 188 } },
+  "r-una-pieza": { guias: 14, porVolumen: 0, diferencia: 0, alternativa: null },
+  "r-caro": { guias: 6, porVolumen: 3, diferencia: 410,
+              alternativa: { plantilla: "sobre", ahorro: 150 } },
+  "r-una-pieza-local": { guias: 0, porVolumen: 0, diferencia: 0, alternativa: null },
+  "r-ventilador-repuesto": { guias: 0, porVolumen: 0, diferencia: 0, alternativa: null },
+  "defecto": { guias: 7, porVolumen: 2, diferencia: 208, alternativa: null },
+};
+
+export const guiasConReglas = () =>
+  Object.values(efectoEmbalaje).reduce((n, e) => n + e.guias, 0);
+
+/** Qué tan mal cubierta está la operación. Si más de la mitad de los pedidos
+    cae al final de la lista, las reglas de arriba no sirven. */
+export function cobroDefecto() {
+  const total = guiasConReglas();
+  const guias = efectoEmbalaje.defecto.guias;
+  const pct = total ? Math.round((guias / total) * 100) : 0;
+  return { guias, total, pct, tono: pct >= 50 ? "mal" : pct >= 30 ? "aviso" : "neutra" };
+}
+
+/** Cuánto tiene que pesar un pedido, respecto de su caja, para no generarse
+    solo. Un pedido que no cabe en su caja se paga dos veces. */
+export const embalaje = { factorRevision: 3 };
+
+/* =================================================================
+ * Lo que el comerciante cambia en la zona de embalaje.
+ *
+ * La demostración entera de esta función es cambiar una regla y ver cambiar la
+ * caja de un pedido, y eso exige cruzar de Configuración a Pedidos. Sin
+ * guardar, al llegar a Pedidos la regla ya había vuelto a ser la de antes y no
+ * había nada que enseñar.
+ *
+ * sessionStorage y no localStorage, igual que las guías y que la matriz: al
+ * cerrar la pestaña el prototipo vuelve a su estado inicial y la siguiente
+ * demostración empieza limpia.
+ * ================================================================= */
+const CLAVE_EMBALAJE = "tc:embalaje";
+
+const embalajeGuardado = leerMapa(CLAVE_EMBALAJE);
+if (Array.isArray(embalajeGuardado.reglas) && embalajeGuardado.reglas.length) {
+  reglasEmbalaje.splice(0, reglasEmbalaje.length, ...embalajeGuardado.reglas);
+}
+if (Array.isArray(embalajeGuardado.vetos)) {
+  vetosEmbalaje.splice(0, vetosEmbalaje.length, ...embalajeGuardado.vetos);
+}
+if (embalajeGuardado.factorRevision) embalaje.factorRevision = embalajeGuardado.factorRevision;
+
+/** Deja constancia del orden, las reglas, los vetos y el tope. Devuelve si de
+    verdad guardó, para que el aviso no afirme lo que no pasó. */
+export function guardarEmbalaje() {
+  return escribirMapa(CLAVE_EMBALAJE, {
+    reglas: reglasEmbalaje,
+    vetos: vetosEmbalaje,
+    factorRevision: embalaje.factorRevision,
+  });
+}
+
+/** Cuántas piezas del pedido NO son ese SKU. Es la segunda mitad de "el
+    producto grande solo" o "el producto grande acompañado". */
+const otrasPiezas = (articulos, sku) =>
+  piezasDe(articulos.filter((a) => a.sku !== sku));
+
+/**
+ * Lo que una regla mira de un pedido.
+ *
+ * Los pedidos viejos del ejemplo no traen líneas, y su línea sintética no
+ * lleva SKU: sobre ellos las condiciones por producto no se pueden evaluar, y
+ * eso es un hecho del pedido, no un caso especial que valga la pena esconder.
+ */
+const contextoDe = (p) => {
+  const articulos = p.articulos ?? [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }];
+  return {
+    articulos,
+    piezas: piezasDe(articulos),
+    total: p.total,
+    canal: p.canal,
+    destino: destinoDe(p),
+    /* Sin SKU en la línea no se puede decir si el pedido contiene el producto,
+       y tampoco si le toca un veto. Lo que no se puede evaluar no se cumple. */
+    sinSKU: articulos.some((a) => !a.sku),
+  };
+};
+
+/**
+ * Si el pedido cumple una regla.
+ *
+ * Una condición que no se puede evaluar NUNCA se da por cumplida, y se dice:
+ * un silencio aquí es una regla que no gana y nadie sabe por qué.
+ */
+function cumpleRegla(regla, ctx) {
+  const c = regla.condiciones ?? {};
+  let sinEvaluar = null;
+
+  if (c.cantidad) {
+    if (ctx.piezas < c.cantidad.de) return { ok: false, sinEvaluar };
+    if (c.cantidad.a != null && ctx.piezas > c.cantidad.a) return { ok: false, sinEvaluar };
+  }
+  if (c.costo) {
+    if (ctx.total < c.costo.de) return { ok: false, sinEvaluar };
+    if (c.costo.a != null && ctx.total > c.costo.a) return { ok: false, sinEvaluar };
+  }
+  if (c.canal && !c.canal.includes(ctx.canal)) return { ok: false, sinEvaluar };
+  if (c.destino && !c.destino.includes(ctx.destino)) return { ok: false, sinEvaluar };
+
+  if (c.contiene) {
+    if (ctx.sinSKU) return { ok: false, sinEvaluar: "contiene" };
+    if (!ctx.articulos.some((a) => a.sku === c.contiene.sku)) return { ok: false, sinEvaluar };
+    const otras = otrasPiezas(ctx.articulos, c.contiene.sku);
+    if (otras < c.contiene.de) return { ok: false, sinEvaluar };
+    if (c.contiene.a != null && otras > c.contiene.a) return { ok: false, sinEvaluar };
+  }
+  return { ok: true, sinEvaluar };
+}
+
+/**
+ * Con qué caja sale un pedido, y si no sale, por qué.
+ *
+ * Tres desenlaces y ninguno más: la caja que eligió una regla, las medidas que
+ * mandó el canal —que ganan siempre, porque un dato medido vale más que uno
+ * inferido— y la revisión manual, que tiene exactamente dos motivos.
+ */
+export function embalajeDe(folio) {
+  const p = pedidos.find((x) => x.folio === folio);
+  if (!p) return null;
+  const articulos = p.articulos ?? [];
+
+  if (p.pesoCanal != null && p.medidasCanal) {
+    return {
+      fuente: "canal", plantilla: null, regla: null, vetos: [], sinEvaluar: null, revision: null,
+      peso: p.pesoCanal, pesoFuente: "canal", medidas: p.medidasCanal,
+    };
+  }
+
+  const ctx = contextoDe(p);
+
+  const vetos = ctx.sinSKU ? []
+    : vetosEmbalaje.filter((v) => articulos.some((a) => a.sku === v.sku));
+  const vetadas = new Set(vetos.map((v) => v.plantilla));
+
+  let elegida = null, regla = null, bloqueada = null, sinEvaluar = null;
+  const bloqueadas = [];
+  for (const r of reglasEmbalaje) {
+    /* Desactivada no es lo mismo que borrada: se queda en la lista, con su
+       puesto y su motivo, y no participa en el orden. */
+    if (r.activa === false) continue;
+    const res = cumpleRegla(r, ctx);
+    if (res.sinEvaluar) sinEvaluar = res.sinEvaluar;
+    if (!res.ok) continue;
+    if (vetadas.has(r.plantilla)) { bloqueada = r; bloqueadas.push(r); continue; }
+    elegida = plantillas.find((x) => x.id === r.plantilla) ?? null;
+    regla = r;
+    break;
+  }
+
+  const base = { fuente: elegida ? "regla" : "sin-caja", plantilla: elegida, regla, vetos, sinEvaluar };
+
+  if (!elegida) {
+    /* Se nombran TODAS las cajas que el veto quitó, no solo la última: con una
+       sola, el operador abre el panel esperando una caja bloqueada y se
+       encuentra dos, y el motivo que leyó en la fila deja de explicar lo que
+       ve. El nombre del producto sale de la línea del pedido, que es lo único
+       que hay: no existe catálogo. */
+    const cajas = [...new Set(bloqueadas.map((r) => r.plantilla))]
+      .map((id) => plantillas.find((x) => x.id === id)?.nombre)
+      .filter(Boolean);
+    const veto = vetos.find((v) => v.plantilla === bloqueada?.plantilla);
+    const producto = nombreDeSKU(veto?.sku);
+    const quien = bloqueada?.defecto ? "la regla por defecto" : `«${bloqueada?.nombre}»`;
+    return {
+      ...base, peso: null, pesoFuente: null, medidas: null,
+      revision: {
+        clave: "veto",
+        texto: cajas.length > 1
+          ? `${producto?.nombre ?? veto?.sku} no puede ir en ${enumerarEs(cajas)}, ` +
+            `y la última que quedaba era la caja de ${quien}.`
+          : `${producto?.nombre ?? veto?.sku} no puede ir en ${cajas[0]}, y ${cajas[0]} ` +
+            `es la caja de ${quien}.`,
+        veto, cajas,
+      },
+    };
+  }
+
+  const peso = p.pesoCanal ?? elegida.peso;
+  const tope = elegida.peso * embalaje.factorRevision;
+  const desbordado = p.pesoCanal != null && p.pesoCanal > tope;
+
+  return {
+    ...base,
+    peso, pesoFuente: p.pesoCanal != null ? "canal" : "plantilla",
+    medidas: { largo: elegida.largo, ancho: elegida.ancho, alto: elegida.alto },
+    revision: desbordado ? {
+      clave: "peso",
+      texto: `El pedido pesa ${peso} kg y ${elegida.nombre} pesa ${elegida.peso}. ` +
+             `Supera el tope de ${embalaje.factorRevision} veces.`,
+    } : null,
+  };
+}
+
+/**
+ * Dos hechos sobre lo que YA ocurrió, para el que está escribiendo una regla:
+ * cuántos pedidos la cumplen y a cuántos de ésos los toma antes otra que está
+ * más arriba. No es un simulador: un probador que corre sobre datos de ejemplo
+ * enseña un resultado que nadie puede comprobar.
+ */
+export function hechosDeRegla(condiciones, { excluir = null, dias = 30 } = {}) {
+  const desde = menosDias(HOY, dias);
+  const recientes = pedidos.filter((p) => p.fecha >= desde);
+  const borrador = { condiciones };
+  const antes = [];
+
+  /* Solo cuentan las reglas que están ARRIBA: una que está debajo no le quita
+     nada, y contarla convertiría el hecho en un reproche falso. Una regla que
+     todavía no existe se escribe al final, así que todas están arriba. */
+  const limite = excluir
+    ? reglasEmbalaje.findIndex((r) => r.id === excluir)
+    : reglasEmbalaje.length;
+
+  const cumplen = recientes.filter((p) => cumpleRegla(borrador, contextoDe(p)).ok);
+  for (const p of cumplen) {
+    const ctx = contextoDe(p);
+    for (let i = 0; i < limite; i++) {
+      const r = reglasEmbalaje[i];
+      if (r.defecto || r.activa === false || !cumpleRegla(r, ctx).ok) continue;
+      const ya = antes.find((x) => x.regla === r);
+      if (ya) ya.n += 1; else antes.push({ regla: r, puesto: i + 1, n: 1 });
+      break;
+    }
+  }
+  return { total: recientes.length, cumplen: cumplen.length, antes };
+}
+
+/**
+ * Los folios que cumplen unas condiciones, y opcionalmente solo los que otra
+ * regla se lleva antes.
+ *
+ * Es lo que convierte las dos cifras del panel en enlaces. `sistema.html`
+ * prohíbe el simulador porque enseña un resultado que nadie puede comprobar;
+ * un número que se abre y deja la tabla de Pedidos con esos doce delante no
+ * enseña un resultado, enseña el conjunto, y se puede contar a mano.
+ */
+export function foliosQueCumplen(condiciones, { dias = 30, tomadosPor = null } = {}) {
+  const desde = menosDias(HOY, dias);
+  const borrador = { condiciones };
+  return pedidos
+    .filter((p) => p.fecha >= desde)
+    .filter((p) => {
+      const ctx = contextoDe(p);
+      if (!cumpleRegla(borrador, ctx).ok) return false;
+      if (!tomadosPor) return true;
+      for (const r of reglasEmbalaje) {
+        if (r.defecto || r.activa === false) continue;
+        if (!cumpleRegla(r, ctx).ok) continue;
+        return r.id === tomadosPor;
+      }
+      return false;
+    })
+    .map((p) => p.folio);
+}
+
+/** Un pedido al que el sistema no le pudo elegir caja. Sigue siendo suyo el
+    trabajo de elegirla, así que vive en Pedidos y no en una cola nueva. */
+export const enRevisionManual = (p) =>
+  !p.envio && p.pago === "Pagado" && !!embalajeDe(p.folio)?.revision;
+
+PENDIENTES["revision-manual"] = {
+  grupo: "problema", etiqueta: "Pedidos en revisión manual",
+  pasa: enRevisionManual,
+};
+
+/* Se cuenta desde que la regla falló, no desde que entró el pedido: con lo
+   segundo, un pedido de hace tres días aparecería como urgente en su primer
+   minuto en la cola. Es el mismo criterio que ya rige para los detenidos. */
+FECHA_ANTIGUEDAD["revision-manual"] = (p) => p.revisionDesde || p.fecha;
+
+/**
+ * Por qué el operador se salió de la propuesta. Lista corta y fija, porque un
+ * campo libre no se agrupa y la frecuencia de las excepciones es exactamente
+ * la señal de que hay que reordenar la lista de preferencia.
+ */
+export const motivosCambioPaqueteria = (propuesta) => [
+  { id: "cliente", etiqueta: "El cliente la pidió" },
+  { id: "urgencia", etiqueta: "Urgencia" },
+  { id: "cobertura", etiqueta: `${propuesta ?? "La propuesta"} no tiene cobertura` },
+  { id: "precio", etiqueta: "Precio" },
+];
+
+/* =================================================================
+ * Recolecciones automáticas.
+ *
+ * La unidad de configuración es la pareja ORIGEN × PAQUETERÍA, y nada más,
+ * porque es la misma unidad en la que la paquetería recibe la solicitud: no
+ * existe una que junte un paquete de DHL con uno de FedEx. Cualquier otra
+ * agrupación obligaría a explicar después por qué salieron cuatro solicitudes
+ * cuando se configuró una.
+ *
+ * `via` es un CAMPO de la regla y no una tercera dimensión. Con tres orígenes,
+ * cuatro paqueterías y dos plataformas, una dimensión más daría sesenta filas
+ * que nadie lee. La restricción que eso impone se asume con los ojos abiertos
+ * —una misma pareja no puede pedir directo y por plataforma a la vez— y se
+ * NOMBRA donde duele: las guías que quedan fuera se enseñan con su motivo y su
+ * acción manual, nunca se barren a la solicitud equivocada.
+ * ================================================================= */
+
+/**
+ * Los tres modos. Dos no entran en esta primera versión y aun así se dibujan,
+ * con su razón: esconderlos haría creer que el producto no los contempla.
+ */
+export const MODOS_RECOLECCION = {
+  agenda: {
+    etiqueta: "Agenda",
+    consecuencia: "Se solicita en días fijos de la semana, aunque haya pocas piezas.",
+  },
+  acumulacion: {
+    etiqueta: "Acumulación",
+    consecuencia: "Se solicita al juntar un número de guías sin recolección.",
+    fuera: "No entra en esta versión.",
+  },
+  "ruta-fija": {
+    etiqueta: "Ruta fija",
+    consecuencia: "La paquetería pasa por contrato. No sale ninguna solicitud; la cita " +
+                  "se registra para poder medir el cumplimiento.",
+    fuera: "No entra en esta versión.",
+  },
+};
+
+/* Empieza en lunes: una semana de trabajo no empieza en domingo. */
+export const DIAS_SEMANA = [
+  { id: 1, corto: "L", nombre: "lunes" },
+  { id: 2, corto: "M", nombre: "martes" },
+  { id: 3, corto: "X", nombre: "miércoles" },
+  { id: 4, corto: "J", nombre: "jueves" },
+  { id: 5, corto: "V", nombre: "viernes" },
+  { id: 6, corto: "S", nombre: "sábado" },
+  { id: 0, corto: "D", nombre: "domingo" },
+];
+
+/** Lo máximo que se ha visto funcionar. No es un dato del transportista, y
+    mientras `diasAnticipacion` esté sin registro la ayuda lo dice así. */
+export const ANTICIPACION_VISTA = 5;
+
+export const reglasRecoleccion = [
+  { id: "rr-puebla-dhl", origen: "puebla", paqueteria: "DHL", modo: "agenda", activa: true,
+    dias: [1, 2, 3, 4, 5], ventana: { abre: "10:00", cierra: "14:00" },
+    corte: "08:00", minimo: 0, anticipacion: 1, via: null },
+
+  { id: "rr-puebla-estafeta", origen: "puebla", paqueteria: "Estafeta", modo: "agenda", activa: true,
+    dias: [1, 3, 5], ventana: { abre: "13:00", cierra: "18:00" },
+    corte: "11:00", minimo: 5, anticipacion: 1, via: null },
+
+  /* La que enseña el campo `via` funcionando: pide a Skydropx, y por eso el
+     selector aparece en esta pareja y no en las demás. */
+  { id: "rr-puebla-redpack", origen: "puebla", paqueteria: "Redpack", modo: "agenda", activa: true,
+    dias: [2, 4], ventana: { abre: "11:00", cierra: "17:00" },
+    corte: "09:00", minimo: 0, anticipacion: 1, via: "Skydropx" },
+];
+
+const CLAVE_RECOLECCION = "tc:recoleccion";
+
+const recoleccionGuardada = leerMapa(CLAVE_RECOLECCION);
+if (Array.isArray(recoleccionGuardada.reglas)) {
+  reglasRecoleccion.splice(0, reglasRecoleccion.length, ...recoleccionGuardada.reglas);
+}
+
+/** Devuelve si de verdad guardó, para que el aviso no afirme lo que no pasó. */
+export const guardarReglasRecoleccion = () =>
+  escribirMapa(CLAVE_RECOLECCION, { reglas: reglasRecoleccion });
+
+/** El origen del que sale un pedido. Sin uno propio, el predeterminado: es el
+    que se imprime como remitente cuando nada dice lo contrario. */
+export const origenDe = (p) => p.origen ?? origenPredeterminado()?.id ?? null;
+
+/**
+ * Las guías que esperan camión, filtrables por pareja y por plataforma.
+ *
+ * Sale del MISMO predicado que cuenta la franja de Pedidos y que se manda a la
+ * paquetería. Con dos predicados, un día la pantalla dice nueve y el camión
+ * llega por siete.
+ */
+export function guiasSinRecoleccion({ origen = null, paqueteria = null, via } = {}) {
+  return pedidos.filter((p) => {
+    if (!PENDIENTES["sin-recoleccion"].pasa(p)) return false;
+    if (origen && origenDe(p) !== origen) return false;
+    if (paqueteria && p.envio.paqueteria !== paqueteria) return false;
+    if (via !== undefined && (p.envio.via ?? null) !== via) return false;
+    return true;
+  });
+}
+
+/**
+ * Las parejas que han tenido envíos, con su regla si la tienen.
+ *
+ * Solo las que han tenido: con tres orígenes y cuatro paqueterías son hasta
+ * doce filas, y una lista de doce siempre llenas donde ocho nunca se usan es
+ * una lista que nadie lee.
+ */
+export function parejasRecoleccion({ dias = 30 } = {}) {
+  const llave = (o, p) => `${o}|${p}`;
+  const vistas = new Map();
+
+  const ver = (origen, paqueteria) => {
+    if (!origen || !paqueteria) return;
+    if (!vistas.has(llave(origen, paqueteria))) vistas.set(llave(origen, paqueteria), { origen, paqueteria });
+  };
+
+  for (const p of pedidos) if (p.envio) ver(origenDe(p), p.envio.paqueteria);
+  for (const r of recolecciones) ver(r.origen, r.paqueteria);
+  for (const r of reglasRecoleccion) ver(r.origen, r.paqueteria);
+
+  const desde = menosDias(HOY, dias);
+
+  return [...vistas.values()].map(({ origen, paqueteria }) => {
+    const regla = reglasRecoleccion.find((r) => r.origen === origen && r.paqueteria === paqueteria) ?? null;
+    const citas = recoleccionesPasadas().filter((r) =>
+      r.origen === origen && r.paqueteria === paqueteria &&
+      r.fecha >= desde && r.resultado !== "sin-piezas");
+    const fallidas = citas.filter((r) => r.recogidas === 0);
+
+    const esperando = guiasSinRecoleccion({ origen, paqueteria });
+    /* Las que la regla NO va a tomar por tener otra plataforma. Es la
+       consecuencia aceptada de que `via` sea un campo, y se nombra. */
+    const fuera = regla
+      ? esperando.filter((p) => (p.envio.via ?? null) !== (regla.via ?? null))
+      : [];
+
+    return {
+      origen, paqueteria, regla,
+      citas: citas.length,
+      sinCumplir: fallidas.length,
+      /* Tres seguidas son el material del reclamo, y por eso se muestran con
+         sus fechas en la propia fila. La regla no se desactiva sola: apagarla
+         dejaría al comerciante sin recolección y sin aviso. */
+      rachaFallida: fallidas.slice().sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 3),
+      esperando: esperando.length,
+      fuera,
+    };
+  }).sort((a, b) => a.origen.localeCompare(b.origen) || a.paqueteria.localeCompare(b.paqueteria));
+}
+
+/** Las plataformas por las que esa pareja ha comprado guías. El campo "Se pide
+    a" solo aparece cuando hay alguna: quien no las tiene no lo ve nunca. */
+export const viasDeLaPareja = (origen, paqueteria) => [...new Set(
+  pedidos
+    .filter((p) => p.envio && origenDe(p) === origen && p.envio.paqueteria === paqueteria)
+    .map((p) => p.envio.via)
+    .filter(Boolean))].sort();
+
+/** "Lunes a viernes, 10:00 a 14:00". Los días corridos se dicen como rango:
+    enumerar cinco nombres para decir "entre semana" se lee peor. */
+export function describirRegla(regla) {
+  if (!regla) return null;
+  const ids = DIAS_SEMANA.map((d) => d.id).filter((id) => regla.dias.includes(id));
+  const nombres = ids.map((id) => DIAS_SEMANA.find((d) => d.id === id).nombre);
+  const posiciones = ids.map((id) => DIAS_SEMANA.findIndex((d) => d.id === id));
+  const corridos = posiciones.every((n, i) => i === 0 || n === posiciones[i - 1] + 1);
+  const cuando = !nombres.length ? "Ningún día"
+    : nombres.length === 1 ? nombres[0]
+    : corridos ? `${nombres[0]} a ${nombres[nombres.length - 1]}`
+    : enumerarEs(nombres);
+  return `${cuando[0].toUpperCase()}${cuando.slice(1)}, ${regla.ventana.abre} a ${regla.ventana.cierra}`;
+}
+
+/**
+ * Qué está mal en una regla, en el idioma de quien la escribe.
+ *
+ * La ventana no puede salirse del horario del origen: una recolección
+ * programada cuando la bodega está cerrada es una recolección fallida
+ * programada.
+ */
+export function validarReglaRecoleccion(regla, origen) {
+  const errores = {};
+  const h = origen?.horario;
+  if (!regla.dias?.length) errores.dias = "Elige al menos un día.";
+  if (regla.ventana.abre >= regla.ventana.cierra) {
+    errores.ventana = "La ventana termina antes de empezar.";
+  } else if (h && (regla.ventana.abre < h.abre || regla.ventana.cierra > h.cierra)) {
+    errores.ventana = `La ventana tiene que caber en el horario del origen: ${h.abre} a ${h.cierra}.`;
+  }
+  if (regla.corte >= regla.ventana.abre) {
+    errores.corte = "El corte tiene que ser anterior al inicio de la ventana.";
+  }
+  return errores;
+}
+
+/** El corte que se propone: dos horas antes de la ventana. Es una propuesta
+    nuestra y la ayuda lo dice; la hora de corte real la sabe la paquetería. */
+export function cortePropuesto(abre) {
+  const [h, m] = String(abre).split(":").map(Number);
+  return `${String(Math.max(0, h - 2)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/* Las cancelaciones que se pidieron por teléfono, donde la paquetería no las
+   expone. No es lo mismo que cancelada: la recolección se sigue contando hasta
+   que el rastreo diga otra cosa, y decir otra cosa sería la interfaz mintiendo. */
+const CLAVE_CANCELACIONES = "tc:cancelaciones";
+
+export const cancelacionesSolicitadas = () => Object.keys(leerMapa(CLAVE_CANCELACIONES));
+
+/**
+ * Qué se puede hacer con una recolección ya solicitada. Sale de la matriz, no
+ * de la pantalla: un diálogo que dice "Sí, cancelar" y termina con un estado
+ * que la paquetería no conoce es la interfaz mintiendo.
+ */
+export function comoCancelar(r) {
+  if (cancelacionesSolicitadas().includes(r.folio)) return { clave: "pedida" };
+  const c = capacidadDe(r.paqueteria, "cancelaRecoleccion");
+  if (c.valor !== "si") return { clave: "instruccion" };
+  if (!c.corte) return { clave: "boton" };
+  /* El corte es una hora del día: solo ha pasado en las de hoy. */
+  const pasado = r.fecha < HOY || (r.fecha === HOY && AHORA >= c.corte);
+  return pasado
+    ? { clave: "instruccion", corte: c.corte, vencido: true }
+    : { clave: "boton", corte: c.corte };
+}
+
+export function marcarCancelacionSolicitada(folio) {
+  const mapa = leerMapa(CLAVE_CANCELACIONES);
+  mapa[folio] = HOY;
+  return escribirMapa(CLAVE_CANCELACIONES, mapa);
+}
+
+/* =================================================================
+ * Devoluciones.
+ *
+ * Una devolución es un REGISTRO QUE CUELGA DE UN PEDIDO, con su propio envío
+ * de regreso. No es un pedido nuevo: el folio del pedido es la única llave que
+ * el comerciante, el comprador y la paquetería comparten. Es el mismo cambio
+ * que `datos.js` ya había anticipado —"un pedido partido en dos guías, una
+ * devolución sin pedido nuevo"— y se respeta.
+ *
+ * Los cinco mecanismos se separan porque responden distinto a dos preguntas
+ * —QUIÉN EMITE la guía y QUIÉN LA PAGA—, y esas dos respuestas son las que
+ * deciden si un costo entra o no en la conciliación. Meter una guía que
+ * nosotros nunca emitimos ni pagamos en el mismo cajón que las que sí, mete en
+ * la conciliación un costo que no existe.
+ * ================================================================= */
+
+/** Lista fija, y fija para poder contarlos: un campo libre no se agrupa. */
+export const MOTIVOS_DEVOLUCION = [
+  "Producto equivocado", "Producto dañado", "No era lo esperado",
+  "Entrega fallida", "Arrepentimiento", "Garantía",
+];
+
+/**
+ * Los cinco mecanismos. `emite` y `paga` no son adorno: son las dos preguntas
+ * que los distinguen, y las que deciden qué entra en la conciliación.
+ */
+export const MECANISMOS_DEVOLUCION = {
+  prepagada: { etiqueta: "Guía prepagada", emite: "nosotros", paga: "comerciante" },
+  recoleccion: { etiqueta: "Recolección en domicilio", emite: "nosotros", paga: "comerciante" },
+  comprador: { etiqueta: "Guía del comprador", emite: "comprador", paga: "comprador" },
+  rto: { etiqueta: "Retorno al remitente", emite: "paqueteria", paga: "comerciante" },
+  canal: { etiqueta: "Del canal", emite: "canal", paga: "canal" },
+};
+
+export const RESOLUCIONES_DEVOLUCION = [
+  "Reembolso total", "Reembolso parcial", "Cambio", "Nota de crédito", "Rechazo tras revisión",
+];
+
+export const QUIEN_PAGA_FLETE = ["Tu cuenta", "Se descuenta del reembolso", "El comprador"];
+
+export const ESTADOS_MERCANCIA = ["Completa y en buen estado", "Con faltante", "Dañada"];
+
+/* Los tonos de la devolución viven junto a los demás estados del producto: un
+   estado que se pinta en dos sitios con dos criterios se pinta distinto. */
+Object.assign(tonos, {
+  "Solicitada": "aviso",
+  "Autorizada": "info",
+  "Con guía de retorno": "neutra",
+  "En tránsito de regreso": "info",
+  "Recibida": "aviso",
+  "Cerrada": "ok",
+  "Rechazada": "neutra",
+  "Sin retorno": "ok",
+});
+
+export const devoluciones = [
+  /* 1 · La cola: es la que se autoriza en el recorrido. */
+  { id: "DV-0031", pedido: "#1011", origenDevolucion: "canal", motivo: "Producto dañado",
+    mecanismo: "prepagada", estado: "Solicitada", desde: "2026-09-19",
+    piezas: { regresan: 1, total: 1 }, envioRetorno: null, resolucion: null, recepcion: null },
+
+  /* 2 · El camino normal, todavía sin atascarse. */
+  { id: "DV-0030", pedido: "#1016", origenDevolucion: "comerciante", motivo: "No era lo esperado",
+    mecanismo: "prepagada", estado: "Autorizada", desde: "2026-09-19",
+    piezas: { regresan: 2, total: 3 }, envioRetorno: null, resolucion: null, recepcion: null },
+
+  /* 3 · Autorizada y quieta: el registro que más se atasca no es el que tiene
+     guía, es el que fue autorizado y nunca tuvo ninguna. */
+  { id: "DV-0029", pedido: "#1013", origenDevolucion: "comprador", motivo: "Arrepentimiento",
+    mecanismo: "comprador", estado: "Autorizada", desde: "2026-09-07",
+    piezas: { regresan: 1, total: 3 }, envioRetorno: null, resolucion: null, recepcion: null },
+
+  /* 4 · El quinto mecanismo funcionando. `via` en null y flete en cero: la
+     pagó el comprador, y no es nuestra. */
+  { id: "DV-0028", pedido: "#1017", origenDevolucion: "comprador", motivo: "Producto equivocado",
+    mecanismo: "comprador", estado: "Con guía de retorno", desde: "2026-09-18",
+    piezas: { regresan: 3, total: 3 },
+    envioRetorno: { guia: "794611559001", paqueteria: "Estafeta", via: null, costo: 0,
+                    estado: "Generada", nota: "La pagó el comprador" },
+    resolucion: null, recepcion: null },
+
+  /* 5, 6 y 7 · La misma cosa a tres antigüedades: el tono sale de los días,
+     que es el único dato duro que hay. La guía existe y el paquete no se ha
+     depositado: es el caso más caro de ignorar. */
+  { id: "DV-0027", pedido: "#1010", origenDevolucion: "comerciante", motivo: "Garantía",
+    mecanismo: "prepagada", estado: "Con guía de retorno", desde: "2026-09-18",
+    piezas: { regresan: 1, total: 1 },
+    envioRetorno: { guia: "794611559012", paqueteria: "DHL", via: null, costo: 148,
+                    estado: "Generada" },
+    resolucion: null, recepcion: null },
+
+  { id: "DV-0026", pedido: "#1020", origenDevolucion: "comerciante", motivo: "No era lo esperado",
+    mecanismo: "prepagada", estado: "Con guía de retorno", desde: "2026-09-12",
+    piezas: { regresan: 1, total: 2 },
+    envioRetorno: { guia: "794611559020", paqueteria: "DHL", via: null, costo: 186,
+                    estado: "Generada" },
+    resolucion: null, recepcion: null },
+
+  { id: "DV-0025", pedido: "#0998", origenDevolucion: "comprador", motivo: "Producto dañado",
+    mecanismo: "prepagada", estado: "Con guía de retorno", desde: "2026-08-31",
+    piezas: null,
+    envioRetorno: { guia: "794611559033", paqueteria: "Estafeta", via: "T1 Envíos", costo: 132,
+                    estado: "Generada" },
+    resolucion: null, recepcion: null },
+
+  /* 8 · Creada sola desde el rastreo. Nadie la pidió y la paquetería la cobra:
+     su cargo va al envío original o queda huérfano. */
+  { id: "DV-0024", pedido: "#10409", origenDevolucion: "paqueteria", motivo: "Entrega fallida",
+    mecanismo: "rto", estado: "En tránsito de regreso", desde: "2026-09-19",
+    piezas: null,
+    envioRetorno: { guia: "PX-220914-R", paqueteria: "Paquetexpress", via: null, costo: null,
+                    estado: "En tránsito" },
+    resolucion: null, recepcion: null },
+
+  /* 9 · Llegó menos de lo esperado. Es lo que sostiene la nota de crédito
+     parcial, que es la razón por la que el paso de recibir existe. */
+  { id: "DV-0023", pedido: "#1019", origenDevolucion: "comprador", motivo: "Producto dañado",
+    mecanismo: "prepagada", estado: "Recibida", desde: "2026-09-18",
+    piezas: { regresan: 2, total: 2 },
+    envioRetorno: { guia: "794611559044", paqueteria: "DHL", via: null, costo: 164,
+                    estado: "Entregado" },
+    recepcion: { fecha: "2026-09-18", piezas: 1, estado: "Con faltante",
+                 nota: "Llegó una copa rota y falta la segunda pieza." },
+    resolucion: null },
+
+  /* 10 · Cerrada con los tres costos poblados: la resta completa. */
+  { id: "DV-0022", pedido: "#1015", origenDevolucion: "comprador", motivo: "No era lo esperado",
+    mecanismo: "prepagada", estado: "Cerrada", desde: "2026-09-16",
+    piezas: { regresan: 1, total: 1 },
+    envioRetorno: { guia: "794611559055", paqueteria: "DHL", via: null, costo: 164,
+                    estado: "Entregado" },
+    recepcion: { fecha: "2026-09-15", piezas: 1, estado: "Completa y en buen estado", nota: "" },
+    resolucion: { tipo: "Reembolso parcial", monto: 1240, fecha: "2026-09-16",
+                  quienPago: "Tu cuenta" } },
+
+  /* 11 · La logística es del canal: no la generamos ni la rastreamos con
+     nuestras cuentas, y el registro existe para que el costo del pedido cuadre. */
+  { id: "DV-0021", pedido: "#1022", origenDevolucion: "canal", motivo: "Arrepentimiento",
+    mecanismo: "canal", estado: "Cerrada", desde: "2026-09-14",
+    piezas: { regresan: 1, total: 1 }, envioRetorno: null, recepcion: null,
+    resolucion: { tipo: "Reembolso total", monto: 2100, fecha: "2026-09-14",
+                  quienPago: "El comprador" } },
+
+  /* 12 · El producto no regresa. Frecuente con mercancía de bajo valor, donde
+     el flete de vuelta cuesta más que el producto. Forzar una guía que nadie
+     va a usar ensucia el rastreo con envíos fantasma. */
+  { id: "DV-0020", pedido: "#0995", origenDevolucion: "comprador", motivo: "Producto dañado",
+    mecanismo: "prepagada", estado: "Sin retorno", desde: "2026-09-10",
+    piezas: null, envioRetorno: null, recepcion: null,
+    resolucion: { tipo: "Reembolso total", monto: 2860, fecha: "2026-09-10",
+                  quienPago: "Tu cuenta" } },
+
+  /* Y el paquete que apareció en la bodega sin que nadie capturara nada. Sin
+     amarrarlo a un pedido no se cierra: sin llave, no hay nada que conciliar. */
+  { id: "DV-0019", pedido: null, origenDevolucion: "comprador", motivo: "Producto equivocado",
+    mecanismo: "comprador", estado: "Recibida", desde: "2026-09-20",
+    piezas: null, envioRetorno: null, resolucion: null,
+    recepcion: { fecha: "2026-09-20", piezas: 1, estado: "Completa y en buen estado",
+                 nota: "Llegó sin nota de remisión. No se sabe de qué pedido es." } },
+];
+
+const CLAVE_DEVOLUCIONES = "tc:devoluciones";
+
+/* Lo que se registra en esta sesión, encima de lo de fábrica. */
+for (const [id, cambios] of Object.entries(leerMapa(CLAVE_DEVOLUCIONES))) {
+  const d = devoluciones.find((x) => x.id === id);
+  if (d) Object.assign(d, cambios);
+  else devoluciones.push(cambios);
+}
+
+/** Deja constancia de un cambio. Devuelve si de verdad guardó. */
+export function guardarDevolucion(d) {
+  const mapa = leerMapa(CLAVE_DEVOLUCIONES);
+  mapa[d.id] = d;
+  return escribirMapa(CLAVE_DEVOLUCIONES, mapa);
+}
+
+/**
+ * Los días que lleva sin moverse.
+ *
+ * Se cuenta desde el último hecho real que hay, igual que los detenidos: en
+ * una autorizada es la señal de que el comprador no ha hecho su parte, y en
+ * una con guía sin usar es lo único que se sabe, porque el vencimiento solo
+ * existe si la matriz lo trae.
+ */
+export const diasSinMoverse = (d) => diasDesde(d.desde);
+
+/**
+ * El tono de la pastilla. La antigüedad es nuestra y es un hecho; el
+ * vencimiento de la guía no se inventa.
+ */
+export function tonoDevolucion(d) {
+  const dias = diasSinMoverse(d);
+  if (d.estado === "Autorizada") return dias >= 7 ? "aviso" : "info";
+  if (d.estado === "Con guía de retorno") return dias >= 14 ? "mal" : dias >= 7 ? "aviso" : "neutra";
+  return tonos[d.estado] ?? "neutra";
+}
+
+/** El único dato duro que acompaña al estado. */
+export function notaDevolucion(d) {
+  const dias = diasSinMoverse(d);
+  if (d.estado === "Autorizada") return `${dias} ${dias === 1 ? "día" : "días"} autorizada`;
+  if (d.estado === "Con guía de retorno") return `${dias} ${dias === 1 ? "día" : "días"} sin usar`;
+  if (d.estado === "Recibida") return `Recibida el ${fechaCorta(d.recepcion?.fecha ?? d.desde)}`;
+  if (d.estado === "Cerrada" || d.estado === "Sin retorno") {
+    return `Cerrada el ${fechaCorta(d.resolucion?.fecha ?? d.desde)}`;
+  }
+  return `${dias} ${dias === 1 ? "día" : "días"} en este estado`;
+}
+
+/* Lo que exige una decisión va primero, y dentro de cada grupo lo que lleva
+   más tiempo sin moverse: la misma señal de prioridad que los detenidos. */
+const PRIORIDAD_DEVOLUCION = { "Solicitada": 0, "Recibida": 1 };
+
+export const devolucionesOrdenadas = () => devoluciones.slice().sort((a, b) =>
+  (PRIORIDAD_DEVOLUCION[a.estado] ?? 2) - (PRIORIDAD_DEVOLUCION[b.estado] ?? 2) ||
+  a.desde.localeCompare(b.desde));
+
+export const devolucionesDe = (folio) => devoluciones.filter((d) => d.pedido === folio);
+
+/** Una devolución sigue abierta mientras no tenga resolución registrada. */
+const CERRADAS = ["Cerrada", "Rechazada", "Sin retorno"];
+export const devolucionAbierta = (folio) =>
+  devolucionesDe(folio).find((d) => !CERRADAS.includes(d.estado)) ?? null;
+
+/** Las piezas se detallan cuando el pedido trae líneas; cuando no, la
+    devolución solo puede ser total, y se dice en vez de inventar el desglose. */
+export function piezasDevueltas(d) {
+  if (d.piezas) return `${d.piezas.regresan} de ${d.piezas.total}`;
+  return null;
+}
+
+/* ---------- El retorno que la paquetería ya declaró ----------
+   Mostrarlo no es predecir, es traducir. Lo que NO existe es el aviso de
+   "último intento": eso exige que el carrier reporte el intento numerado, y
+   contar intentos por nuestra cuenta y presentarlos como dato suyo es
+   exactamente lo que el principio prohíbe. */
+const PALABRAS_DE_RETORNO = [
+  /return\s+to\s+(shipper|sender)/i,
+  /retorno\s+al\s+remitente/i,
+  /devoluci[oó]n\s+al\s+remitente/i,
+];
+
+export const declaraRetorno = (original) =>
+  !!original && PALABRAS_DE_RETORNO.some((re) => re.test(original));
+
+/* ---------- Los cargos del envío ----------
+   `diferencia` era una frase: se lee pero no se suma, y el punto entero de
+   ligar el cargo del RTO al envío original es poder sumarlo. */
+const CLAVE_CARGOS = "tc:cargos";
+
+export const TIPOS_CARGO = {
+  rto: "Retorno al remitente", reexpedicion: "Reexpedición", zona: "Zona extendida",
+  sobrepeso: "Sobrepeso", reentrega: "Reentrega", seguro: "Seguro", otro: "Otro",
+};
+
+const cargosGuardados = leerMapa(CLAVE_CARGOS);
+
+/** Los cargos tipificados de una guía, más el que migra de `diferencia`. */
+export function cargosDe(guia) {
+  const pedido = pedidos.find((p) => p.envio?.guia === guia);
+  const propios = cargosGuardados[guia] ?? [];
+  /* La frase de hoy migra como un cargo de tipo `otro` con su texto en la
+     nota: no se pierde nada y empieza a poder sumarse. */
+  const viejo = pedido?.envio?.diferencia
+    ? [{ tipo: "otro", monto: null, factura: null, nota: pedido.envio.diferencia }]
+    : [];
+  return [...viejo, ...propios];
+}
+
+export function agregarCargo(guia, cargo) {
+  const mapa = leerMapa(CLAVE_CARGOS);
+  mapa[guia] = [...(mapa[guia] ?? []), cargo];
+  cargosGuardados[guia] = mapa[guia];
+  return escribirMapa(CLAVE_CARGOS, mapa);
+}
+
+export const cargoDe = (guia, tipo) => cargosDe(guia).find((c) => c.tipo === tipo) ?? null;
+
+/**
+ * Los tres costos de una devolución, que es la resta que sostiene la decisión.
+ *
+ * Confundirlos es lo que hace que la conciliación no cuadre: el flete de ida ya
+ * se pagó y no se recupera; el de retorno lo paga el comerciante salvo que la
+ * guía la haya comprado el comprador; y el cargo del RTO lo factura la
+ * paquetería sin que nadie lo pidiera. El del RTO **no se estima**: se captura
+ * de la factura, y mientras no aparezca la fila lo dice.
+ */
+export function costosDevolucion(d) {
+  const pedido = pedidos.find((p) => p.folio === d.pedido);
+  const ida = pedido?.envio?.costo ?? null;
+  const retorno = d.envioRetorno ? d.envioRetorno.costo : null;
+  const rto = pedido?.envio?.guia ? cargoDe(pedido.envio.guia, "rto") : null;
+  const conocidos = [ida, retorno, rto?.monto].filter((x) => x != null);
+  return {
+    ida, retorno,
+    rto: rto?.monto ?? null,
+    rtoPendiente: d.mecanismo === "rto" && !rto,
+    total: conocidos.reduce((s, x) => s + x, 0),
+    mercancia: pedido?.total ?? null,
+    notaRetorno: d.envioRetorno?.nota ?? null,
+  };
+}
+
+/** El siguiente paso de una devolución, que es lo que va en su fila. */
+export function siguientePaso(d) {
+  switch (d.estado) {
+    case "Solicitada": return { texto: "Autorizar", accion: "autorizar" };
+    case "Autorizada": return { texto: "Ver el retorno", accion: "abrir" };
+    case "Con guía de retorno": return { texto: "Marcar recibida", accion: "recibir" };
+    case "En tránsito de regreso": return { texto: "Marcar recibida", accion: "recibir" };
+    case "Recibida": return { texto: "Cerrar devolución", accion: "cerrar" };
+    default: return { texto: "Ver el pedido", accion: "abrir" };
+  }
+}

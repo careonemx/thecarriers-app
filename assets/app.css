@@ -150,6 +150,16 @@ a { color: inherit; }
 [hidden] { display: none !important; }
 .tabular { font-variant-numeric: tabular-nums; }
 .nowrap { white-space: nowrap; }
+
+/* `apagado` y `mono` solo estaban definidos dentro de una celda de tabla, y
+   las pantallas los usan en todas partes. Fuera de una tabla, el texto
+   secundario salía del color del cuerpo —y entonces no era secundario— y un
+   número de guía salía en la misma tipografía que la prosa, donde el uno y la
+   ele se confunden. Distinguirlos es la única razón por la que una guía se
+   escribe en monoespaciado. */
+.apagado { color: var(--muted); }
+.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
@@ -442,7 +452,11 @@ input[type="time"]:not([data-lleno])::-webkit-datetime-edit { color: var(--muted
 }
 select option { background: var(--pagina); }
 
-.campo { display: grid; gap: 6px; }
+/* La columna es minmax(0, 1fr) y no `auto`: un <select> se mide por su opción
+   más larga, y con la columna en auto "Caja mediana — 40 × 30 × 25 cm" estiraba
+   el campo hasta 524px dentro de un panel de 390. El campo crecía, la caja que
+   lo contiene crecía, y aparecía una barra horizontal dentro del panel. */
+.campo { display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr); }
 .campo > span { font-weight: 500; }
 .campo__ayuda { color: var(--muted); font-size: 12px; }
 
@@ -1428,6 +1442,11 @@ tr.fila--principal td:first-child::before {
 /* ---------- Barra de selección múltiple ----------
    Aparece dentro de la tarjeta, no flotando: el usuario ya está mirando
    la tabla y no hay que llevarle la vista a otro lado. */
+/* El motivo por el que ninguna acción aplica. Va en la barra y no solo en un
+   `title`: con el dedo no hay `title` que valga, y ese aviso es justo el que
+   hace falta cuando se llega desde un atajo que prometía trabajo. */
+.barra-seleccion__nota { flex: 1 1 100%; color: var(--muted); font-size: 12px; }
+
 .barra-seleccion {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding: 11px 18px; border-bottom: 1px solid var(--hairline);
@@ -1538,17 +1557,27 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 /* min-height:0 no es opcional. Un hijo de flex trae min-height:auto, así que
    el cuerpo crece hasta su contenido en vez de encogerse, el diálogo se
    desborda y aparece una SEGUNDA barra de scroll sobre la del cuerpo. */
+/* La columna es minmax(0, 1fr) por la misma razón que en `.campo`: una rejilla
+   sin columnas declaradas mide su única columna por el contenido más ancho, y
+   la tabla de artículos lleva un mínimo de 560px en pantallas angostas. Sin
+   esto, el cuerpo del panel medía 562px dentro de una pantalla de 390 y la
+   tabla, que tiene su propio scroll, arrastraba al panel entero con ella. */
 .panel__cuerpo {
   flex: 1; min-height: 0; overflow-y: auto;
   padding: 22px; display: grid; gap: 22px; align-content: start;
+  grid-template-columns: minmax(0, 1fr);
 }
 .panel__pie {
   flex: none; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap;
   padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--tarjeta);
 }
 
-/* ---------- Bloques del detalle ---------- */
-.bloque { display: grid; gap: 11px; }
+/* ---------- Bloques del detalle ----------
+   Columna declarada, igual que en `.panel__cuerpo` y en `.campo`: la tabla de
+   artículos lleva `min-width: 560px` en pantallas angostas, y con la columna
+   en auto el bloque la medía entera en vez de dejar que la tabla se desplazara
+   dentro de su propia caja. Un scroll por capa: el de la tabla es de la tabla. */
+.bloque { display: grid; gap: 11px; grid-template-columns: minmax(0, 1fr); }
 .bloque__titulo {
   display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
   font-size: 11px; font-weight: 600; letter-spacing: .12em;
@@ -1776,6 +1805,12 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
 
 /* ---------- Contador de caracteres ----------
    Debajo y a la derecha del campo, discreto hasta que importa. */
+/* Una cifra con su unidad al lado: "[3] veces". La unidad dentro de la
+   etiqueta obliga a leerla dos veces, y de ayuda se lee como una frase suelta. */
+.campo-sufijo { display: flex; align-items: center; gap: 8px; }
+.campo-sufijo input { max-width: 96px; }
+.campo-sufijo > span { color: var(--muted); font-size: 13px; }
+
 .campo__pie { display: flex; justify-content: space-between; gap: 12px; }
 .campo__contador { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .campo__contador[data-cerca="true"] { color: var(--aviso); }
@@ -1803,6 +1838,145 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
 
 @media (max-width: 640px) {
   .campos--2, .campos--3, .campos--corto-largo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* =================================================================
+ * La instrucción.
+ *
+ * Lo que le toca a la persona cuando la paquetería no expone la acción. No
+ * sirve ninguno de los que ya hay: el diálogo confirma acciones NUESTRAS, la
+ * franja describe un problema y el aviso afirma un hecho. Ninguno dicta un
+ * procedimiento que ejecuta otra persona por otro canal, que es donde la capa
+ * de en medio se hace visible sin mentir.
+ *
+ * Las dos ausencias se ven distinto porque llevan a acciones distintas: "no lo
+ * hace" cierra el tema y se pinta en neutro; "no lo hemos confirmado" es una
+ * llamada que el comerciante todavía puede hacer, y se pinta como lo que está
+ * abierto.
+ * ================================================================= */
+.instruccion {
+  display: grid; gap: 10px;
+  padding: 14px 16px; border: 1px solid; border-radius: var(--r);
+}
+.instruccion > b { display: block; font-weight: 600; }
+.instruccion ol { margin: 0; padding-left: 20px; display: grid; gap: 9px; }
+.instruccion__paso { font-size: 13px; line-height: 1.55; }
+/* El dato que hay que citar por teléfono: copiable y en monoespaciado, porque
+   se dicta dígito por dígito. */
+.instruccion__dato {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px;
+  padding: 1px 6px; border-radius: var(--r-sm);
+  background: var(--hundido-fuerte); color: var(--ink);
+  user-select: all;
+}
+.instruccion--no { border-color: var(--hairline-fuerte); background: var(--hundido); }
+.instruccion--no > b { color: var(--ink); }
+.instruccion--sin-registro { border-color: var(--aviso-borde); background: var(--aviso-fondo); }
+.instruccion--sin-registro > b { color: var(--aviso); }
+.instruccion--sin-registro .instruccion__dato { background: var(--pagina); }
+
+/* =================================================================
+ * El cobro: la consecuencia primero, el porqué después.
+ *
+ * "Te cobran 6 kg" y debajo "pesa 4, pero una caja de 40 × 30 × 25 se cobra
+ * como si pesara 6". Estaba escrito tres veces con estilos en línea dentro de
+ * Plantillas, y un patrón repetido a mano deja de ser el mismo patrón, igual
+ * que un color.
+ * ================================================================= */
+.cobro {
+  display: grid; gap: 4px; padding: 11px 13px;
+  border: 1px solid var(--hairline); border-radius: var(--r); background: var(--hundido);
+}
+.cobro__cifra { font-weight: 600; font-size: 14px; }
+.cobro__porque { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.cobro .grupo-botones { margin-top: 4px; }
+.cobro--aviso { border-color: var(--aviso-borde); background: var(--aviso-fondo); }
+.cobro--aviso .cobro__cifra { color: var(--aviso); }
+.cobro--mal { border-color: var(--mal-borde); background: var(--mal-fondo); }
+.cobro--mal .cobro__cifra { color: var(--mal); }
+
+/* =================================================================
+ * La condición, leída dentro de una fila.
+ *
+ * "Cantidad 1 a 3 piezas", "Contiene MON-VEN-16". No es una pastilla —eso es
+ * un estado— ni un `.dato` —eso es un par de etiqueta y valor—: es un
+ * enunciado con rango, y no se lee bien como ninguno de los dos.
+ * ================================================================= */
+.condiciones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.condicion {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  padding: 2px 8px; border-radius: var(--r-sm);
+  border: 1px solid var(--hairline); background: var(--pagina);
+  color: var(--muted); font-size: 11.5px; line-height: 1.7;
+}
+.condicion b { color: var(--ink); font-weight: 500; }
+/* Su SKU no aparece en ningún pedido reciente: la condición no se puede
+   evaluar y la regla nunca va a ganar por ella. Apagada y marcada, no
+   escondida. */
+.condicion--sin-dato { border-style: dashed; border-color: var(--aviso-borde); }
+.condicion--sin-dato b { color: var(--aviso); }
+
+/* =================================================================
+ * El orden, aplicado a las reglas de embalaje.
+ *
+ * Misma mecánica de arrastre, puesto y flechas que el orden de paqueterías,
+ * porque es el mismo tipo de criterio humano y un segundo modelo mental para
+ * el mismo problema es un modelo de más. Cambia la rejilla: una regla lleva
+ * condiciones y caja donde una paquetería lleva papel.
+ *
+ * Los cortes repiten los del orden base y van DESPUÉS, porque tienen la misma
+ * especificidad: escritos antes, el ancho de escritorio ganaría en el móvil.
+ * ================================================================= */
+/* La última columna mide 150px y no `auto`: cada fila es su propia rejilla, y
+   la de por defecto —que no lleva flechas ni editar— dejaba esa columna en
+   cero y repartía el sobrante entre las demás. Su caja y su motivo quedaban
+   corridos respecto de todas las de arriba, en una lista cuyo trabajo es
+   justamente compararse renglón a renglón. */
+.orden--reglas, .orden__cabecera--reglas {
+  --orden-cols: 18px 30px minmax(120px, 1.6fr) 150px minmax(140px, 1.4fr) 140px;
+}
+.orden--reglas .orden__fila::before { background: var(--hairline-fuerte); }
+.orden--reglas .orden__quien b { display: block; }
+.orden--reglas .orden__porque textarea { min-height: 38px; }
+
+/* La caja y sus medidas: el nombre decide y la medida explica. */
+.orden__caja select { width: 100%; }
+.orden__caja .apagado { display: block; margin-top: 4px; font-size: 11px; }
+
+/* Lo que la regla cobró va a lo ancho de la fila, debajo de todo: es una
+   consecuencia de la fila entera, no de una de sus celdas. */
+.orden__fila .cobro, .orden__fila .aviso { grid-column: 1 / -1; margin-top: 2px; }
+
+/* La de por defecto no se mueve ni se borra: su condición está vacía y
+   siempre se cumple, de modo que ningún pedido se queda sin caja. Se marca
+   con la línea más tenue de la lista, no con una barra de estado. */
+.orden__fila--defecto::before { background: var(--hairline); }
+.orden__fila--defecto .orden__puesto { border-style: dashed; }
+
+/* Entre 768 y 1023 no cabe la fila completa: sin el asa quedan cinco columnas y
+   el contenido pedía 746px en un contenedor de 718. Se corta antes de que se
+   note —el botón se leía "Edita" y el cobro se salía por la derecha— bajando
+   los mínimos y apilando las flechas con el nombre, que es el mismo camino que
+   ya toma el orden de paqueterías más abajo. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .orden--reglas, .orden__cabecera--reglas {
+    --orden-cols: 18px 26px minmax(120px, 1.4fr) 130px minmax(120px, 1fr) 96px;
+  }
+  .orden--reglas .orden__fila { gap: 9px; padding-inline: 12px; }
+  .orden__cabecera--reglas { padding-inline: 12px; }
+  /* Tres botones no caben en 96px en una fila: se parten en dos renglones
+     antes que recortarse a media palabra. */
+  .orden--reglas .orden__mover { flex-wrap: wrap; justify-content: flex-end; }
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  .orden--reglas, .orden__cabecera--reglas {
+    --orden-cols: 30px minmax(150px, 1fr) 160px minmax(160px, 1fr) auto;
+  }
+}
+@media (max-width: 767px) {
+  .orden--reglas, .orden__cabecera--reglas { --orden-cols: 30px 1fr auto; }
+  .orden--reglas .orden__caja, .orden--reglas .orden__porque { grid-column: 2 / -1; }
 }
 
 /* =================================================================

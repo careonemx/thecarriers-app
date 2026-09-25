@@ -11,14 +11,36 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=deddf32a";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=923d07fd";
 
 const CLAVE = "tc_sesion";
 
+/* Con el almacenamiento del sitio bloqueado —una ventana privada, o el permiso
+   quitado a mano— escribir en sessionStorage lanza SecurityError. Sin capturarlo,
+   el botón de Entrar no hacía nada y no decía nada: la pantalla se quedaba
+   quieta. `datos.js` ya envolvía todos sus accesos por esto mismo.
+
+   La copia en memoria sostiene la sesión mientras no se cambie de página, que
+   es lo que hace falta para que Entrar no se quede mudo. Cruzar a otra pantalla
+   sí la pierde, y por eso `abrir` devuelve si pudo guardar: quien llama lo dice
+   en vez de mandar a nadie a un ciclo de acceso que no se cierra nunca. */
+let enMemoria = null;
+
 export const sesion = {
-  abrir(correo) { sessionStorage.setItem(CLAVE, JSON.stringify({ correo, desde: Date.now() })); },
-  leer() { try { return JSON.parse(sessionStorage.getItem(CLAVE)); } catch { return null; } },
-  cerrar() { sessionStorage.removeItem(CLAVE); },
+  abrir(correo) {
+    enMemoria = JSON.stringify({ correo, desde: Date.now() });
+    try { sessionStorage.setItem(CLAVE, enMemoria); return true; }
+    catch { return false; }
+  },
+  leer() {
+    let guardada = null;
+    try { guardada = sessionStorage.getItem(CLAVE); } catch { /* almacenamiento bloqueado */ }
+    try { return JSON.parse(guardada ?? enMemoria); } catch { return null; }
+  },
+  cerrar() {
+    enMemoria = null;
+    try { sessionStorage.removeItem(CLAVE); } catch { /* almacenamiento bloqueado */ }
+  },
 };
 
 const icono = {

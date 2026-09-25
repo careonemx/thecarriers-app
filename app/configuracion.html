@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=deddf32a">
-<script src="../assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
+<script src="../assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -25,6 +25,60 @@
     <h2 class="zona__titulo">Cuando entra un pedido pagado</h2>
     <div class="tarjeta">
       <div class="tarjeta__cuerpo campos" id="automatico"></div>
+    </div>
+  </section>
+
+  <section class="zona" id="reglas-embalaje">
+    <h2 class="zona__titulo">Con qué caja sale cada pedido</h2>
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabeza">
+        <div>
+          <h2>Nunca en esta caja</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Se revisa antes que el orden de abajo y descarta plantillas, incluida
+            la de la regla por defecto.</p>
+        </div>
+      </div>
+      <div class="tarjeta__cuerpo" id="vetos"></div>
+      <div class="tarjeta__pie">
+        <span class="filtros__sep"></span>
+        <button class="boton boton--sutil boton--chico" type="button" id="nuevo-veto">Agregar veto</button>
+      </div>
+    </div>
+
+    <div class="tarjeta" style="margin-top:14px">
+      <div class="tarjeta__cabeza">
+        <div>
+          <h2>Tu orden de reglas</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Se recorre de arriba abajo: gana la primera que se cumple, así que
+            lo específico va arriba y lo general abajo.
+            <span class="solo-raton">Arrastra una regla para cambiar su puesto,
+              o muévela con las flechas.</span><span
+              class="solo-tacto">Cambia su puesto con las flechas.</span></p>
+        </div>
+      </div>
+
+      <div class="orden__cabecera orden__cabecera--reglas" aria-hidden="true">
+        <span></span><span></span>
+        <span>Regla</span>
+        <span>Caja</span>
+        <span>Motivo</span>
+        <span></span>
+      </div>
+      <div class="orden orden--reglas" id="orden-reglas"></div>
+
+      <div class="tarjeta__pie">
+        <span id="guias-reglas"></span>
+        <span class="filtros__sep"></span>
+        <button class="boton boton--sutil boton--chico" type="button" id="nueva-regla">Agregar regla</button>
+      </div>
+    </div>
+
+    <div class="tarjeta" style="margin-top:14px;max-width:560px">
+      <div class="tarjeta__cabeza"><h2>Cuándo pasa a revisión manual</h2></div>
+      <div class="tarjeta__cuerpo campos" id="tope"></div>
     </div>
   </section>
 
@@ -62,11 +116,61 @@
     </div>
   </section>
 
+  <!-- Última de la cadena: pedir el camión es lo último que el sistema hace
+       solo, después de revisar la dirección, elegir la caja y elegir la
+       paquetería. Las zonas quedan en el orden en que ocurren. -->
+  <section class="zona" id="recoleccion-automatica">
+    <h2 class="zona__titulo">Cuando hay guías sin recoger</h2>
+
+    <div class="tarjeta">
+      <div class="tarjeta__cabeza">
+        <div>
+          <h2>Recolección automática por origen y paquetería</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Una solicitud sale por cada origen y cada paquetería. No existe una
+            solicitud que junte un paquete de DHL con uno de FedEx.</p>
+        </div>
+      </div>
+      <p class="apagado" id="nota-cancelacion" style="font-size:12px;padding:0 18px 12px"></p>
+      <div class="tabla-caja scroll-fino">
+        <table id="tabla-parejas">
+          <caption class="sr-only">Reglas de recolección automática por origen y paquetería.</caption>
+          <thead><tr>
+            <th scope="col">Origen y paquetería</th><th scope="col">Modo</th>
+            <th scope="col">Cuándo</th><th scope="col">Corte</th>
+            <th scope="col">Mínimo</th><th scope="col">Últimos 30 días</th>
+            <th scope="col">Activa</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="tarjeta__pie">
+        <span>Solo aparecen las parejas que han tenido envíos.</span>
+        <span class="filtros__sep"></span>
+        <button class="boton boton--sutil boton--chico" type="button" id="nueva-pareja">Agregar pareja</button>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="panel" id="panel-regla" aria-labelledby="panel-regla-titulo"></dialog>
+  <dialog class="panel" id="panel-recoleccion" aria-labelledby="panel-reco-titulo"></dialog>
+  <dialog class="dialogo" id="dlg" aria-labelledby="dlg-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=deddf32a";
-import { origenes, plantillas, reglasPaqueteria, PAPELES } from "../assets/datos.js?v=deddf32a";
+import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
+import { origenes, plantillas, reglasPaqueteria, PAPELES,
+         reglasEmbalaje, vetosEmbalaje, efectoEmbalaje, embalaje, CONDICIONES_EMBALAJE,
+         DESTINOS, cobroDefecto, guiasConReglas, hechosDeRegla,
+         nombreDeSKU, skusVistos, enRevisionManual, embalajeDe,
+         pedidos, canalesVenta, dinero,
+         reglasRecoleccion, guardarReglasRecoleccion, parejasRecoleccion,
+         MODOS_RECOLECCION, DIAS_SEMANA, ANTICIPACION_VISTA, describirRegla,
+         validarReglaRecoleccion, cortePropuesto, viasDeLaPareja,
+         guiasSinRecoleccion, sinRegistro, enumerarEs,
+         FACTOR_VOLUMETRICO, capacidadDe, guardarEmbalaje,
+         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=923d07fd";
 if (exigirSesion()) {
   montar();
 
@@ -116,20 +220,16 @@ if (exigirSesion()) {
           La paquetería sale de tu orden de preferencia.</span></span>
     </label>
 
-    <div class="campos campos--2">
-      <label class="campo"><span>Sale de</span>
-        <select id="auto-origen">
-          ${origenes.map((o) => `<option${o.predeterminado ? " selected" : ""}>${esc(o.nombre)}</option>`).join("")}
-        </select>
-        <span class="campo__ayuda">La dirección que va como remitente.</span>
-      </label>
-      <label class="campo"><span>Con la plantilla</span>
-        <select id="auto-plantilla">
-          ${plantillas.map((p) => `<option${p.predeterminada ? " selected" : ""}>${esc(p.nombre)}</option>`).join("")}
-        </select>
-        <span class="campo__ayuda">Peso y medidas cuando el pedido no los incluye.</span>
-      </label>
-    </div>`;
+    <label class="campo"><span>Sale de</span>
+      <select id="auto-origen">
+        ${origenes.map((o) => `<option${o.predeterminado ? " selected" : ""}>${esc(o.nombre)}</option>`).join("")}
+      </select>
+      <span class="campo__ayuda">La dirección que va como remitente.</span>
+    </label>
+
+    <p class="apagado" style="font-size:13px">
+      La caja sale de tus <a href="#reglas-embalaje">reglas de embalaje</a>,
+      más abajo en esta pantalla.</p>`;
 
   document.getElementById("auto-guia").addEventListener("change", (e) =>
     avisar(e.target.checked
@@ -177,10 +277,19 @@ if (exigirSesion()) {
 
         <div class="orden__quien">
           <b>${esc(o.paqueteria)}${o === manda
-            ? ' <span class="pastilla pastilla--ok">Preferida</span>' : ""}</b>
-          <span class="apagado">${o === manda
-            ? "Primera de la lista que se puede usar."
-            : esc(PAPELES[o.papel].ayuda)}</span>
+            ? ' <span class="pastilla pastilla--ok">Preferida</span>' : ""}${
+            tieneCuenta(o.paqueteria) ? "" : ' <span class="pastilla pastilla--aviso">Sin cuenta</span>'}</b>
+          <span class="apagado">${!tieneCuenta(o.paqueteria)
+            ? `No puede salir elegida: no hay cuenta conectada de ${esc(o.paqueteria)}.`
+            : o === manda
+              ? "Primera de la lista que se puede usar."
+              : esc(PAPELES[o.papel].ayuda)}</span>
+          ${tieneCuenta(o.paqueteria) ? "" : `<div class="grupo-botones" style="margin-top:6px">
+            <a class="boton boton--sutil boton--chico"
+               href="paqueterias.html?paqueteria=${encodeURIComponent(o.paqueteria)}">Conectar ${esc(o.paqueteria)}</a>
+            <button class="boton boton--sutil boton--chico" type="button"
+                    data-quitar-paqueteria>Quitar de la lista</button>
+          </div>`}
         </div>
 
         <label class="campo orden__papel">
@@ -234,6 +343,14 @@ if (exigirSesion()) {
     const i = +fila.dataset.i;
     if (e.target.closest("[data-subir]")) mover(i, i - 1);
     else if (e.target.closest("[data-bajar]")) mover(i, i + 2);
+    /* Dos salidas y las dos legítimas: conectarla o sacarla. Lo que no se hace
+       es quitarla sola de la lista, porque el orden es un criterio humano y
+       borrarlo por una cuenta que falta deshace meses de incidencias. */
+    else if (e.target.closest("[data-quitar-paqueteria]")) {
+      const [fuera] = reglasPaqueteria.orden.splice(i, 1);
+      repintarReglas();
+      avisar(`Guardado. ${fuera.paqueteria} sale de tu orden de preferencia.`);
+    }
   });
 
   orden.addEventListener("change", (e) => {
@@ -254,71 +371,89 @@ if (exigirSesion()) {
   });
 
   /* ---------- Arrastrar para reordenar ----------
+     Una sola implementación para las dos listas ordenables de la pantalla. Con
+     una copia por lista, el día que se corrija un defecto del arrastre se
+     corrige en una y la otra se queda con él.
+
      Solo el asa arranca el arrastre. Si la fila entera fuera arrastrable,
      seleccionar texto dentro del motivo movería la paquetería.
 
      El arrastre nativo no existe en pantallas táctiles, así que el asa se
      oculta ahí y quedan las flechas, que son además el camino del teclado:
      nada se puede hacer solo con ratón. */
-  let viaja = null;
+  function arrastrable(nodo, mover) {
+    let viaja = null;
+    const limpiar = () => nodo.querySelectorAll(".orden__fila").forEach((f) =>
+      f.classList.remove("orden__fila--antes", "orden__fila--despues"));
 
-  const limpiarMarcas = () => orden.querySelectorAll(".orden__fila").forEach((f) =>
-    f.classList.remove("orden__fila--antes", "orden__fila--despues"));
+    nodo.addEventListener("dragstart", (e) => {
+      const asa = e.target.closest("[data-asa]");
+      if (!asa) { e.preventDefault(); return; }
+      const fila = asa.closest("[data-i]");
+      viaja = +fila.dataset.i;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(viaja));
+      e.dataTransfer.setDragImage(fila, 24, fila.offsetHeight / 2);
+      requestAnimationFrame(() => fila.classList.add("orden__fila--viaja"));
+    });
 
-  orden.addEventListener("dragstart", (e) => {
-    const asa = e.target.closest("[data-asa]");
-    if (!asa) { e.preventDefault(); return; }
-    const fila = asa.closest("[data-i]");
-    viaja = +fila.dataset.i;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(viaja));
-    e.dataTransfer.setDragImage(fila, 24, fila.offsetHeight / 2);
-    requestAnimationFrame(() => fila.classList.add("orden__fila--viaja"));
-  });
-
-  /* El destino se marca con una línea entre filas, no pintando la de debajo:
-     lo que se decide es en qué hueco cae, no sobre quién. */
-  orden.addEventListener("dragover", (e) => {
-    if (viaja === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const fila = e.target.closest("[data-i]");
-    if (!fila) return;
-    limpiarMarcas();
-    const caja = fila.getBoundingClientRect();
-    fila.classList.add(e.clientY > caja.top + caja.height / 2
-      ? "orden__fila--despues" : "orden__fila--antes");
-  });
-
-  orden.addEventListener("drop", (e) => {
-    if (viaja === null) return;
-    e.preventDefault();
-    const fila = e.target.closest("[data-i]");
-    if (fila) {
+    /* El destino se marca con una línea entre filas, no pintando la de debajo:
+       lo que se decide es en qué hueco cae, no sobre quién. */
+    nodo.addEventListener("dragover", (e) => {
+      if (viaja === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const fila = e.target.closest("[data-i]");
+      if (!fila) return;
+      limpiar();
       const caja = fila.getBoundingClientRect();
-      mover(viaja, +fila.dataset.i + (e.clientY > caja.top + caja.height / 2 ? 1 : 0));
-    }
-    viaja = null;
-    limpiarMarcas();
-  });
+      fila.classList.add(e.clientY > caja.top + caja.height / 2
+        ? "orden__fila--despues" : "orden__fila--antes");
+    });
 
-  orden.addEventListener("dragend", () => {
-    viaja = null;
-    limpiarMarcas();
-    orden.querySelectorAll(".orden__fila--viaja").forEach((f) =>
-      f.classList.remove("orden__fila--viaja"));
-  });
+    nodo.addEventListener("drop", (e) => {
+      if (viaja === null) return;
+      e.preventDefault();
+      const fila = e.target.closest("[data-i]");
+      if (fila) {
+        const caja = fila.getBoundingClientRect();
+        mover(viaja, +fila.dataset.i + (e.clientY > caja.top + caja.height / 2 ? 1 : 0));
+      }
+      viaja = null;
+      limpiar();
+    });
+
+    nodo.addEventListener("dragend", () => {
+      viaja = null;
+      limpiar();
+      nodo.querySelectorAll(".orden__fila--viaja").forEach((f) =>
+        f.classList.remove("orden__fila--viaja"));
+    });
+  }
+
+  arrastrable(orden, mover);
 
   /* ---------- Cuándo se sustituye la preferida ---------- */
   function pintarExcepciones() {
     const r = reglasPaqueteria;
     const hay = preferidaAhora();
     const pref = hay?.paqueteria ?? "la preferida";
+    /* La primera que se puede usar puede ser una sin cuenta: se ordena igual y
+       no puede ganar, así que el pedido sale con la siguiente. Decirlo donde se
+       lee la regla de seguridad evita que alguien busque el defecto en el orden. */
+    const siguiente = r.orden.find((o) => o.papel === "normal" && tieneCuenta(o.paqueteria));
+    const prefSinCuenta = hay && !tieneCuenta(hay.paqueteria);
+
     document.getElementById("excepciones").innerHTML = `
+      ${prefSinCuenta ? `<p class="aviso aviso--alerta">${esc(hay.paqueteria)} está en el primer
+        puesto y no tiene cuenta conectada.${siguiente
+          ? ` Los pedidos salen con ${esc(siguiente.paqueteria)}, la siguiente que se puede usar.`
+          : " Ninguna de las que quedan tiene cuenta conectada."}</p>` : ""}
       <p style="font-size:13px;line-height:1.55">${hay
         ? `Se usa <b>${esc(pref)}</b> salvo que ocurra lo siguiente.`
-        : `Ninguna paquetería está marcada como <b>Se puede usar</b>, así que no hay
-           preferida y cada envío se resuelve entre las de evitar.`}</p>
+        : `Ninguna paquetería está marcada como <b>Se puede usar</b>. Sin preferida, cada
+           envío se resuelve entre las que quedan${
+             r.orden.some((o) => o.papel === "evitar") ? ", empezando por las de evitar" : ""}.`}</p>
 
       <label class="campo campo--corto">
         <span>Cuando su costo supere</span>
@@ -358,6 +493,1169 @@ if (exigirSesion()) {
   }
 
   repintarReglas();
+
+  /* ================================================================
+     Con qué caja sale cada pedido
+     ================================================================
+     La regla contesta "qué caja se usa en qué pedido", que es una decisión
+     que el sistema toma solo; Plantillas contesta "qué cajas uso y por
+     cuánto me cobran". Se agrupa por pregunta, no por sistema, y por eso
+     esto vive aquí y no allá. */
+  /* El aviso solo afirma "Guardado." cuando de verdad se guardó. Con el
+     almacenamiento bloqueado no se puede, y decirlo igual deja al comerciante
+     convencido de que su cambio existe hasta que cambia de pantalla. */
+  const guardado = (texto) => avisar(guardarEmbalaje()
+    ? `Guardado. ${texto}`
+    : `${texto} El navegador tiene bloqueado el almacenamiento: el cambio se pierde al salir de esta pantalla.`);
+
+  const ordenReglas = document.getElementById("orden-reglas");
+  const panelRegla = document.getElementById("panel-regla");
+  const dlg = document.getElementById("dlg");
+
+  const movibles = () => reglasEmbalaje.filter((r) => !r.defecto);
+  const cajaDe = (id) => plantillas.find((p) => p.id === id) ?? null;
+
+  /* Una regla no elige paquetería, así que su cifra no puede salir del divisor
+     de una sola. Mientras ninguna lo tenga confirmado, la cifra es una
+     estimación nuestra y se dice como tal; el día que una lo confirme y difiera,
+     esto deja de ser cierto y hay que contarlo por paquetería. */
+  const divisorSinRegistro = () =>
+    PAQUETERIAS_DEL_PRODUCTO.every((n) => !capacidadDe(n, "divisorVolumetrico").fuente);
+  const medidasDe = (c) => c ? `${c.largo} × ${c.ancho} × ${c.alto} cm` : "";
+  const canalesConectados = () => [...new Set([
+    ...canalesVenta.map((c) => c.nombre), ...pedidos.map((p) => p.canal)])].sort();
+
+  /* Un rango se lee como una frase, no como dos números: "1 pieza" cuando el
+     mínimo y el máximo son el mismo, y "o más" cuando no hay tope. Escribir
+     "de 1 a 1 piezas" obliga a traducirlo cada vez que se lee la lista. */
+  function rango(de, a, sing, plur) {
+    if (a == null) return `${de} ${plur} o más`;
+    if (de === a) return `${de} ${de === 1 ? sing : plur}`;
+    return `${de} a ${a} ${plur}`;
+  }
+
+  let chipApagado = false;
+  const chip = (texto, sinDato = false) =>
+    `<span class="condicion${sinDato || chipApagado ? " condicion--sin-dato" : ""}">${texto}</span>`;
+
+  /* El SKU se valida contra lo único que tenemos, que son los pedidos: no hay
+     catálogo. Un SKU mal tecleado no falla, simplemente no se cumple nunca, y
+     un silencio ahí es una regla que no gana y nadie sabe por qué. */
+  const skuDesconocido = (sku) => !!sku && !skusVistos().includes(sku);
+
+  function condicionesHTML(r) {
+    const c = r.condiciones ?? {};
+    /* Una regla desactivada enseña sus condiciones apagadas: siguen escritas,
+       pero no deciden nada mientras no participe en el orden. */
+    chipApagado = r.activa === false;
+    const chips = [];
+    if (c.cantidad) chips.push(chip(`Cantidad ${rango(c.cantidad.de, c.cantidad.a, "pieza", "piezas")}`));
+    if (c.costo) {
+      chips.push(chip(c.costo.a == null
+        ? `Costo ${dinero(c.costo.de)} en adelante`
+        : `Costo ${dinero(c.costo.de)} a ${dinero(c.costo.a)}`));
+    }
+    if (c.contiene) {
+      chips.push(chip(`Contiene <b>${esc(c.contiene.sku)}</b>`, skuDesconocido(c.contiene.sku)));
+      chips.push(chip(c.contiene.de === 0 && c.contiene.a === 0
+        ? "Sin otras piezas"
+        : `Más ${rango(c.contiene.de, c.contiene.a, "pieza", "piezas")}`));
+    }
+    if (c.canal) chips.push(chip(`Canal ${esc(c.canal.join(", "))}`));
+    if (c.destino) chips.push(chip(`Destino ${c.destino.map((d) => DESTINOS[d].toLowerCase()).join(", ")}`));
+    chipApagado = false;
+    if (!chips.length) {
+      chips.push(r.defecto
+        ? chip("Cualquier pedido que no haya ganado arriba")
+        /* Si una regla sin condiciones llega desde una sesión anterior, se lee
+           por lo que es y no con la frase de «Por defecto»: dos filas idénticas
+           con distinto puesto hacen que el puesto mienta. */
+        : chip("Sin condiciones: se cumple siempre", true));
+    }
+    return `<div class="condiciones">${chips.join("")}</div>`;
+  }
+
+  /**
+   * Una regla que no puede ganar nunca porque otra de más arriba ya cubre sus
+   * condiciones. El dato ya se calculaba para el panel de edición; aquí sale a
+   * la fila, que es donde se lee la lista. Con el aviso solo dentro del panel
+   * hay que abrir las siete reglas una por una para enterarse.
+   */
+  function reglaMuerta(r) {
+    if (r.defecto || r.activa === false || !Object.keys(r.condiciones ?? {}).length) return null;
+    const h = hechosDeRegla(r.condiciones, { excluir: r.id });
+    /* Sin pedidos que la cumplan no está muerta: está sin estrenar, y eso ya lo
+       dice su propio aviso de SKU o su cobro. Muerta es que los cumpla y que
+       otra se los lleve TODOS. */
+    if (!h.cumplen) return null;
+    const tomados = h.antes.reduce((n, x) => n + x.n, 0);
+    if (tomados < h.cumplen) return null;
+    return h.antes.slice().sort((a, b) => b.n - a.n)[0];
+  }
+
+  function avisoMuerta(r) {
+    const quien = reglaMuerta(r);
+    if (!quien) return "";
+    /* El botón nombra a la regla que se la come, no un número de puesto: el
+       puesto cambia en cuanto alguien mueve cualquier fila, y una acción que
+       dice "al puesto 1" envejece en el primer arrastre. */
+    return `<p class="aviso aviso--alerta">Esta regla no ha ganado ninguna vez:
+      «${esc(quien.regla.nombre)}», en el puesto ${quien.puesto}, ya cubre sus condiciones.
+      <button class="boton boton--fantasma boton--chico" type="button"
+              data-subir-sobre="${esc(quien.regla.id)}"
+              data-regla-muerta="${esc(r.id)}">Subirla sobre «${esc(quien.regla.nombre)}»</button></p>`;
+  }
+
+  function avisoSKU(r) {
+    const sku = r.condiciones?.contiene?.sku;
+    if (!skuDesconocido(sku)) return "";
+    return `<p class="aviso aviso--alerta">El SKU <span class="mono">${esc(sku)}</span>
+      no aparece en ningún pedido de los últimos 30 días. Esta regla se salta y el
+      pedido pasa a la siguiente.</p>`;
+  }
+
+  /* Lo que la regla cobró, en dinero. El sistema no cambia la caja: lo dice, y
+     lo dice en dinero, porque una sugerencia vale lo que ahorra. Es el mismo
+     principio que "la preferida manda". */
+  function cobroHTML(r) {
+    /* Una regla recién creada no tiene histórico. Decirlo es lo mismo que
+       decirlo de una que lleva treinta días sin ganar: el hecho es el mismo y
+       dos silencios distintos para el mismo hecho se leen como un error. */
+    const e = efectoEmbalaje[r.id] ?? { guias: 0, porVolumen: 0, diferencia: 0, alternativa: null };
+
+    /* Esta cifra habla de GUÍAS y en pasado, y nunca de pedidos. La del panel
+       de edición habla de pedidos y en presente, y nunca de guías ni de dinero.
+       Si comparten sustantivo se leen como una sola medición mal hecha, y es la
+       única disciplina que impide que vuelvan a pelearse. */
+    if (r.defecto) {
+      const d = cobroDefecto();
+      return `<div class="cobro${d.tono === "neutra" ? "" : ` cobro--${d.tono}`}">
+        <p class="cobro__cifra">Con esta regla han salido ${d.guias} de las ${d.total}
+          guías de los últimos 30 días: el ${d.pct} %.</p>
+        <p class="cobro__porque">Es la medida de qué tan bien cubren las reglas de arriba.</p>
+      </div>`;
+    }
+
+    if (r.activa === false) {
+      return `<div class="cobro"><p class="cobro__cifra">Desactivada: no participa en el orden.</p></div>`;
+    }
+
+    /* Recién creada y sin haber salido nunca son dos hechos distintos, y un
+       silencio y un cero no se distinguen. */
+    if (!e.guias) {
+      return `<div class="cobro"><p class="cobro__cifra">${r.creadaHoy
+        ? "Creada hoy: todavía no ha salido ninguna guía."
+        : "Con esta regla no ha salido ninguna guía en los últimos 30 días."}</p></div>`;
+    }
+
+    const caja = cajaDe(r.plantilla);
+    const alt = e.alternativa ? cajaDe(e.alternativa.plantilla) : null;
+    return `<div class="cobro${e.porVolumen ? " cobro--aviso" : ""}">
+      <p class="cobro__cifra">Con esta regla ${e.guias === 1 ? "ha salido 1 guía" : `han salido ${e.guias} guías`}
+        en los últimos 30 días.
+        ${e.porVolumen
+          ? `En ${e.porVolumen} se cobró por volumen, no por peso. Diferencia acumulada: ${dinero(e.diferencia)}.`
+          : "En ninguna se cobró por volumen."}</p>
+      ${alt ? `<p class="cobro__porque">Con ${esc(alt.nombre)} en vez de ${esc(caja.nombre)},
+        esas ${e.porVolumen} ${e.porVolumen === 1 ? "guía habría costado" : "guías habrían costado"}
+        ${dinero(e.alternativa.ahorro)} menos.</p>` : ""}
+      ${e.porVolumen && divisorSinRegistro() ? `<p class="cobro__porque">Calculado con divisor
+        ${FACTOR_VOLUMETRICO}, sin registro del de la paquetería.</p>` : ""}
+      ${alt ? `<div class="grupo-botones"><button class="boton boton--sutil boton--chico"
+        type="button" data-cambiar-caja="${esc(r.id)}">Cambiar la caja de esta regla</button></div>` : ""}
+    </div>`;
+  }
+
+  function filaReglaHTML(r, i) {
+    const fija = !!r.defecto;
+    const caja = cajaDe(r.plantilla);
+    const ultima = i === movibles().length - 1;
+    return `
+      <div class="orden__fila${fija ? " orden__fila--defecto" : ""}"
+           data-regla="${esc(r.id)}"${fija ? "" : ` data-i="${i}"`}>
+        ${fija ? "<span></span>" : `<span class="orden__asa" data-asa draggable="true"
+          aria-hidden="true" title="Arrastra para cambiar el puesto">${ASA}</span>`}
+        <span class="orden__puesto">${fija ? "—" : i + 1}</span>
+
+        <div class="orden__quien">
+          <b>${esc(r.nombre)}${r.activa === false
+            ? ' <span class="pastilla pastilla--neutra">Desactivada</span>' : ""}</b>
+          ${condicionesHTML(r)}
+        </div>
+
+        <label class="campo orden__caja">
+          <span class="orden__et">Caja</span>
+          <select data-caja>
+            ${plantillas.map((p) => `<option value="${esc(p.id)}"${
+              p.id === r.plantilla ? " selected" : ""}>${esc(p.nombre)}</option>`).join("")}
+          </select>
+          <span class="apagado">${medidasDe(caja)}</span>
+        </label>
+
+        <label class="campo orden__porque">
+          <span class="orden__et">Motivo</span>
+          <textarea data-porque rows="2" placeholder="Sin motivo">${esc(r.porque)}</textarea>
+        </label>
+
+        <div class="orden__mover">
+          ${fija ? "" : `
+          <button class="boton boton--sutil boton--chico" type="button" data-subir
+            ${i === 0 ? "disabled" : ""} aria-label="Subir ${esc(r.nombre)}">↑</button>
+          <button class="boton boton--sutil boton--chico" type="button" data-bajar
+            ${ultima ? "disabled" : ""} aria-label="Bajar ${esc(r.nombre)}">↓</button>
+          <button class="boton boton--sutil boton--chico" type="button" data-editar-regla
+            aria-label="Editar ${esc(r.nombre)}">Editar</button>`}
+        </div>
+
+        ${avisoSKU(r)}
+        ${avisoMuerta(r)}
+        ${cobroHTML(r)}
+      </div>`;
+  }
+
+  function pintarReglas() {
+    ordenReglas.innerHTML =
+      movibles().map(filaReglaHTML).join("") +
+      filaReglaHTML(reglasEmbalaje.find((r) => r.defecto), -1);
+    ordenReglas.querySelectorAll("[data-porque]").forEach(ajustarAlto);
+    document.getElementById("guias-reglas").textContent =
+      `${guiasConReglas()} guías con reglas en los últimos 30 días`;
+  }
+
+  /* Una sola función mueve, venga del arrastre o de las flechas. La de por
+     defecto no entra en la cuenta: su condición está vacía y siempre se
+     cumple, así que cualquier regla debajo de ella sería una regla muerta. */
+  function moverRegla(desde, hasta, boton = "data-subir") {
+    const lista = movibles();
+    if (hasta > desde) hasta -= 1;
+    hasta = Math.max(0, Math.min(lista.length - 1, hasta));
+    if (hasta === desde) return;
+    const [r] = lista.splice(desde, 1);
+    lista.splice(hasta, 0, r);
+    reglasEmbalaje.splice(0, reglasEmbalaje.length, ...lista, reglasEmbalaje.find((x) => x.defecto));
+    pintarReglas();
+    pintarTope();
+    /* La lista se repinta entera, así que el foco se iba al <body> y el
+       siguiente Tab empezaba desde el principio del documento: bajar una regla
+       dos puestos obligaba a recorrer la lista otra vez. Vuelve al mismo botón
+       de la fila, que ahora está en otro sitio. */
+    devolverFoco(r.id, boton);
+    guardado(`«${r.nombre}» queda en el puesto ${hasta + 1}.`);
+  }
+
+  /** El mismo control de la misma regla, después de repintar. */
+  function devolverFoco(id, boton) {
+    const fila = ordenReglas.querySelector(`[data-regla="${CSS.escape(id)}"]`);
+    const destino = fila?.querySelector(`[${boton}]:not([disabled])`)
+      ?? fila?.querySelector("[data-subir]:not([disabled]), [data-bajar]:not([disabled])")
+      ?? fila?.querySelector("[data-editar-regla]");
+    destino?.focus();
+  }
+
+  ordenReglas.addEventListener("click", (e) => {
+    const fila = e.target.closest("[data-regla]");
+    if (!fila) return;
+    const r = reglasEmbalaje.find((x) => x.id === fila.dataset.regla);
+    if (e.target.closest("[data-subir]")) return moverRegla(+fila.dataset.i, +fila.dataset.i - 1, "data-subir");
+    if (e.target.closest("[data-bajar]")) return moverRegla(+fila.dataset.i, +fila.dataset.i + 2, "data-bajar");
+    const sobre = e.target.closest("[data-subir-sobre]");
+    if (sobre) {
+      const destino = movibles().findIndex((x) => x.id === sobre.dataset.subirSobre);
+      return moverRegla(+fila.dataset.i, destino, "data-subir");
+    }
+    if (e.target.closest("[data-editar-regla]")) return abrirRegla(r);
+    if (e.target.closest("[data-cambiar-caja]")) {
+      fila.querySelector("[data-caja]").focus();
+      return;
+    }
+  });
+
+  ordenReglas.addEventListener("change", (e) => {
+    const fila = e.target.closest("[data-regla]");
+    if (!fila || !e.target.matches("[data-caja]")) return;
+    const r = reglasEmbalaje.find((x) => x.id === fila.dataset.regla);
+    r.plantilla = e.target.value;
+    pintarReglas();
+    pintarTope();
+    guardado(`«${r.nombre}» usa ${cajaDe(r.plantilla).nombre}.`);
+  });
+
+  ordenReglas.addEventListener("input", (e) => {
+    const fila = e.target.closest("[data-regla]");
+    if (fila && e.target.matches("[data-porque]")) {
+      reglasEmbalaje.find((x) => x.id === fila.dataset.regla).porque = e.target.value;
+      ajustarAlto(e.target);
+    }
+  });
+
+  /* El motivo se guarda al soltar el campo y no en cada tecla: escribir tres
+     frases no son treinta guardados, y el aviso saltaría en cada letra. */
+  ordenReglas.addEventListener("focusout", (e) => {
+    if (e.target.matches("[data-porque]")) guardarEmbalaje();
+  });
+
+  arrastrable(ordenReglas, moverRegla);
+
+  /* ---------- Nunca en esta caja ----------
+     El veto es una lista aparte y no una fila más del orden PORQUE no asigna
+     caja: descarta candidatas. Una fila con número de puesto que no asigna
+     nada hace que el número mienta. */
+  function pintarVetos() {
+    const caja = document.getElementById("vetos");
+    if (!vetosEmbalaje.length) {
+      caja.innerHTML = `<p class="apagado" style="font-size:13px">Ningún producto tiene caja prohibida.</p>`;
+      return;
+    }
+    caja.innerHTML = vetosEmbalaje.map((v) => {
+      const producto = nombreDeSKU(v.sku);
+      return `<div class="dato">
+        <span>Si el pedido contiene <span class="mono">${esc(v.sku)}</span> → nunca
+          ${esc(cajaDe(v.plantilla)?.nombre ?? v.plantilla)}
+          ${producto ? `<span class="apagado" style="display:block;font-size:12px">${esc(producto.nombre)}</span>` : ""}</span>
+        <span><button class="boton boton--sutil boton--chico" type="button"
+          data-quitar-veto="${esc(v.id)}">Quitar veto</button></span>
+      </div>`;
+    }).join("");
+  }
+
+  /* Quitar un veto pide confirmación: es lo único que protege un producto
+     frágil y lo quitaba un clic de más. El diálogo dice qué se lleva, no
+     "¿estás seguro?". */
+  document.getElementById("vetos").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-quitar-veto]");
+    if (!b) return;
+    const v = vetosEmbalaje.find((x) => x.id === b.dataset.quitarVeto);
+    const caja = cajaDe(v.plantilla)?.nombre ?? v.plantilla;
+    const producto = nombreDeSKU(v.sku);
+    dlg.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-titulo">¿Quitar el veto de ${esc(v.sku)}?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p>${esc(producto?.nombre ?? v.sku)} vuelve a poder salir en ${esc(caja)}, y los pedidos
+          que hoy pasan a revisión manual por este veto se generarán solos.</p>
+        ${v.porque ? `<p style="margin-top:8px">El veto existe por esto: ${esc(v.porque)}</p>` : ""}
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dlg>Conservar el veto</button>
+        <button class="boton boton--peligro" type="button"
+                data-si-quitar-veto="${esc(v.id)}">Sí, quitar</button>
+      </div>`;
+    dlg.showModal();
+  });
+
+  document.getElementById("nuevo-veto").addEventListener("click", () => {
+    dlg.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="dlg-titulo">Agregar veto</h2></div>
+      <div class="dialogo__cuerpo">
+        <form id="form-veto" class="campos" novalidate>
+          <label class="campo" data-campo="sku"><span>Si el pedido contiene el SKU</span>
+            <input id="veto-sku" class="mono" name="sku" autocomplete="off" placeholder="MON-CRI-6">
+            <span class="campo__ayuda" id="veto-producto">El SKU tal como lo manda tu canal en la línea del pedido.</span>
+            <span class="campo__error" hidden></span>
+          </label>
+          <label class="campo"><span>Nunca en</span>
+            <select id="veto-caja" name="plantilla">
+              ${plantillas.map((p) => `<option value="${esc(p.id)}">${esc(p.nombre)} — ${medidasDe(p)}</option>`).join("")}
+            </select>
+          </label>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dlg>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-guardar-veto>Agregar veto</button>
+      </div>`;
+    dlg.showModal();
+
+    const sku = dlg.querySelector("#veto-sku");
+    const ayuda = dlg.querySelector("#veto-producto");
+    sku.addEventListener("input", () => {
+      const p = nombreDeSKU(sku.value.trim());
+      ayuda.textContent = p
+        ? `${p.nombre}, visto en ${p.pedidos} ${p.pedidos === 1 ? "pedido" : "pedidos"}.`
+        : "El SKU tal como lo manda tu canal en la línea del pedido.";
+    });
+    sku.focus();
+  });
+
+  dlg.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-dlg]")) return dlg.close();
+
+    const quitar = e.target.closest("[data-si-quitar-veto]");
+    if (quitar) {
+      const i = vetosEmbalaje.findIndex((v) => v.id === quitar.dataset.siQuitarVeto);
+      const [v] = vetosEmbalaje.splice(i, 1);
+      dlg.close();
+      pintarVetos();
+      pintarReglas();
+      pintarTope();
+      return guardado(`${v.sku} ya puede ir en ${cajaDe(v.plantilla)?.nombre}.`);
+    }
+
+    const encima = e.target.closest("[data-colocar-encima]");
+    if (encima) {
+      const desde = movibles().findIndex((x) => x.id === encima.dataset.colocarEncima);
+      const hasta = movibles().findIndex((x) => x.id === encima.dataset.encimaDe);
+      dlg.close();
+      return moverRegla(desde, hasta, "data-subir");
+    }
+
+    if (!e.target.closest("[data-guardar-veto]")) return;
+    const form = dlg.querySelector("#form-veto");
+    const v = Object.fromEntries(new FormData(form).entries());
+    const sku = String(v.sku || "").trim().toUpperCase();
+    const error = dlg.querySelector(".campo__error");
+    const etiqueta = dlg.querySelector('[data-campo="sku"]');
+    if (!sku) {
+      etiqueta.classList.add("campo--error");
+      error.textContent = "Falta el SKU del producto.";
+      error.hidden = false;
+      dlg.querySelector("#veto-sku").focus();
+      return;
+    }
+    vetosEmbalaje.push({ id: `v-${sku}-${v.plantilla}`, sku, plantilla: v.plantilla, porque: "" });
+    dlg.close();
+    pintarVetos();
+    pintarReglas();
+    pintarTope();
+    guardado(`${sku} ya no puede ir en ${cajaDe(v.plantilla).nombre}.`);
+  });
+
+  /* ---------- Cuándo pasa a revisión manual ----------
+     El ancho del campo dice cuánto escribir: recibe una cifra, así que se
+     acota. Y la ayuda dice la verdad incómoda: sin catálogo con peso, este
+     tope casi no dispara, y callarlo haría pensar que protege más de lo que
+     protege. */
+  function pintarTope() {
+    const enCola = pedidos.filter(enRevisionManual);
+    const porTope = enCola.filter((p) => embalajeDe(p.folio).revision.clave === "peso").length;
+    const porVeto = enCola.length - porTope;
+    const cuenta = [
+      porTope ? `${porTope} ${porTope === 1 ? "pedido pasó" : "pedidos pasaron"} a revisión manual por este tope` : "",
+      porVeto ? `${porVeto} por un veto` : "",
+    ].filter(Boolean).join(" y ");
+
+    document.getElementById("tope").innerHTML = `
+      <label class="campo campo--corto"><span>Pasar a revisión manual cuando el peso
+        del pedido supere el de la plantilla por</span>
+        <span class="campo-sufijo">
+          <input id="factor" type="number" min="1" step="1" inputmode="numeric"
+                 value="${embalaje.factorRevision}">
+          <span>veces</span>
+        </span>
+        <span class="campo__ayuda">Un pedido que no cabe en su caja se paga dos veces: el
+          sobrepeso y la reexpedición. Este tope solo se puede evaluar en los pedidos que
+          traen peso del canal; los demás no se comprueban.</span>
+      </label>
+      <p class="apagado" style="font-size:13px">${cuenta
+        ? `En los últimos 30 días, ${cuenta}. <a href="pedidos.html?pendiente=revision-manual">Verlos en Pedidos</a>`
+        : "En los últimos 30 días ningún pedido pasó a revisión manual."}</p>`;
+
+    document.getElementById("factor").addEventListener("change", (e) => {
+      embalaje.factorRevision = Math.max(1, +e.target.value || 1);
+      e.target.value = embalaje.factorRevision;
+      pintarTope();
+      guardado(`Un pedido pasa a revisión manual cuando pesa más de ${
+        embalaje.factorRevision} veces lo que su caja.`);
+    });
+  }
+
+  /* ---------- El panel de la regla ----------
+     Todas las condiciones marcadas tienen que cumplirse. Para una alternativa
+     se escribe otra regla: una condición con Y y O mezclados obliga a pensar
+     en paréntesis, y nadie que empaca cajas debe tener que pensar en
+     paréntesis. */
+  let editando = null;
+
+  const marca = (clave, puesta, cuerpo, ayuda = "", fuera = false) => `
+    <div class="campo">
+      <label class="marca-campo">
+        <input type="checkbox" data-cond="${clave}"${puesta ? " checked" : ""}${fuera ? " disabled" : ""}>
+        <span>${esc(CONDICIONES_EMBALAJE.find((c) => c.clave === clave).etiqueta)}</span>
+      </label>
+      <div data-cuerpo="${clave}" class="campos" style="margin-left:30px"${puesta ? "" : " hidden"}>${cuerpo}</div>
+      ${ayuda ? `<span class="campo__ayuda" style="margin-left:30px">${ayuda}</span>` : ""}
+    </div>`;
+
+  const numero = (nombre, valor, etiqueta) => `
+    <label class="campo campo--corto"><span>${etiqueta}</span>
+      <input type="number" min="0" step="1" inputmode="numeric" name="${nombre}"
+             value="${valor ?? ""}" placeholder="Sin tope"></label>`;
+
+  const casillas = (nombre, opciones, puestas) => opciones.map((o) => `
+    <label class="marca-campo">
+      <input type="checkbox" name="${nombre}" value="${esc(o.valor)}"${
+        puestas.includes(o.valor) ? " checked" : ""}>
+      <span>${esc(o.etiqueta)}</span>
+    </label>`).join("");
+
+  function abrirRegla(regla) {
+    editando = regla;
+    const nueva = !regla;
+    const c = regla?.condiciones ?? {};
+    const ayudaDe = (k) => CONDICIONES_EMBALAJE.find((x) => x.clave === k).ayuda;
+
+    panelRegla.innerHTML = `
+      <div class="panel__cabeza">
+        <div style="min-width:0">
+          <h2 id="panel-regla-titulo">${nueva ? "Nueva regla" : "Editar regla"}</h2>
+          <p>Gana la primera regla de la lista que se cumple.</p>
+        </div>
+        <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-regla>✕</button>
+      </div>
+
+      <div class="panel__cuerpo">
+        <form id="form-regla" class="campos" novalidate>
+          <label class="campo" data-campo="nombre"><span>Nombre de la regla</span>
+            <input id="regla-nombre" name="nombre" value="${esc(regla?.nombre ?? "")}" autocomplete="off">
+            <span class="campo__ayuda">Se lee en la lista y queda anotado en cada guía que salga con ella.</span>
+            <span class="campo__error" hidden></span>
+          </label>
+
+          <p class="campos__titulo">Se cumple cuando</p>
+          <p class="campo__ayuda">Todas las condiciones marcadas tienen que cumplirse.
+            Para una alternativa, se escribe otra regla.</p>
+          <p class="campo__error" data-error-condiciones hidden></p>
+
+          ${marca("cantidad", !!c.cantidad, `
+            <div class="campos campos--2">
+              ${numero("cantidadDe", c.cantidad?.de ?? 1, "De")}
+              ${numero("cantidadA", c.cantidad?.a ?? 1, "A")}
+            </div>`, ayudaDe("cantidad"))}
+
+          ${marca("costo", !!c.costo, `
+            <div class="campos campos--2">
+              ${numero("costoDe", c.costo?.de ?? 0, "De $")}
+              ${numero("costoA", c.costo?.a ?? null, "A $")}
+            </div>`)}
+
+          ${marca("contiene", !!c.contiene, `
+            <label class="campo" data-campo="sku"><span>SKU</span>
+              <input class="mono" name="sku" value="${esc(c.contiene?.sku ?? "")}"
+                     autocomplete="off" placeholder="MON-VEN-16">
+              <span class="campo__ayuda" data-producto></span>
+              <span class="campo__error" hidden></span>
+            </label>
+            <div class="campos campos--2">
+              ${numero("contieneDe", c.contiene?.de ?? 0, "Y además, de")}
+              ${numero("contieneA", c.contiene?.a ?? 0, "A")}
+            </div>
+            <span class="campo__ayuda">Piezas de cualquier otro artículo.</span>`, ayudaDe("contiene"))}
+
+          ${marca("canal", !!c.canal,
+            casillas("canal", canalesConectados().map((n) => ({ valor: n, etiqueta: n })), c.canal ?? []),
+            ayudaDe("canal"))}
+
+          ${marca("destino", !!c.destino,
+            casillas("destino", Object.entries(DESTINOS).map(([k, v]) => ({ valor: k, etiqueta: v })),
+              c.destino ?? []))}
+
+          ${marca("peso", false, "", ayudaDe("peso"), true)}
+
+          <label class="campo"><span>Caja</span>
+            <select name="plantilla">
+              ${plantillas.map((p) => `<option value="${esc(p.id)}"${
+                p.id === (regla?.plantilla ?? plantillas[0].id) ? " selected" : ""
+                }>${esc(p.nombre)} — ${medidasDe(p)}</option>`).join("")}
+            </select>
+          </label>
+
+          <label class="campo"><span>Motivo</span>
+            <textarea name="porque" rows="3">${esc(regla?.porque ?? "")}</textarea>
+            <span class="campo__ayuda">Dentro de seis meses, esto es lo que impide que alguien
+              borre la regla que existe por un producto que se rompió tres veces.</span>
+          </label>
+
+          <div data-hechos></div>
+        </form>
+      </div>
+
+      <div class="panel__pie">
+        ${nueva ? "" : `<button class="boton boton--sutil" type="button" data-borrar-regla>Eliminar regla</button>`}
+        <span class="filtros__sep"></span>
+        <button class="boton boton--sutil" type="button" data-cerrar-regla>${
+          nueva ? "Cancelar" : "Conservar la regla anterior"}</button>
+        <button class="boton boton--primario" type="button" data-guardar-regla>${
+          nueva ? "Agregar regla" : "Guardar regla"}</button>
+      </div>`;
+
+    panelRegla.showModal();
+    refrescarHechos();
+    /* En una regla nueva el foco entra en el primer campo que hay que llenar.
+       En una que ya existe entra en el contenedor, para que el lector de
+       pantalla empiece por el título y no por un campo a media frase. */
+    if (nueva) {
+      panelRegla.querySelector("#regla-nombre").focus();
+    } else {
+      panelRegla.setAttribute("tabindex", "-1");
+      panelRegla.focus();
+    }
+  }
+
+  /** Lo que el formulario dice en este momento, ya como condiciones. */
+  function condicionesDelForm() {
+    const form = panelRegla.querySelector("#form-regla");
+    const puesta = (k) => form.querySelector(`[data-cond="${k}"]`).checked;
+    const num = (n) => {
+      const v = form.querySelector(`[name="${n}"]`)?.value;
+      return v === "" || v == null ? null : Number(v);
+    };
+    const marcadas = (n) => [...form.querySelectorAll(`[name="${n}"]:checked`)].map((x) => x.value);
+
+    const c = {};
+    if (puesta("cantidad")) c.cantidad = { de: num("cantidadDe") ?? 1, a: num("cantidadA") };
+    if (puesta("costo")) c.costo = { de: num("costoDe") ?? 0, a: num("costoA") };
+    if (puesta("contiene")) {
+      c.contiene = { sku: form.querySelector('[name="sku"]').value.trim().toUpperCase(),
+                     de: num("contieneDe") ?? 0, a: num("contieneA") };
+    }
+    if (puesta("canal")) c.canal = marcadas("canal");
+    if (puesta("destino")) c.destino = marcadas("destino");
+    return c;
+  }
+
+  /* Dos hechos sobre lo que YA ocurrió, no un simulador: un probador que corre
+     sobre datos de ejemplo enseña un resultado que nadie puede comprobar. */
+  function refrescarHechos() {
+    const form = panelRegla.querySelector("#form-regla");
+    const condiciones = condicionesDelForm();
+    const caja = form.querySelector("[data-hechos]");
+
+    /* Sin ninguna condición marcada, "los 40 cumplen estas condiciones" es
+       cierto y es ruido: el formulario está vacío y todavía no hay regla de la
+       que decir nada. */
+    if (!Object.keys(condiciones).length) {
+      caja.innerHTML = "";
+      revisarSKU(form);
+      return;
+    }
+
+    const h = hechosDeRegla(condiciones, { excluir: editando?.id ?? null });
+
+    /* Habla de PEDIDOS y en presente, nunca de guías ni de dinero: eso es de la
+       otra cifra, la del `.cobro`. Y las dos son enlaces a los pedidos que
+       cuentan, que es lo que las separa de un simulador: un número que se abre
+       y deja la tabla con esos doce delante enseña el conjunto, no un
+       resultado, y se puede contar a mano. */
+    const nombre = form.querySelector("#regla-nombre").value.trim() || "esta condición";
+    caja.innerHTML = `
+      <div class="franja franja--editada">
+        <span class="franja__icono">${svgIco(ICO_LISTA)}</span>
+        <div>
+          <b>Sobre los pedidos de hoy, esta condición alcanza a ${h.cumplen} de ${h.total}.</b>
+          ${h.cumplen ? ` ${enlacePedidos(condiciones, null, nombre, "Verlos")}` : ""}
+          ${h.antes.map((x) => `<p>A ${x.n} de ${h.cumplen === x.n ? "ésos" : `esos ${h.cumplen}`}
+            ${x.n === 1 ? "lo toma" : "los toma"} antes «${esc(x.regla.nombre)}», en el puesto ${x.puesto}.
+            ${enlacePedidos(condiciones, x.regla.id, nombre, `Ver ${x.n === 1 ? "ése" : `esos ${x.n}`}`)}</p>`).join("")}
+        </div>
+      </div>`;
+
+    revisarSKU(form);
+  }
+
+  /** Un SKU mal tecleado no falla: simplemente no se cumple nunca. Se revisa
+      contra los pedidos, que es lo único que hay, y se dice sin bloquear. */
+  function revisarSKU(form) {
+    const sku = form.querySelector('[name="sku"]');
+    if (!sku) return;
+    const producto = nombreDeSKU(sku.value.trim().toUpperCase());
+    const nota = form.querySelector("[data-producto]");
+    const error = form.querySelector('[data-campo="sku"] .campo__error');
+    nota.textContent = producto
+      ? `${producto.nombre}, visto en ${producto.pedidos} ${producto.pedidos === 1 ? "pedido" : "pedidos"}.`
+      : "";
+    /* No bloquea el guardado —el producto puede ser nuevo— pero se dice. */
+    const desconocido = skuDesconocido(sku.value.trim().toUpperCase());
+    error.hidden = !desconocido;
+    error.textContent = desconocido
+      ? `Ningún pedido de los últimos 30 días trae el SKU ${sku.value.trim().toUpperCase()}. Revisa que esté bien escrito.`
+      : "";
+  }
+
+  panelRegla.addEventListener("change", (e) => {
+    const casilla = e.target.closest("[data-cond]");
+    if (casilla) {
+      const cuerpo = panelRegla.querySelector(`[data-cuerpo="${casilla.dataset.cond}"]`);
+      if (cuerpo) cuerpo.hidden = !casilla.checked;
+    }
+    refrescarHechos();
+  });
+  panelRegla.addEventListener("input", (e) => {
+    if (e.target.matches("input, select, textarea")) refrescarHechos();
+  });
+
+  panelRegla.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-regla]")) return panelRegla.close();
+
+    if (e.target.closest("[data-borrar-regla]")) {
+      const r = editando;
+      dlg.innerHTML = `
+        <div class="dialogo__cabeza"><h2 id="dlg-titulo">¿Eliminar «${esc(r.nombre)}»?</h2></div>
+        <div class="dialogo__cuerpo">
+          <p>Los pedidos que hoy toma esta regla pasarán a la siguiente que cumplan, y
+            los que no cumplan ninguna saldrán con
+            ${esc(cajaDe(reglasEmbalaje.find((x) => x.defecto).plantilla).nombre)},
+            que es la caja de la regla por defecto.</p>
+        </div>
+        <div class="dialogo__pie">
+          <button class="boton boton--sutil" type="button" data-cerrar-dlg>Conservarla</button>
+          <button class="boton boton--peligro" type="button" data-si-borrar>Sí, eliminar</button>
+        </div>`;
+      dlg.showModal();
+      dlg.querySelector("[data-si-borrar]").addEventListener("click", () => {
+        reglasEmbalaje.splice(reglasEmbalaje.indexOf(r), 1);
+        dlg.close();
+        panelRegla.close();
+        pintarReglas();
+        pintarTope();
+        guardado(`Se eliminó «${r.nombre}».`);
+      });
+      return;
+    }
+
+    if (!e.target.closest("[data-guardar-regla]")) return;
+
+    const form = panelRegla.querySelector("#form-regla");
+    const nombre = form.querySelector("#regla-nombre").value.trim();
+    const etiqueta = form.querySelector('[data-campo="nombre"]');
+    const error = etiqueta.querySelector(".campo__error");
+    if (!nombre) {
+      etiqueta.classList.add("campo--error");
+      error.textContent = "Falta el nombre de la regla.";
+      error.hidden = false;
+      form.querySelector("#regla-nombre").focus();
+      return;
+    }
+
+    const condiciones = condicionesDelForm();
+
+    /* Una regla sin condiciones se cumple siempre: queda encima de «Por
+       defecto» y la deja muerta, con las dos filas leyéndose igual. Ese trabajo
+       ya lo hace la de por defecto, y para eso se le cambia la caja. */
+    const errorCond = form.querySelector("[data-error-condiciones]");
+    if (!Object.keys(condiciones).length) {
+      errorCond.textContent = "Marca al menos una condición. Una regla sin condiciones se cumple " +
+        "siempre y dejaría a «Por defecto» sin ganar nunca; para que todos los pedidos salgan en " +
+        "otra caja, cámbiale la caja a «Por defecto».";
+      errorCond.hidden = false;
+      form.querySelector("[data-cond]").focus();
+      return;
+    }
+    errorCond.hidden = true;
+
+    const datos = {
+      nombre,
+      plantilla: form.querySelector('[name="plantilla"]').value,
+      porque: form.querySelector('[name="porque"]').value,
+      condiciones,
+    };
+
+    if (editando) {
+      Object.assign(editando, datos);
+      guardado(`«${nombre}» usa ${cajaDe(datos.plantilla).nombre}.`);
+    } else {
+      /* La nueva entra encima de la de por defecto, nunca debajo: debajo no
+         ganaría nunca, porque la de por defecto siempre se cumple. */
+      const defecto = reglasEmbalaje.find((x) => x.defecto);
+      reglasEmbalaje.splice(reglasEmbalaje.indexOf(defecto), 0,
+        { id: `r-${Date.now()}`, creadaHoy: true, ...datos });
+      guardado(`«${nombre}» queda en el puesto ${movibles().length}.`);
+    }
+    panelRegla.close();
+    pintarReglas();
+    pintarTope();
+
+    /* No se descubre a los treinta días con el cobro en cero. No bloquea: el
+       comerciante puede querer escribirla ahora y ordenarla después. */
+    const guardada = editando ?? reglasEmbalaje.find((x) => x.nombre === nombre);
+    const come = guardada && reglaMuerta(guardada);
+    if (come) {
+      dlg.innerHTML = `
+        <div class="dialogo__cabeza"><h2 id="dlg-titulo">«${esc(come.regla.nombre)}» ya cubre estas condiciones</h2></div>
+        <div class="dialogo__cuerpo">
+          <p>«${esc(come.regla.nombre)}» está en el puesto ${come.puesto} y se lleva todos los
+            pedidos que «${esc(guardada.nombre)}» cumple: colocada debajo, esta regla no va a
+            ganar nunca.</p>
+        </div>
+        <div class="dialogo__pie">
+          <button class="boton boton--sutil" type="button" data-cerrar-dlg>Dejarla donde está</button>
+          <button class="boton boton--primario" type="button"
+            data-colocar-encima="${esc(guardada.id)}"
+            data-encima-de="${esc(come.regla.id)}">Colocarla encima de «${esc(come.regla.nombre)}»</button>
+        </div>`;
+      dlg.showModal();
+    }
+  });
+
+  document.getElementById("nueva-regla").addEventListener("click", () => abrirRegla(null));
+
+  /* Abre Pedidos en otra pestaña, filtrado por estas condiciones y diciendo de
+     dónde vino el filtro: cerrar el panel de la regla no puede ser el precio de
+     mirar los pedidos que cuenta. */
+  const enlacePedidos = (condiciones, tomadosPor, nombre, texto) => {
+    const u = new URLSearchParams({
+      cumplen: JSON.stringify(condiciones),
+      etiqueta: `Cumplen «${nombre}»`,
+    });
+    if (tomadosPor) u.set("tomadosPor", tomadosPor);
+    return `<a class="boton boton--sutil boton--chico" target="_blank" rel="noopener"
+               href="pedidos.html?${u}">${esc(texto)}</a>`;
+  };
+
+  const ICO_LISTA = '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>';
+  const svgIco = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+
+  pintarVetos();
+  pintarReglas();
+  pintarTope();
+
+  /* ================================================================
+     Cuando hay guías sin recoger
+     ================================================================
+     La unidad es la pareja origen × paquetería y nada más, porque es la misma
+     unidad en la que la paquetería recibe la solicitud. `via` es un campo de
+     la regla y no una tercera dimensión: doce filas, no sesenta. */
+  const tablaParejas = document.querySelector("#tabla-parejas tbody");
+  const panelReco = document.getElementById("panel-recoleccion");
+
+  const guardadoReco = (texto) => avisar(guardarReglasRecoleccion()
+    ? `Guardado. ${texto}`
+    : `${texto} El navegador tiene bloqueado el almacenamiento: el cambio se pierde al salir de esta pantalla.`);
+
+  const nombreOrigen = (id) => origenes.find((o) => o.id === id)?.nombre ?? id;
+  const origenDeId = (id) => origenes.find((o) => o.id === id) ?? null;
+
+  function filaParejaHTML(x) {
+    const r = x.regla;
+    const tono = x.sinCumplir ? (x.sinCumplir >= 3 ? "mal" : "aviso") : "ok";
+    return `
+      <tr data-pareja="${esc(x.origen)}|${esc(x.paqueteria)}">
+        <td><b>${esc(nombreOrigen(x.origen))} · ${esc(x.paqueteria)}</b>
+          ${r ? `<div class="apagado" style="margin-top:3px;font-size:12px">${
+            r.via ? `Se pide a ${esc(r.via)}` : "Se pide directo"}</div>` : ""}</td>
+        <td>${r ? esc(MODOS_RECOLECCION[r.modo].etiqueta)
+                : '<span class="pastilla pastilla--neutra">Sin regla</span>'}</td>
+        <td>${r ? esc(describirRegla(r)) : "—"}</td>
+        <td class="tabular">${r ? esc(r.corte) : "—"}</td>
+        <td class="tabular">${r ? (r.minimo ? r.minimo : "Sale siempre") : "—"}</td>
+        <td>${x.citas
+          ? `<span class="pastilla pastilla--${tono}">${x.citas} ${x.citas === 1 ? "cita" : "citas"}</span>
+             ${x.sinCumplir ? `<div class="apagado" style="margin-top:3px;font-size:12px">${
+               x.sinCumplir} sin cumplir</div>` : ""}`
+          : '<span class="apagado">Sin citas</span>'}</td>
+        <td>${r ? `<label class="interruptor">
+            <input type="checkbox" data-activa${r.activa ? " checked" : ""}
+              aria-label="Regla activa de ${esc(nombreOrigen(x.origen))} y ${esc(x.paqueteria)}">
+          </label>` : "—"}</td>
+        <td>
+          <div class="acciones-fila">
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar-pareja>${
+              r ? "Editar regla" : "Crear regla"}</button>
+            ${r ? `<span style="flex:1"></span>
+              <button class="boton boton--sutil boton--chico" type="button" data-quitar-regla>Quitar regla</button>` : ""}
+          </div>
+        </td>
+      </tr>
+      ${avisoRachaHTML(x)}
+      ${avisoFueraHTML(x)}`;
+  }
+
+  /* Tres fallas seguidas son el material del reclamo, y van en la propia fila
+     con sus fechas: una tabla, aunque haya grupos. */
+  function avisoRachaHTML(x) {
+    if (x.sinCumplir < 3) return "";
+    /* "el 13, el 17 y el 19 de septiembre": el mes se dice una vez y los días
+       van en el orden en que pasaron. Tres fechas abreviadas seguidas se leen
+       como un código, no como tres días. */
+    const orden = x.rachaFallida.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const mes = new Date(orden[0].fecha + "T12:00:00").toLocaleDateString("es-MX", { month: "long" });
+    const dias = orden.map((r) => `el ${+r.fecha.slice(8)}`);
+    return `<tr><td colspan="8" style="padding-top:0">
+      <p class="aviso aviso--alerta">${esc(x.paqueteria)} no se presentó ${
+        esc(enumerarEs(dias))} de ${esc(mes)} en ${esc(nombreOrigen(x.origen))}.
+        <a class="boton boton--fantasma boton--chico"
+           href="recolecciones.html?pareja=${encodeURIComponent(x.origen + "|" + x.paqueteria)}"
+        >Ver las tres citas</a></p></td></tr>`;
+  }
+
+  /* La consecuencia de que `via` sea un campo, dicha antes de que duela: una
+     guía metida en una solicitud dirigida a la contraparte equivocada es una
+     recolección que no va a ocurrir y un reclamo a quien no le toca. */
+  function avisoFueraHTML(x) {
+    if (!x.fuera.length) return "";
+    const plataformas = [...new Set(x.fuera.map((p) => p.envio.via ?? "directo"))];
+    const n = x.fuera.length;
+    return `<tr><td colspan="8" style="padding-top:0">
+      <p class="aviso aviso--alerta">${n} ${n === 1 ? "guía" : "guías"} de esta pareja
+        ${n === 1 ? "se compró" : "se compraron"} en ${esc(enumerarEs(plataformas))} y esta regla
+        pide recolección ${x.regla.via ? `a ${esc(x.regla.via)}` : "directa"}.
+        ${n === 1 ? "No entra" : "No entran"} en su solicitud.
+        <a class="boton boton--fantasma boton--chico"
+           href="recolecciones.html?sueltas=${encodeURIComponent(x.origen + "|" + x.paqueteria)}"
+        >Ver ${n === 1 ? "la guía" : `las ${n} guías`}</a></p></td></tr>`;
+  }
+
+  function pintarParejas() {
+    const lista = parejasRecoleccion();
+    if (!lista.length) {
+      tablaParejas.innerHTML = `<tr><td colspan="8">
+        <div class="vacio">
+          <h3 style="font-size:16px">Todavía no hay guías de ninguna paquetería</h3>
+          <p>Las reglas de recolección se arman sobre las parejas de origen y paquetería
+             que ya han tenido envíos.</p>
+          <div class="vacio__acciones">
+            <a class="boton boton--primario" href="pedidos.html">Ver Pedidos</a>
+          </div>
+        </div></td></tr>`;
+    } else {
+      tablaParejas.innerHTML = lista.map(filaParejaHTML).join("");
+    }
+
+    /* Lo que la matriz dice sobre cancelar, sobre la tabla: es donde se decide
+       si la fila de Recolecciones va a tener botón o instrucción. */
+    const conCuenta = PAQUETERIAS_DEL_PRODUCTO.filter((n) => lista.some((x) => x.paqueteria === n));
+    const noCancelan = conCuenta.filter((n) => capacidadDe(n, "cancelaRecoleccion").valor === "no");
+    const sinReg = conCuenta.filter((n) => sinRegistro(n, "cancelaRecoleccion"));
+    document.getElementById("nota-cancelacion").innerHTML = [
+      noCancelan.length ? `${esc(enumerarEs(noCancelan))} no ${
+        noCancelan.length === 1 ? "cancela" : "cancelan"} recolecciones desde aquí.` : "",
+      sinReg.length ? `Sin registro de si ${esc(enumerarEs(sinReg))} las ${
+        sinReg.length === 1 ? "cancela" : "cancelan"}.` : "",
+    ].filter(Boolean).join(" ");
+  }
+
+  tablaParejas.addEventListener("change", (e) => {
+    const fila = e.target.closest("[data-pareja]");
+    if (!fila || !e.target.matches("[data-activa]")) return;
+    const [origen, paqueteria] = fila.dataset.pareja.split("|");
+    const r = reglasRecoleccion.find((x) => x.origen === origen && x.paqueteria === paqueteria);
+    r.activa = e.target.checked;
+    pintarParejas();
+    /* Cancelar nombra lo que conserva: desactivar la regla es nuestro y es
+       inmediato, y no toca lo ya confirmado. */
+    guardadoReco(r.activa
+      ? `Se solicitará recolección de ${nombreOrigen(origen)} · ${paqueteria} otra vez.`
+      : `No saldrán más solicitudes de ${nombreOrigen(origen)} · ${paqueteria}. Las recolecciones ya confirmadas no se tocan.`);
+  });
+
+  tablaParejas.addEventListener("click", (e) => {
+    const fila = e.target.closest("[data-pareja]");
+    if (!fila) return;
+    const [origen, paqueteria] = fila.dataset.pareja.split("|");
+    if (e.target.closest("[data-editar-pareja]")) return abrirReco(origen, paqueteria);
+    if (e.target.closest("[data-quitar-regla]")) {
+      const i = reglasRecoleccion.findIndex((x) => x.origen === origen && x.paqueteria === paqueteria);
+      reglasRecoleccion.splice(i, 1);
+      pintarParejas();
+      guardadoReco(`${nombreOrigen(origen)} · ${paqueteria} vuelve a programarse a mano.`);
+    }
+  });
+
+  document.getElementById("nueva-pareja").addEventListener("click", () => {
+    const sinRegla = parejasRecoleccion().find((x) => !x.regla);
+    if (!sinRegla) return avisar("Todas las parejas con envíos ya tienen regla.");
+    abrirReco(sinRegla.origen, sinRegla.paqueteria);
+  });
+
+  /* ---------- El panel de la regla ---------- */
+  let editandoReco = null;
+
+  function abrirReco(origenId, paqueteria) {
+    const origen = origenDeId(origenId);
+    const existente = reglasRecoleccion.find((r) => r.origen === origenId && r.paqueteria === paqueteria);
+    const nueva = !existente;
+    const r = existente ?? {
+      id: `rr-${origenId}-${paqueteria.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+      origen: origenId, paqueteria, modo: "agenda", activa: true,
+      dias: [1, 2, 3, 4, 5],
+      ventana: { abre: origen?.horario?.abre ?? "09:00", cierra: origen?.horario?.cierra ?? "18:00" },
+      corte: cortePropuesto(origen?.horario?.abre ?? "09:00"),
+      minimo: 0, anticipacion: 1, via: null,
+    };
+    editandoReco = { regla: { ...r, dias: [...r.dias], ventana: { ...r.ventana } }, nueva, origen };
+
+    const vias = viasDeLaPareja(origenId, paqueteria);
+
+    panelReco.innerHTML = `
+      <div class="panel__cabeza">
+        <div style="min-width:0">
+          <h2 id="panel-reco-titulo">${esc(nombreOrigen(origenId))} · ${esc(paqueteria)}</h2>
+          <p>Horario del origen: ${esc(origen?.horario?.abre ?? "—")} a ${esc(origen?.horario?.cierra ?? "—")}.</p>
+        </div>
+        <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-reco>✕</button>
+      </div>
+
+      <div class="panel__cuerpo">
+        <form id="form-reco" class="campos" novalidate>
+          <p class="campos__titulo">Cómo se pide</p>
+          ${Object.entries(MODOS_RECOLECCION).map(([k, m]) => `
+            <div class="campo">
+              <label class="marca-campo">
+                <input type="radio" name="modo" value="${k}"${k === r.modo ? " checked" : ""}${
+                  m.fuera ? " disabled" : ""}>
+                <span>${esc(m.etiqueta)}
+                  <span class="apagado" style="display:block;font-size:12px">${esc(m.consecuencia)}${
+                    m.fuera ? ` ${esc(m.fuera)}` : ""}</span></span>
+              </label>
+            </div>`).join("")}
+
+          <p class="campos__titulo">Cuándo</p>
+          <div class="campo" data-campo="dias">
+            <span>Días</span>
+            <div class="grupo-botones">
+              ${DIAS_SEMANA.map((d) => `
+                <label class="marca-campo">
+                  <input type="checkbox" name="dia" value="${d.id}"${
+                    r.dias.includes(d.id) ? " checked" : ""}>
+                  <span><span class="sr-only">${esc(d.nombre)}</span><span aria-hidden="true">${d.corto}</span></span>
+                </label>`).join("")}
+            </div>
+            <span class="campo__error" hidden></span>
+          </div>
+
+          <div class="campos campos--2" data-campo="ventana">
+            <label class="campo"><span>La ventana empieza</span>
+              <input type="time" name="abre" value="${esc(r.ventana.abre)}"></label>
+            <label class="campo"><span>y termina</span>
+              <input type="time" name="cierra" value="${esc(r.ventana.cierra)}"></label>
+            <span class="campo__ayuda" style="grid-column:1/-1">Tiene que caber en el horario
+              del origen: ${esc(origen?.horario?.abre ?? "—")} a ${esc(origen?.horario?.cierra ?? "—")}.</span>
+            <span class="campo__error" style="grid-column:1/-1" hidden></span>
+          </div>
+
+          <label class="campo campo--corto" data-campo="corte"><span>Hora de corte</span>
+            <input type="time" name="corte" value="${esc(r.corte)}">
+            <span class="campo__ayuda">Es cuando se congela la cuenta de piezas y sale la
+              solicitud. Las guías generadas después entran a la recolección del día siguiente.</span>
+            <span class="campo__error" hidden></span>
+          </label>
+
+          <label class="campo campo--corto"><span>Mínimo de piezas</span>
+            <input type="number" name="minimo" min="0" step="1" inputmode="numeric" value="${r.minimo}">
+            <span class="campo__ayuda">Si ese día no se junta el mínimo, no sale solicitud y el
+              día se registra como "Sin piezas". Cero significa que sale siempre.</span>
+          </label>
+
+          <label class="campo campo--corto"><span>Días de anticipación</span>
+            <input type="number" name="anticipacion" min="0" max="${ANTICIPACION_VISTA}"
+                   step="1" inputmode="numeric" value="${r.anticipacion}">
+            <span class="campo__ayuda">${sinRegistro(paqueteria, "diasAnticipacion")
+              ? `Hasta ${ANTICIPACION_VISTA} días, que es lo que se ha visto funcionar. Sin registro
+                 del máximo de ${esc(paqueteria)}.`
+              : `Hasta ${capacidadDe(paqueteria, "diasAnticipacion").valor} días.`}</span>
+          </label>
+
+          ${vias.length ? `
+          <label class="campo"><span>Se pide a</span>
+            <select name="via">
+              <option value=""${r.via ? "" : " selected"}>Directo</option>
+              ${vias.map((v) => `<option value="${esc(v)}"${
+                v === r.via ? " selected" : ""}>${esc(v)}</option>`).join("")}
+            </select>
+            <span class="campo__ayuda">La solicitud va a quien vendió la guía, aunque quien
+              recoja sea ${esc(paqueteria)}.</span>
+          </label>` : ""}
+
+          <div data-hechos-reco></div>
+        </form>
+      </div>
+
+      <div class="panel__pie">
+        <span class="filtros__sep"></span>
+        <button class="boton boton--sutil" type="button" data-cerrar-reco>${
+          nueva ? "Cancelar" : "Conservar la regla anterior"}</button>
+        <button class="boton boton--primario" type="button" data-guardar-reco>${
+          nueva ? "Agregar regla" : "Guardar regla"}</button>
+      </div>`;
+
+    panelReco.showModal();
+    panelReco.setAttribute("tabindex", "-1");
+    panelReco.focus();
+    refrescarHechosReco();
+  }
+
+  /** Lo que el formulario dice en este momento, ya como regla. */
+  function reglaDelForm() {
+    const f = panelReco.querySelector("#form-reco");
+    const v = (n) => f.querySelector(`[name="${n}"]`)?.value;
+    return {
+      ...editandoReco.regla,
+      modo: f.querySelector('[name="modo"]:checked')?.value ?? "agenda",
+      dias: [...f.querySelectorAll('[name="dia"]:checked')].map((x) => +x.value),
+      ventana: { abre: v("abre"), cierra: v("cierra") },
+      corte: v("corte"),
+      minimo: Math.max(0, +v("minimo") || 0),
+      anticipacion: Math.max(0, +v("anticipacion") || 0),
+      via: v("via") || null,
+    };
+  }
+
+  /* Dos hechos y ninguna predicción. La cifra sale del mismo predicado que se
+     manda a la paquetería: con dos, un día la pantalla dice nueve y el camión
+     llega por siete. */
+  function refrescarHechosReco() {
+    const r = reglaDelForm();
+    const esperando = guiasSinRecoleccion({ origen: r.origen, paqueteria: r.paqueteria });
+    const fuera = esperando.filter((p) => (p.envio.via ?? null) !== (r.via ?? null));
+
+    panelReco.querySelector("[data-hechos-reco]").innerHTML = `
+      <div class="franja franja--editada">
+        <span class="franja__icono">${svgIco(ICO_LISTA)}</span>
+        <div>
+          <b>Ahora mismo hay ${esperando.length} ${esperando.length === 1 ? "guía" : "guías"}
+            de ${esc(r.paqueteria)} sin recolección en ${esc(nombreOrigen(r.origen))}.</b>
+          <p>Con el corte en ${esc(r.corte)}, las guías generadas después entran a la
+            recolección del día siguiente.</p>
+        </div>
+      </div>
+      ${fuera.length ? `
+      <div class="franja franja--pendiente" style="margin-top:10px">
+        <span class="franja__icono">${svgIco(ICO_LISTA)}</span>
+        <div>
+          <b>${fuera.length} de esas ${esperando.length} se ${
+            fuera.length === 1 ? "compró" : "compraron"} en ${
+            esc(enumerarEs([...new Set(fuera.map((p) => p.envio.via ?? "directo"))]))}.</b>
+          <p>Con "Se pide ${r.via ? `a ${esc(r.via)}` : "directo"}", ${
+            fuera.length === 1 ? "esa queda fuera" : `esas ${fuera.length} quedan fuera`} de la
+            solicitud y se programan a mano.</p>
+        </div>
+      </div>` : ""}`;
+  }
+
+  panelReco.addEventListener("change", refrescarHechosReco);
+  panelReco.addEventListener("input", (e) => {
+    if (e.target.matches("input, select")) refrescarHechosReco();
+  });
+
+  panelReco.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-reco]")) return panelReco.close();
+    if (!e.target.closest("[data-guardar-reco]")) return;
+
+    const r = reglaDelForm();
+    const errores = validarReglaRecoleccion(r, editandoReco.origen);
+    const f = panelReco.querySelector("#form-reco");
+    for (const campo of ["dias", "ventana", "corte"]) {
+      const caja = f.querySelector(`[data-campo="${campo}"]`);
+      const err = caja.querySelector(".campo__error");
+      caja.classList.toggle("campo--error", !!errores[campo]);
+      err.textContent = errores[campo] ?? "";
+      err.hidden = !errores[campo];
+    }
+    if (Object.keys(errores).length) {
+      f.querySelector(".campo--error input")?.focus();
+      return;
+    }
+
+    const i = reglasRecoleccion.findIndex((x) => x.id === r.id);
+    if (i >= 0) reglasRecoleccion[i] = r; else reglasRecoleccion.push(r);
+    panelReco.close();
+    pintarParejas();
+    guardadoReco(`Se solicitará recolección ${describirRegla(r).toLowerCase()}, con corte a las ${
+      r.corte}${r.minimo ? `, a partir de ${r.minimo} piezas` : ""}.`);
+  });
+
+  pintarParejas();
 }
 </script>
 </body>

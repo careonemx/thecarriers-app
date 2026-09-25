@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Paqueterías · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=deddf32a">
-<script src="../assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
+<script src="../assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body data-seccion="paqueterias">
 <main class="contenido contenido--ancho">
@@ -22,9 +22,23 @@
 
   <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
 
-  <div class="fichas fichas--conexiones" id="cuentas"></div>
+  <section class="zona">
+    <h2 class="zona__titulo">Tus cuentas</h2>
+    <div class="fichas fichas--conexiones" id="cuentas"></div>
+  </section>
 
-  <section class="zona zona--analitica" style="margin-top:26px">
+  <!-- Se cotizan y se ordenan, pero no pueden salir elegidas. La ficha va
+       apagada y su pliegue de capacidades funciona igual: no es un anuncio,
+       es un sitio donde se trabaja. -->
+  <section class="zona">
+    <h2 class="zona__titulo">Las demás paqueterías</h2>
+    <p class="apagado" style="font-size:13px;margin-bottom:12px">
+      El producto las cotiza y las ordena. Sin cuenta conectada no pueden salir
+      elegidas, pero lo que exponen sí se registra aquí.</p>
+    <div class="fichas fichas--conexiones" id="sin-cuenta"></div>
+  </section>
+
+  <section class="zona zona--analitica">
     <h2 class="zona__titulo">Se pueden conectar</h2>
     <p class="apagado" style="font-size:13px;margin-bottom:12px">
       Estas plataformas revenden las guías de DHL, FedEx y las demás. No son
@@ -35,8 +49,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=deddf32a";
-import { cuentasEnvio, PLATAFORMAS, conexionesCaidas } from "../assets/datos.js?v=deddf32a";
+import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
+import { cuentasEnvio, paqueteriasSinCuenta, PLATAFORMAS, conexionesCaidas,
+         telefonoDe, HOY,
+         CAPACIDADES_FILAS, VALORES_CAPACIDAD, MODALIDADES_RETORNO,
+         capacidadDe, procedenciaDe, porQueDifiere, resumenCapacidades,
+         PAQUETERIAS_DEL_PRODUCTO,
+         marcarCapacidad } from "../assets/datos.js?v=923d07fd";
 if (exigirSesion()) {
   montar();
 
@@ -52,25 +71,160 @@ if (exigirSesion()) {
     quitando = setTimeout(() => { aviso.hidden = true; }, 3500);
   }
 
-  /* ---------- La cuenta por la que se compran las guías ----------
-     T1 Envíos no es una paquetería: es quien revende las guías de todas. Por
-     eso va arriba y aparte, y no dentro de la lista de preferencia. */
+  /* ---------- Qué expone cada paquetería ----------
+     Lo que se guarda se dice con su CONSECUENCIA, no con la confirmación:
+     "guardado" no le dice a nadie qué cambió en la pantalla de al lado, y lo
+     que esta tabla mueve son botones que aparecen o dejan de aparecer.
+
+     Tres frases y no dos. "No" y "sin registro" apagan la misma acción pero no
+     dejan al comerciante en el mismo sitio: una cierra el tema y la otra es una
+     llamada que puede hacer. Con la misma frase se borraría justo la distinción
+     que la matriz existe para hacer. */
+  const CONSECUENCIA = {
+    cancelaRecoleccion: {
+      si: (n) => `El botón de cancelar aparece en las recolecciones de ${n}.`,
+      no: (n) => `Las recolecciones de ${n} ofrecen la instrucción de llamar, no el botón de cancelar.`,
+      "sin-registro": (n) => `Las recolecciones de ${n} ofrecen la instrucción de llamar, con el paso para confirmarlo.`,
+    },
+    sumaPiezas: {
+      si: (n) => `Una guía generada después del corte se puede sumar a la recolección de ${n} del mismo día.`,
+      no: (n) => `Una guía generada después del corte entra a la recolección de ${n} del día siguiente.`,
+      "sin-registro": (n) => `Una guía generada después del corte entra a la del día siguiente, con el paso para confirmarlo con ${n}.`,
+    },
+    cancelaGuia: {
+      si: (n) => `El botón de cancelar la guía aparece en los pedidos con guía de ${n}.`,
+      no: (n) => `Los pedidos con guía de ${n} ofrecen la instrucción de llamar, no el botón de cancelar.`,
+      "sin-registro": (n) => `Los pedidos con guía de ${n} ofrecen la instrucción de llamar, con el paso para confirmarlo.`,
+    },
+    guiaRetorno: {
+      si: (n) => `${n} aparece en el selector de guía de retorno.`,
+      no: (n) => `${n} no aparece en el selector de guía de retorno, y la lista dice que no las emite.`,
+      "sin-registro": (n) => `${n} no aparece en el selector de guía de retorno, y la lista dice que está sin registro.`,
+    },
+    intentosNumerados: {
+      si: (n) => `Los envíos de ${n} pueden mostrar en qué intento de entrega van.`,
+      no: (n) => `De los envíos de ${n} solo se muestra el retorno que la paquetería ya declaró.`,
+      "sin-registro": (n) => `De los envíos de ${n} solo se muestra el retorno ya declarado, con el paso para confirmarlo.`,
+    },
+    costoSeguro: {
+      si: (n) => `La casilla de asegurar en los envíos de ${n} dice cuánto cuesta el seguro.`,
+      no: (n) => `La casilla de asegurar no aparece en los envíos de ${n}: no asegura.`,
+      "sin-registro": (n) => `La casilla de asegurar en los envíos de ${n} dice que el importe aparece en la factura.`,
+    },
+  };
+
+  const CONSECUENCIA_NUMERO = {
+    diasAnticipacion: (n, v) => v
+      ? `Una recolección de ${n} se puede programar hasta con ${v} ${v === 1 ? "día" : "días"} de anticipación.`
+      : `Sin este dato, la anticipación de ${n} se limita a lo que ya se ha visto funcionar.`,
+    caducidadRetorno: (n, v) => v
+      ? `Una guía de retorno de ${n} muestra su vencimiento a los ${v} días.`
+      : `Sin este dato, una guía de retorno de ${n} muestra su antigüedad y ninguna cuenta regresiva.`,
+    divisorVolumetrico: (n, v) => v
+      ? `El peso volumétrico de ${n} se calcula con divisor ${v}.`
+      : `Sin este dato, el peso volumétrico de ${n} se calcula con 5000 y se marca como estimación.`,
+  };
+
+  /* El campo extra solo existe con "Sí": una hora límite para cancelar algo que
+     no se puede cancelar es un dato que nadie va a usar y que hay que volver a
+     borrar el día que la respuesta cambie. */
+  function extraHTML(paq, fila, celda) {
+    if (celda.valor !== "si" || !fila.extra) return "";
+    const id = `cap-${paq.id}-${fila.extra.clave}`;
+    if (fila.extra.tipo === "time") {
+      return `<label class="campo campo--corto" data-extra="${esc(fila.clave)}">
+        <span>${esc(fila.extra.etiqueta)}</span>
+        <input id="${id}" type="time" value="${esc(celda.corte ?? "")}">
+      </label>`;
+    }
+    if (fila.extra.tipo === "tarifa") {
+      return `<div class="campos campos--2" data-extra="${esc(fila.clave)}">
+        <label class="campo campo--corto"><span>Porcentaje sobre el valor declarado</span>
+          <input id="${id}-pct" data-tarifa="pct" type="number" min="0" step="0.1"
+                 inputmode="decimal" value="${celda.pct ?? ""}" placeholder="Sin dato"></label>
+        <label class="campo campo--corto"><span>Mínimo en pesos</span>
+          <input id="${id}-min" data-tarifa="minimo" type="number" min="0" step="1"
+                 inputmode="numeric" value="${celda.minimo ?? ""}" placeholder="Sin dato"></label>
+      </div>`;
+    }
+    return `<label class="campo" data-extra="${esc(fila.clave)}">
+      <span>${esc(fila.extra.etiqueta)}</span>
+      <select id="${id}">
+        <option value="">Sin elegir</option>
+        ${Object.entries(MODALIDADES_RETORNO).map(([k, m]) =>
+          `<option value="${k}"${k === celda.modalidad ? " selected" : ""}>${esc(m.etiqueta)}</option>`).join("")}
+      </select>
+    </label>`;
+  }
+
+  /* Nueve filas, cada una una frase en el idioma de quien opera y nunca la
+     clave del objeto. Un select de tres valores por fila y no tres radios:
+     serían veintisiete controles dentro de una tarjeta. */
+  function filaHTML(paq, fila) {
+    const celda = capacidadDe(paq.nombre, fila.clave);
+    const id = `cap-${paq.id}-${fila.clave}`;
+    const difiere = porQueDifiere(paq.nombre, fila.clave);
+    const pie = `<span class="campo__ayuda">${esc(procedenciaDe(paq.nombre, fila.clave))}</span>` +
+      (difiere ? `<span class="campo__ayuda">${esc(difiere)}</span>` : "");
+
+    if (fila.tipo === "numero") {
+      return `<label class="campo campo--corto" data-capacidad="${esc(fila.clave)}">
+        <span>${esc(fila.etiqueta)}</span>
+        <input id="${id}" type="number" min="0" step="1" inputmode="numeric"
+               placeholder="Sin dato" value="${celda.valor ?? ""}">
+        ${pie}
+      </label>`;
+    }
+
+    return `<label class="campo" data-capacidad="${esc(fila.clave)}">
+        <span>${esc(fila.etiqueta)}</span>
+        <select id="${id}">
+          ${Object.entries(VALORES_CAPACIDAD).map(([k, v]) =>
+            `<option value="${k}"${k === celda.valor ? " selected" : ""}>${esc(v)}</option>`).join("")}
+        </select>
+        ${pie}
+      </label>` + extraHTML(paq, fila, celda);
+  }
+
+  const pliegueHTML = (paq) => `
+    <details class="avanzado avanzado--ficha" data-expone>
+      <summary>Qué expone esta paquetería</summary>
+      <div class="campos">
+        ${paq.conCuenta ? "" : `<p class="aviso aviso--info">Sin cuenta conectada, esto es lo
+          que ${esc(paq.nombre)} expone en general. Tu contrato puede tener menos.</p>`}
+        <p class="campo__ayuda">Con "sin registro" la acción no se ofrece, igual que con "no".
+          Ofrecer una acción que quizá funcione es la forma más cara de averiguarlo:
+          se averigua con un paquete real.</p>
+        ${CAPACIDADES_FILAS.map((f) => filaHTML(paq, f)).join("")}
+      </div>
+    </details>`;
+
   const caidas = conexionesCaidas().map((c) => c.id);
 
-  document.getElementById("cuentas").innerHTML = cuentasEnvio.map((c) => {
+  /* La cabeza contesta DOS preguntas y se tienen que leer como dos: si hay
+     cuenta, y qué expone la paquetería. "Sin cuenta conectada" se resuelve
+     conectando; "sin registro" se resuelve llamando. */
+  function tarjetaCuenta(c) {
     const rota = caidas.includes(c.id);
+    const telefono = telefonoDe(c.nombre);
+    const paq = { id: c.id, nombre: c.nombre, conCuenta: true };
+    /* El pliegue existe para lo que tiene fila en la matriz. Una plataforma
+       conectada la tiene —revende guías y hereda lo que exponga—; una que ni
+       siquiera está en la lista del producto, no. */
+    const enMatriz = PAQUETERIAS_DEL_PRODUCTO.includes(c.nombre);
     return `
-    <article class="ficha">
+    <article class="ficha" data-paqueteria="${esc(c.nombre)}" data-cuenta="${esc(c.id)}">
       <div class="ficha__cabeza">
         <div>
           <h2>${esc(c.nombre)}</h2>
-          <p class="ficha__sub">${esc(c.detalle)}</p>
+          <p class="ficha__sub">${esc(c.que)}</p>
         </div>
         <span class="pastilla pastilla--${rota ? "aviso" : "ok"}">${
           rota ? "Sin sincronizar" : "Conectada"}</span>
       </div>
-      <p class="ficha__nota">${esc(c.que)}</p>
-      <p class="ficha__nota">${esc(c.desde)}</p>
+      <p class="ficha__nota">${esc(c.detalle)} · ${esc(c.desde.replace(/^Conectad[ao] el /, "conectada el "))}</p>
+      <p class="ficha__nota">${esc(resumenCapacidades(c.nombre))}</p>
+      ${telefono ? `<p class="ficha__nota">Atención: ${esc(telefono)}</p>` : ""}
 
       <details class="avanzado avanzado--ficha">
         <summary>Credenciales</summary>
@@ -81,14 +235,144 @@ if (exigirSesion()) {
         </div>
       </details>
 
+      ${enMatriz ? pliegueHTML(paq) : ""}
+
       <div class="ficha__pie">
         <button class="boton boton--sutil boton--chico" type="button">Revisar conexión</button>
       </div>
     </article>`;
-  }).join("");
+  }
 
-  /* Las que faltan se ven como tarjetas apagadas, igual que en Canales de
-     venta: así se distingue de un vistazo lo conectado de lo conectable. */
+  function tarjetaSinCuenta(p) {
+    const paq = { id: p.id, nombre: p.nombre, conCuenta: false };
+    return `
+    <article class="ficha ficha--apagada" data-paqueteria="${esc(p.nombre)}" data-cuenta="${esc(p.id)}">
+      <div class="ficha__cabeza">
+        <div><h2>${esc(p.nombre)}</h2></div>
+        <span class="pastilla pastilla--neutra">Sin cuenta</span>
+      </div>
+      <p class="ficha__nota">Sin cuenta conectada: esta paquetería se cotiza y se ordena,
+        pero no puede salir elegida.</p>
+      <p class="ficha__nota">${esc(resumenCapacidades(p.nombre))}</p>
+      ${p.telefono ? `<p class="ficha__nota">Atención: ${esc(p.telefono)}</p>` : ""}
+
+      ${pliegueHTML(paq)}
+
+      <div class="ficha__pie">
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-conectar="${esc(p.nombre)}">Conectar cuenta</button>
+      </div>
+    </article>`;
+  }
+
+  const zonaCuentas = document.getElementById("cuentas");
+  const zonaSinCuenta = document.getElementById("sin-cuenta");
+  zonaCuentas.innerHTML = cuentasEnvio.map(tarjetaCuenta).join("");
+  zonaSinCuenta.innerHTML = paqueteriasSinCuenta.map(tarjetaSinCuenta).join("");
+
+  /* Se repinta solo la tarjeta tocada y se le devuelve el pliegue abierto: con
+     la lista entera repintada, el pliegue se cierra y hay que volver a bajar
+     hasta la celda que se acaba de cambiar. */
+  function repintar(nombre) {
+    const vieja = document.querySelector(`[data-paqueteria="${CSS.escape(nombre)}"]`);
+    const abiertos = [...vieja.querySelectorAll("details")].map((d) => d.open);
+    const cuenta = cuentasEnvio.find((c) => c.nombre === nombre);
+    const nueva = document.createElement("div");
+    nueva.innerHTML = cuenta
+      ? tarjetaCuenta(cuenta)
+      : tarjetaSinCuenta(paqueteriasSinCuenta.find((p) => p.nombre === nombre));
+    const art = nueva.firstElementChild;
+    art.querySelectorAll("details").forEach((d, i) => { d.open = abiertos[i] ?? false; });
+    vieja.replaceWith(art);
+    return art;
+  }
+
+  function alCambiar(e) {
+    const ficha = e.target.closest("[data-paqueteria]");
+    if (!ficha) return;
+    const nombre = ficha.dataset.paqueteria;
+    const campo = e.target.closest("[data-capacidad], [data-extra]");
+    if (!campo) return;
+
+    /* Lo que marca el comerciante va SIEMPRE a la capa de cuenta, con su fecha:
+       la de producto se confirma con la paquetería y no es suya. Esconder una
+       detrás de la otra deja sin saber de quién es el error cuando falle. */
+    const marca = { fecha: HOY };
+
+    if (campo.dataset.extra) {
+      const fila = CAPACIDADES_FILAS.find((f) => f.clave === campo.dataset.extra);
+      const actual = capacidadDe(nombre, fila.clave);
+      if (fila.extra.tipo === "tarifa") {
+        const cual = e.target.dataset.tarifa;
+        marcarCapacidad(nombre, fila.clave, {
+          ...marca, valor: "si",
+          pct: actual.pct ?? null, minimo: actual.minimo ?? null,
+          [cual]: e.target.value === "" ? null : Number(e.target.value),
+        });
+        repintar(nombre);
+        const c = capacidadDe(nombre, fila.clave);
+        return avisar(c.pct != null
+          ? `Guardado. El seguro de ${nombre} cuesta ${c.pct} % sobre el valor declarado${
+              c.minimo != null ? `, mínimo $${c.minimo}` : ""}.`
+          : `Guardado. Falta el porcentaje para poder decir cuánto cuesta el seguro de ${nombre}.`);
+      }
+      const clave = fila.extra.clave;
+      marcarCapacidad(nombre, fila.clave, { ...marca, valor: "si", [clave]: e.target.value || null });
+      repintar(nombre);
+      return avisar(clave === "corte"
+        ? (e.target.value
+            ? `Guardado. Una recolección de ${nombre} se puede cancelar hasta las ${e.target.value}.`
+            : `Guardado. Sin hora límite, la cancelación de ${nombre} se ofrece a cualquier hora.`)
+        : `Guardado. ${nombre} emite la guía de retorno en la modalidad elegida.`);
+    }
+
+    const clave = campo.dataset.capacidad;
+    const fila = CAPACIDADES_FILAS.find((f) => f.clave === clave);
+    const valor = fila.tipo === "numero"
+      ? (e.target.value === "" ? null : Number(e.target.value))
+      : e.target.value;
+
+    /* Volver una celda a "sin registro" es QUITAR el registro de cuenta, no
+       escribir un valor: la celda vuelve a decir lo que diga el producto. */
+    if (valor === "sin-registro" || (fila.tipo === "numero" && valor === null)) {
+      marcarCapacidad(nombre, clave, null);
+    } else {
+      marcarCapacidad(nombre, clave, { ...marca, valor });
+    }
+
+    const art = repintar(nombre);
+    art.querySelector(`[data-capacidad="${CSS.escape(clave)}"] select, [data-capacidad="${CSS.escape(clave)}"] input`)?.focus();
+
+    const resuelto = capacidadDe(nombre, clave).valor;
+    if (fila.tipo === "numero") avisar(`Guardado. ${CONSECUENCIA_NUMERO[clave](nombre, resuelto)}`);
+    else avisar(`Guardado. ${CONSECUENCIA[clave][resuelto](nombre)}`);
+  }
+
+  zonaCuentas.addEventListener("change", alCambiar);
+  zonaSinCuenta.addEventListener("change", alCambiar);
+
+  /* "Confirmar con Redpack", desde donde la acción no existió, abre esta
+     pantalla con esa ficha desplegada y esa celda enfocada, esté en la zona de
+     cuentas o en la de las demás. */
+  const url = new URLSearchParams(location.search);
+  const buscada = url.get("paqueteria")
+    ?? cuentasEnvio.find((c) => c.id === url.get("cuenta"))?.nombre;
+  if (buscada) {
+    const ficha = document.querySelector(`[data-paqueteria="${CSS.escape(buscada)}"]`);
+    const pliegue = ficha?.querySelector("[data-expone]");
+    if (pliegue) {
+      pliegue.open = true;
+      const celda = url.get("capacidad");
+      const control = celda
+        ? pliegue.querySelector(`[data-capacidad="${CSS.escape(celda)}"] select, [data-capacidad="${CSS.escape(celda)}"] input`)
+        : null;
+      (control ?? ficha).scrollIntoView({ block: "center" });
+      control?.focus();
+    }
+  }
+
+  /* Las plataformas que faltan se ven como tarjetas apagadas, igual que en
+     Canales de venta. No son paqueterías y no tienen fila en la matriz. */
   document.getElementById("otras").innerHTML = PLATAFORMAS
     .filter((p) => !cuentasEnvio.some((c) => c.nombre === p))
     .map((n) => `
@@ -103,7 +387,7 @@ if (exigirSesion()) {
         </div>
       </article>`).join("");
 
-  document.getElementById("otras").addEventListener("click", (e) => {
+  document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-conectar]");
     if (b) avisar(`Aquí se abriría el permiso de ${b.dataset.conectar}.`);
   });

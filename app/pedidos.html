@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=deddf32a">
-<script src="../assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
+<script src="../assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -17,6 +17,9 @@
       <p>Los pedidos que entran por tus canales de venta. Desde aquí se genera la guía con tus propias cuentas de paquetería.</p>
     </div>
     <div class="encabezado__acciones">
+      <button class="boton boton--primario" type="button" id="nueva-devolucion" hidden>
+        Registrar devolución
+      </button>
       <button class="boton boton--sutil" type="button" id="sincronizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4.5L4 9"/><path d="M4 5v4h4"/><path d="M4 13a8 8 0 0 0 14 4.5L20 15"/><path d="M20 19v-4h-4"/></svg>
         Sincronizar estatus
@@ -34,6 +37,7 @@
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="transito">En tránsito</button>
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="detenidos">Detenidos</button>
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="entregados">Entregados</button>
+        <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="devoluciones">Devoluciones</button>
       </div>
       <div class="conmutador" role="group" aria-label="Forma de ver la lista">
         <button type="button" aria-pressed="true" data-modo="clasico">Clásico</button>
@@ -70,6 +74,16 @@
       <label class="sr-only" for="fc">Filtrar por canal</label>
       <select id="fc"><option value="">Todos los canales</option></select>
 
+      <span class="filtros__div" aria-hidden="true" data-solo-dev hidden></span>
+      <label class="sr-only" for="fd-estado">Filtrar por estado</label>
+      <select id="fd-estado" data-solo-dev hidden><option value="">Todos los estados</option></select>
+      <label class="sr-only" for="fd-motivo">Filtrar por motivo</label>
+      <select id="fd-motivo" data-solo-dev hidden><option value="">Todos los motivos</option></select>
+      <label class="sr-only" for="fd-mecanismo">Filtrar por mecanismo</label>
+      <select id="fd-mecanismo" data-solo-dev hidden><option value="">Todos los mecanismos</option></select>
+      <button class="ficha-filtro" type="button" id="fd-quietas" aria-pressed="false"
+              data-solo-dev hidden>Sin moverse más de 7 días</button>
+
       <span class="filtros__div" aria-hidden="true"></span>
       <button class="ficha-filtro ficha-filtro--quitable" type="button" id="ficha-foco" hidden></button>
 
@@ -85,7 +99,9 @@
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar">Cancelar selección</button>
       <button class="boton boton--fantasma boton--chico" type="button" data-lote="recoleccion">Programar recolección</button>
       <button class="boton boton--fantasma boton--chico" type="button" data-lote="etiquetas">Imprimir etiquetas</button>
+      <button class="boton boton--fantasma boton--chico" type="button" data-lote="forzar">Forzar paquetería</button>
       <button class="boton boton--primario boton--chico" type="button" data-lote="guias">Generar guías</button>
+      <span class="barra-seleccion__nota" data-sin-accion hidden></span>
     </div>
 
     <div class="tabla-caja scroll-fino" id="vista-tabla">
@@ -102,6 +118,22 @@
     </div>
 
     <div class="mosaico" id="vista-mosaico" hidden></div>
+
+    <!-- La sexta lente. Lista larga, así que tabla y no tarjetas. -->
+    <div class="tabla-caja scroll-fino" id="vista-devoluciones" hidden>
+      <table id="tabla-dev">
+        <caption class="sr-only">Devoluciones, con su mecanismo y su estado.</caption>
+        <thead><tr>
+          <th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Motivo</th>
+          <th scope="col">Piezas</th><th scope="col">Mecanismo</th><th scope="col">Estado</th>
+          <th scope="col">Guía de retorno</th>
+          <th scope="col"><span class="sr-only">Acción</span></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="vacio" id="vacio-dev" hidden></div>
 
     <div class="vacio" data-sin-resultados hidden>
       <h3 style="font-size:16px">Ningún pedido en esta vista</h3>
@@ -123,15 +155,29 @@
   </section>
   <dialog class="panel" id="panel" aria-labelledby="panel-titulo"></dialog>
   <dialog class="dialogo lote" id="lote" aria-labelledby="lote-titulo"></dialog>
+  <dialog class="dialogo" id="confirmar" aria-labelledby="confirmar-titulo"></dialog>
+  <dialog class="dialogo" id="dlg-dev" aria-labelledby="dlg-dev-titulo"></dialog>
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=deddf32a";
+import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
-         PENDIENTES, origen,
-         detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar,
-         motivoOmision, simularGeneracion, guardarGuia } from "../assets/datos.js?v=deddf32a";
+         PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
+         detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar, tarifaDe,
+         motivoOmision, simularGeneracion, guardarGuia, olvidarGuia, enumerarEs,
+         embalajeDe, pesoCobrado, divisorDe, capacidadDe,
+         reglasPaqueteria, decidirPaqueteria, motivosCambioPaqueteria,
+         PAQUETERIAS, PLATAFORMAS,
+         telefonoDe, nombrarAusencia, ofrece, costoSeguroDe,
+         CAMBIOS_EN_CANAL, GENERADA_MIENTRAS_TANTO, foliosQueCumplen,
+         devoluciones, devolucionesOrdenadas, devolucionesDe, devolucionAbierta,
+         guardarDevolucion, diasSinMoverse, tonoDevolucion, notaDevolucion,
+         piezasDevueltas, siguientePaso, costosDevolucion, agregarCargo,
+         MOTIVOS_DEVOLUCION, MECANISMOS_DEVOLUCION, RESOLUCIONES_DEVOLUCION,
+         QUIEN_PAGA_FLETE, ESTADOS_MERCANCIA, RASTREO_PUBLICO, enlaceRastreo,
+         origenDeEtiqueta, sinRegistro, MODALIDADES_RETORNO, CAPACIDADES, precioDe,
+         PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=923d07fd";
 if (exigirSesion()) {
   montar();
 
@@ -153,10 +199,16 @@ if (exigirSesion()) {
   const metrica = (e, v, n) =>
     `<div class="metrica"><p class="metrica__etiqueta">${e}</p>
      <p class="metrica__valor tabular">${v}</p><p class="metrica__nota">${n}</p></div>`;
-  document.getElementById("metricas").innerHTML =
-    metrica("Total de pedidos", pedidos.length, "En el periodo") +
-    metrica("Sin guía", sinGuia.length, conError.length ? `${conError.length} con error al generarla` : "Pendientes de despachar") +
-    metrica("En tránsito", cuenta("transito"), `${cuenta("detenidos")} detenidos`);
+  /* Las métricas cambian con la lente, así que se pintan al cambiar de lente y
+     no una sola vez al cargar: si no, volver de Devoluciones dejaba las tres
+     cifras de las devoluciones encima de la tabla de pedidos. */
+  function pintarMetricasPedidos() {
+    document.getElementById("metricas").innerHTML =
+      metrica("Total de pedidos", pedidos.length, "En el periodo") +
+      metrica("Sin guía", sinGuia.length, conError.length ? `${conError.length} con error al generarla` : "Pendientes de despachar") +
+      metrica("En tránsito", cuenta("transito"), `${cuenta("detenidos")} detenidos`);
+  }
+  pintarMetricasPedidos();
 
   /* La columna de envío carga tres cosas distintas: la guía si existe, el
      error si lo hubo, y —lo que el MVP todavía no dice— cuántos días lleva
@@ -171,6 +223,15 @@ if (exigirSesion()) {
       return `<span class="pastilla pastilla--mal">No se pudo generar</span>
         <div class="apagado" style="margin-top:5px;font-size:12px;max-width:34ch">${p.error}</div>`;
     }
+    /* El motivo va escrito en la fila y no escondido en un filtro: quien abre
+       la lista a las siete de la mañana tiene que poder decidir cuál abrir
+       primero sin abrirlos todos. */
+    const caja = p.pago === "Pagado" ? embalajeDe(p.folio) : null;
+    if (caja?.revision) {
+      return `<span class="pastilla pastilla--aviso">Revisión manual</span>
+        <div class="apagado" style="margin-top:5px;font-size:12px;max-width:34ch">${caja.revision.texto}</div>`;
+    }
+
     const d = diasDesde(p.fecha);
     const tono = d >= 3 ? "mal" : d >= 1 ? "aviso" : "neutra";
     return `<span class="pastilla pastilla--${tono}">Sin guía</span>
@@ -347,14 +408,12 @@ if (exigirSesion()) {
         <div class="bloque__caja" style="display:grid;gap:14px">
           ${franja("editada", ICO.lapiz, "Dirección actualizada a mano",
             `La guardaste el ${fechaCorta(HOY)}.` + (d.envio
-              ? ` La guía ${esc(d.envio.guia)} ya estaba generada con la anterior, así que hay que cancelarla y generar otra.`
-              : ""))}
+              ? ` La guía ${esc(d.envio.guia)} se generó con la anterior y la etiqueta impresa conserva
+                 esa dirección. Lo que se puede hacer con la guía está arriba, en Envío.`
+              : " Está lista para generar la guía, arriba, en Envío."))}
           ${direccionCompacta(editada, editada.telefono)}
           <div class="grupo-botones">
-            ${d.envio
-              ? '<button class="boton boton--peligro boton--chico" type="button">Cancelar guía y generar otra</button>'
-              : '<button class="boton boton--primario boton--chico" type="button">Generar guía</button>'}
-            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar</button>
+            <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
             <button class="boton boton--sutil boton--chico" type="button" data-descartar="${d.folio}">Descartar cambios</button>
           </div>
         </div>
@@ -416,7 +475,7 @@ if (exigirSesion()) {
           ${listaCambios(c.cambios)}
         </div>
         <div class="grupo-botones">
-          <button class="boton boton--primario boton--chico" type="button">Aplicar corrección y generar guía</button>
+          <button class="boton boton--primario boton--chico" type="button" data-aplicar="${d.folio}">Aplicar corrección</button>
           <button class="boton boton--fantasma boton--chico" type="button" data-editar="${d.folio}">Editar dirección</button>
         </div>
       </div>
@@ -578,19 +637,27 @@ if (exigirSesion()) {
       e.hidden = !mensaje;
     };
 
+    /* Los que faltan salen marcados ANTES de que nadie intente guardar, y el
+       foco entra en el primero: son catorce campos, y encontrar el que falta no
+       puede costar más que escribirlo. */
+    const capturados = editados.get(folio) ?? d.direccion.campos ?? {};
+    const pendientes = CAMPOS_OBLIGATORIOS.filter((x) => !String(capturados[x.campo] ?? "").trim());
+    for (const x of pendientes) marcarError(x.campo, `Falta ${x.etiqueta}.`);
+
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
       const v = Object.fromEntries(new FormData(form).entries());
       let ok = true;
-      for (const [k, etiqueta] of [["nombre", "el nombre"], ["apellido", "el apellido"],
-                                   ["calle", "la calle"], ["numExt", "el número exterior"],
-                                   ["colonia", "la colonia"], ["ciudad", "la ciudad"], ["estado", "el estado"]]) {
-        const falta = !String(v[k] || "").trim();
-        marcarError(k, falta ? `Falta ${etiqueta}.` : "");
+      for (const { campo, etiqueta } of CAMPOS_OBLIGATORIOS) {
+        if (campo === "cp") continue; // el CP además tiene forma, y se revisa aparte
+        const falta = !String(v[campo] || "").trim();
+        marcarError(campo, falta ? `Falta ${etiqueta}.` : "");
         if (falta) ok = false;
       }
+      const cpVacio = !String(v.cp || "").trim();
       const malCP = !/^\d{5}$/.test(String(v.cp || "").trim());
-      marcarError("cp", malCP ? "El código postal son cinco dígitos." : "");
+      marcarError("cp", cpVacio ? "Falta el código postal."
+        : malCP ? "El código postal son cinco dígitos." : "");
       if (malCP) ok = false;
 
       const tel = String(v.telefono || "").replace(/\D/g, "");
@@ -612,7 +679,11 @@ if (exigirSesion()) {
     form.querySelector("[data-cancelar-edicion]")
       .addEventListener("click", () => repintarDireccion(folio));
 
-    form.querySelector("#dir-nombre").focus();
+    /* El foco cae en el primer campo que falta, no en el primero del
+       formulario: abrir la edición desde "Falta la colonia" y aterrizar en el
+       nombre es el viaje de más otra vez, catorce campos más abajo. */
+    const primero = pendientes[0]?.campo;
+    (form.querySelector(`#dir-${primero}`) ?? form.querySelector("#dir-nombre")).focus();
   }
 
   function repintarDireccion(folio) {
@@ -620,54 +691,368 @@ if (exigirSesion()) {
     const nuevo = document.createElement("div");
     nuevo.innerHTML = bloqueDireccion(detalleActual(folio));
     bloque.replaceWith(nuevo.firstElementChild);
+    /* El bloque de Envío se repinta con ella: el código postal pudo cambiar de
+       zona, y una tarifa calculada con la dirección anterior es una tarifa
+       equivocada esperando a que alguien pulse Generar. El panel no se cierra
+       y no se vuelve a la tabla. */
+    repintarEnvio(folio);
   }
 
   /** El detalle, con la edición de esta sesión encima si la hay. */
   function detalleActual(folio) {
-    const d = detalleDe(folio);
+    const d0 = detalleDe(folio);
+    /* La corrección aplicada en esta sesión. El prototipo no tiene servidor,
+       pero el cambio tiene que sobrevivir a repintar el panel: si no, el bloque
+       de Envío volvería a decir que la dirección está sin resolver. */
+    const d = d0 && correccionesAplicadas.has(folio) && d0.correccion
+      ? { ...d0, correccion: { ...d0.correccion, aplicada: true } }
+      : d0;
     const e = editados.get(folio);
     if (!d || !e) return d;
     return { ...d, direccion: { nombre: e.nombre, lineas: lineasDe(e), telefono: e.telefono, campos: e } };
   }
 
+  /* ================================================================
+     El bloque Envío
+     ================================================================
+     Corregir la colonia y tener que irse a otra pantalla a generar la guía es
+     la misma tarea partida en dos viajes. Aquí está todo lo que mueve el
+     precio —origen, caja, peso, seguro y paquetería—, y cambiar cualquiera de
+     esas cosas vuelve a cotizar mientras se escribe: el número que importa se
+     calcula con lo que se captura, y verlo después de generar la guía es
+     verlo demasiado tarde. */
+
+  /* Lo capturado en esta sesión, por pedido. Sobrevive a cerrar y reabrir el
+     panel; si no, un fallo obligaría a recapturar peso, caja y seguro para
+     volver a intentar lo mismo. */
+  const envios = new Map();
+  /* Idempotencia: la llave es folio + intento, no folio. Con el folio solo, la
+     protección contra el doble clic bloquea también el reintento, que es justo
+     lo que hay que permitir. */
+  const emitidas = new Set();
+  const correccionesAplicadas = new Set();
+  const cambiosAceptados = new Set();
+
+  const papelDe = (nombre) =>
+    reglasPaqueteria.orden.find((o) => o.paqueteria === nombre)?.papel ?? "normal";
+  const puestoDe = (nombre) => {
+    const i = reglasPaqueteria.orden.findIndex((o) => o.paqueteria === nombre);
+    return i === -1 ? 99 : i;
+  };
+
+  /* Las de "no usar" no se ofrecen —nunca, aunque sean las más baratas— y las
+     plataformas no son paqueterías. Del resto manda el orden de preferencia, y
+     las de evitar caen al final: la lista tiene que decir lo mismo que
+     Configuración o una de las dos sobra. */
+  /* Las plataformas revenden guías: no son paqueterías y no van en la lista al
+     lado de DHL. Las de "no usar" no se ofrecen nunca, aunque sean las más
+     baratas: es lo que dice Configuración, y una lista que la contradiga
+     convierte ese ajuste en decorado. */
+  const cuentasTarifa = () =>
+    PAQUETERIAS.filter((n) => !PLATAFORMAS.includes(n) && papelDe(n) !== "no-usar");
+
+  function opcionesDe(peso, todas = false) {
+    const lista = cuentasTarifa()
+      .map((n) => ({ ...tarifaDe(n, peso), papel: papelDe(n), puesto: puestoDe(n) }))
+      .sort((a, b) =>
+        (a.papel === "evitar") - (b.papel === "evitar") || a.puesto - b.puesto || a.precio - b.precio);
+    return todas ? lista : lista.slice(0, 4);
+  }
+
+  function estadoEnvio(folio) {
+    if (envios.has(folio)) return envios.get(folio);
+    const d = detalleActual(folio);
+    const caja = embalajeDe(folio) ?? {};
+    const e = {
+      origen: pedidos.find((x) => x.folio === folio)?.origen ?? origenPredeterminado()?.id ?? null,
+      plantilla: caja.plantilla?.id ?? null,
+      cajaFuente: caja.fuente ?? "regla",
+      regla: caja.regla ?? null,
+      revision: caja.revision ?? null,
+      vetadas: new Set((caja.vetos ?? []).map((v) => v.plantilla)),
+      medidas: caja.medidas ?? null,
+      peso: caja.peso ?? d.pesoEstimado ?? 1.5,
+      /* Sin caja elegida el peso no sale de ninguna plantilla: decir que sí
+         sería atribuirle un origen a un número que nos inventamos nosotros. */
+      pesoFuente: caja.pesoFuente ?? "estimado",
+      asegurar: false,
+      valor: d.total,
+      paqueteria: null,
+      motivo: "",
+      descartadas: [],
+      todas: false,
+      intento: 0,
+      fallo: null,
+      aviso: null,
+    };
+    envios.set(folio, e);
+    return e;
+  }
+
+  /** Lo que de verdad se cotiza: el mayor entre el peso y el volumétrico. */
+  function facturableDe(e, paqueteria) {
+    const caja = plantillas.find((x) => x.id === e.plantilla);
+    const m = e.medidas ?? (caja ? { largo: caja.largo, ancho: caja.ancho, alto: caja.alto } : null);
+    if (!m) return { real: e.peso, volumetrico: 0, cobrado: e.peso, porVolumen: false, medidas: null };
+    const c = pesoCobrado({ peso: e.peso, ...m }, divisorDe(paqueteria));
+    return { ...c, medidas: m };
+  }
+
+  /**
+   * Con cuál sale, con cuáles se puede comparar y por qué.
+   *
+   * Sale de aquí y de ningún otro sitio: la lista, el radio marcado y el botón
+   * que nombra la paquetería tienen que decir lo mismo. Calculado por
+   * separado, el botón siguió nombrando a una paquetería que la lista ya había
+   * quitado por falta de cobertura.
+   *
+   * La propuesta llega elegida, no en blanco, porque en la mayoría de los
+   * pedidos se va a aceptar y obligar a elegir cada vez convierte una
+   * confirmación en una decisión.
+   */
+  function propuestaDe(e, d) {
+    const previa = decidirPaqueteria({ peso: e.peso });
+    const cobro = facturableDe(e, e.paqueteria ?? previa.elegida);
+    const decision = decidirPaqueteria({ peso: cobro.cobrado });
+
+    const opciones = opcionesDe(cobro.cobrado, e.todas)
+      .filter((o) => !e.descartadas.includes(o.paqueteria));
+    if (decision.elegida && !e.descartadas.includes(decision.elegida)
+        && !opciones.some((o) => o.paqueteria === decision.elegida)) {
+      opciones.unshift({ ...tarifaDe(decision.elegida, cobro.cobrado), papel: "normal" });
+    }
+
+    /* Cuando la propuesta se cae por falta de cobertura, la siguiente pasa a
+       ser la propuesta: elegirla no es salirse de la regla, así que tampoco
+       se pide un motivo por algo que decidió el sistema. */
+    const propuesta = decision.elegida && !e.descartadas.includes(decision.elegida)
+      ? decision.elegida
+      : opciones[0]?.paqueteria ?? null;
+
+    return { decision, cobro, opciones, propuesta, elegida: e.paqueteria ?? propuesta };
+  }
+
+  /* Los campos sin los que la etiqueta no sirve, en una sola lista. La franja
+     de "lo que falta" y la validación del formulario salen de aquí las dos:
+     con dos listas, la franja nombra uno y el formulario rechaza por otro, que
+     es exactamente el viaje de más que esta función existe para quitar. */
+  const CAMPOS_OBLIGATORIOS = [
+    { campo: "nombre", etiqueta: "el nombre" },
+    { campo: "apellido", etiqueta: "el apellido" },
+    { campo: "calle", etiqueta: "la calle" },
+    { campo: "numExt", etiqueta: "el número exterior" },
+    { campo: "cp", etiqueta: "el código postal" },
+    { campo: "colonia", etiqueta: "la colonia" },
+    { campo: "ciudad", etiqueta: "la ciudad" },
+    { campo: "estado", etiqueta: "el estado" },
+  ];
+
+  const falta = (d) => {
+    const c = d.direccion.campos ?? {};
+    return CAMPOS_OBLIGATORIOS.filter((x) => !String(c[x.campo] ?? "").trim());
+  };
+
+  /* ---------- Las piezas que se repintan mientras se escribe ---------- */
+
+  function cobroHTML(e, cobro, paq) {
+    if (!cobro.medidas) return "";
+    const m = cobro.medidas;
+    const sinConfirmarDivisor = !capacidadDe(paq, "divisorVolumetrico").fuente;
+    return `<div class="cobro${cobro.porVolumen ? " cobro--aviso" : ""}">
+      <p class="cobro__cifra">Te cobran ${kg(cobro.cobrado)}</p>
+      <p class="cobro__porque">${cobro.porVolumen
+        ? `Pesa ${kg(cobro.real)}, pero una caja de ${m.largo} × ${m.ancho} × ${m.alto} cm
+           se cobra como si pesara ${kg(cobro.volumetrico)}.`
+        : `Pesa ${kg(cobro.real)} y la caja no abulta más que eso.`}</p>
+      ${cobro.porVolumen && sinConfirmarDivisor
+        ? `<p class="cobro__porque">Calculado con divisor ${divisorDe(paq)}.
+           No está confirmado con ${esc(paq)}.</p>` : ""}
+    </div>`;
+  }
+
+  function tarifasHTML(folio, e, d, plan) {
+    const { opciones, cobro, decision, elegida } = plan;
+
+    if (!opciones.length) {
+      return `<p class="aviso aviso--mal">Ninguna paquetería quedó disponible para este pedido.</p>`;
+    }
+
+    const salida = origenes.find((o) => o.id === e.origen)?.nombre ?? "tu origen";
+    return `
+      <div>
+        <p class="apagado" style="font-size:13px;margin-bottom:10px">
+          Con tus cuentas, de ${esc(salida)} a ${esc(d.ciudad.split(",")[0])} ·
+          ${kg(cobro.cobrado)} facturables:
+        </p>
+        <div class="tarifas" role="radiogroup" aria-label="Paquetería y servicio">
+          ${opciones.map((o) => `
+            <label class="tarifa">
+              <input type="radio" name="tarifa-${esc(folio)}" value="${esc(o.paqueteria)}"
+                     data-precio="${o.precio}"${o.paqueteria === elegida ? " checked" : ""}>
+              <span class="tarifa__nombre">
+                <b>${esc(o.paqueteria)}</b> · ${esc(o.servicio)}
+                <span class="tarifa__meta">
+                  Entrega en ${esc(o.dias)}${o.aTiempo != null
+                    ? ` · <span class="tarifa__cumple" data-bajo="${o.aTiempo < 90}">${o.aTiempo}% a tiempo contigo</span>`
+                    : ""}${o.papel === "evitar" ? " · Marcada como evitar" : ""}
+                </span>
+              </span>
+              <span class="tarifa__precio">${dinero(o.precio)}
+                <span class="apagado" style="display:block;font-size:11px;font-weight:400">Estimado</span></span>
+            </label>`).join("")}
+        </div>
+        <!-- Cotizar lo mismo desde dos bodegas distintas sin decir nada le
+             enseña al comerciante un hecho falso sobre su propia operación, y
+             ese error se descubre al conciliar. La tarifa por zona no entra en
+             esta versión; lo que sí entra es decir de qué depende. -->
+        <p class="aviso aviso--info" style="margin-top:10px">Estimado por peso. La tarifa
+          final depende de la zona entre el origen y el destino, y sale de la cotización
+          en vivo de la paquetería.</p>
+        <p class="apagado" style="font-size:12px;margin-top:8px">${
+          e.descartadas.length
+            ? `${esc(e.descartadas.join(" y "))} quedó fuera de la lista: no tiene cobertura en este destino.`
+            : decision.elegida ? esc(decision.porque) : ""}</p>
+      </div>`;
+  }
+
+  /* El motivo solo aparece al elegir una distinta de la propuesta. Sin ese
+     registro, el orden de preferencia parece equivocado cuando no lo está, y
+     la frecuencia de las excepciones es la señal de que hay que reordenarlo. */
+  function motivoHTML(e, plan) {
+    if (!e.paqueteria || e.paqueteria === plan.propuesta) return "";
+    return `<label class="campo"><span>Por qué no sale con ${esc(plan.propuesta)}</span>
+      <select data-motivo>
+        <option value="">Elige un motivo</option>
+        ${motivosCambioPaqueteria(plan.propuesta).map((m) =>
+          `<option value="${esc(m.id)}"${m.id === e.motivo ? " selected" : ""}>${esc(m.etiqueta)}</option>`).join("")}
+      </select>
+      <span class="campo__ayuda">Queda anotado en el pedido. La frecuencia de las excepciones
+        es lo que dice si hay que reordenar tu lista de preferencia.</span>
+    </label>`;
+  }
+
+  function accionesHTML(folio, e, plan, pendientes) {
+    const { cobro, elegida: paq } = plan;
+    const precio = paq ? tarifaDe(paq, cobro.cobrado) : null;
+    const faltaMotivo = !!e.paqueteria && e.paqueteria !== plan.propuesta && !e.motivo;
+    /* Sin caja no hay medidas que declarar, y una guía sin medidas se paga dos
+       veces: el sobrepeso y la reexpedición. */
+    const razon = pedidos.find((x) => x.folio === folio)?.envio
+      ? "Este pedido ya tiene guía."
+      : !cobro.medidas
+      ? "Falta elegir la caja del paquete."
+      : !paq ? "Ninguna paquetería quedó disponible para este pedido."
+      : pendientes.length
+        ? `${pendientes.length === 1 ? "Falta" : "Faltan"} ${
+            enumerarEs(pendientes.map((x) => x.etiqueta))} de la dirección.`
+        : faltaMotivo ? "Falta el motivo del cambio de paquetería." : "";
+
+    const total = totalDe(e, plan);
+    return `
+      <button class="boton boton--primario boton--chico" type="button" data-generar
+        ${razon ? `disabled title="${esc(razon)}"` : ""}>
+        Generar guía con ${esc(paq ?? "—")} ${precio ? `${esc(precio.servicio)} · ${dinero(total)}` : ""}
+      </button>
+      <button class="boton boton--sutil boton--chico" type="button" data-comparar>${
+        e.todas ? "Ver menos opciones" : "Comparar más opciones"}</button>`;
+  }
+
+  /* ---------- La instrucción de la capa de en medio ----------
+     Donde la paquetería no expone la acción, lo que queda es una llamada. Y
+     "no la expone" y "no lo hemos confirmado" se ven igual pero no se nombran
+     igual: la primera cierra el tema y la segunda es una llamada que el
+     comerciante puede hacer, porque él tiene el ejecutivo de cuenta. */
+  function instruccionHTML(paqueteria, clave, pasos, queHace = "hace esto") {
+    /* Una paquetería que no está en la matriz cae aquí como "sin registro", no
+       como "no" y desde luego no como "sí": no hay registro de qué expone, y
+       decir que no lo hace sería afirmar algo sobre un tercero que nadie
+       comprobó. La matriz tiene fila para las nueve, con cuenta o sin ella,
+       así que el paso de confirmar existe siempre. */
+    const modo = capacidadDe(paqueteria, clave).valor === "no" ? "no" : "sin-registro";
+    return `<div class="instruccion instruccion--${modo}">
+      <b>${esc(nombrarAusencia(paqueteria, clave))}</b>
+      <ol>
+        ${pasos.map((x) => `<li class="instruccion__paso">${x}</li>`).join("")}
+        ${modo === "sin-registro" ? `<li class="instruccion__paso">Si ${esc(paqueteria)}
+          sí ${esc(queHace)}, márcalo en Paqueterías para que el botón aparezca la próxima vez.
+          ${enlaceConfirmar(paqueteria, clave)}</li>` : ""}
+      </ol>
+    </div>`;
+  }
+
+  /* Lleva a la ficha de esa paquetería con su celda enfocada, esté en la zona
+     de cuentas o en la de las demás. Es lo que convierte el hueco en algo que
+     se puede cerrar, en vez de en una nota que nadie recoge. */
+  const enlaceConfirmar = (paqueteria, clave) =>
+    `<a class="boton boton--sutil boton--chico"
+        href="paqueterias.html?paqueteria=${encodeURIComponent(paqueteria)}&capacidad=${encodeURIComponent(clave)}"
+     >Confirmar con ${esc(paqueteria)}</a>`;
+
+  /** Los pasos de una cancelación que nos toca pedir por teléfono. */
+  const pasosCancelar = (paqueteria, guia) => {
+    const tel = telefonoDe(paqueteria);
+    return [
+      `Llama a ${esc(paqueteria)}${tel ? ` al ${esc(tel)}` : ""} y pide la cancelación de la guía
+       <span class="instruccion__dato">${esc(guia)}</span>.
+       <button class="boton boton--sutil boton--chico" type="button"
+               data-copiar="${esc(guia)}">Copiar guía</button>`,
+      "La guía queda sin usar. Si tu contrato cobra las guías emitidas, esta se te cobra.",
+    ];
+  };
+
+  function cancelarGuiaHTML(e) {
+    if (ofrece(e.paqueteria, "cancelaGuia")) {
+      return `<div class="grupo-botones">
+        <button class="boton boton--sutil boton--chico" type="button"
+                data-cancelar-guia>Cancelar guía y generar otra</button>
+      </div>`;
+    }
+    return instruccionHTML(e.paqueteria, "cancelaGuia", pasosCancelar(e.paqueteria, e.guia), "cancela guías");
+  }
+
+  /* ---------- El bloque entero ---------- */
   function bloqueEnvio(d) {
     if (d.envio) {
       const e = d.envio;
-      return `<div class="bloque">
+      return `<div class="bloque" data-bloque-envio>
         <p class="bloque__titulo">Envío</p>
-        <div class="bloque__caja">
+        <div class="bloque__caja" style="display:grid;gap:14px">
           <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">
             <b style="font-size:15px">${esc(e.paqueteria)}</b>
             <span class="mono">${esc(e.guia)}</span>
           </div>
-          <dl style="margin:13px 0 0">
+          <dl style="margin:0">
             <div class="dato"><dt>Estado</dt><dd>
               <span class="pastilla pastilla--${e.estado === "Entregado" ? "ok" : e.estado === "Detenido" ? "mal" : "info"}">${esc(e.estado)}</span>
             </dd></div>
             ${e.original ? `<div class="dato"><dt>Estado original de la paquetería</dt>
               <dd class="mono" style="font-size:12px">${esc(e.original)}</dd></div>` : ""}
-            <div class="dato"><dt>Costo de la guía</dt><dd class="tabular">${dinero(d.costoGuia)}</dd></div>
-            <div class="dato"><dt>Generada</dt><dd>${fechaCorta(d.fecha)}</dd></div>
+            <div class="dato"><dt>Costo de la guía</dt>
+              <dd class="tabular">${dinero(e.costo ?? d.costoGuia)}</dd></div>
+            ${e.seguro ? `<div class="dato"><dt>Valor declarado</dt>
+              <dd class="tabular">${dinero(e.seguro)}</dd></div>` : ""}
+            ${e.costoSeguro != null ? `<div class="dato"><dt>Seguro</dt>
+              <dd class="tabular">${dinero(e.costoSeguro)}</dd></div>` : ""}
+            ${e.generadaPor ? `<div class="dato"><dt>La generó</dt><dd>${
+              e.generadaPor === "regla" ? `Una regla · ${esc(e.regla ?? "sin nombre")}` : "Una persona"
+            }</dd></div>` : ""}
+            <div class="dato"><dt>Generada</dt><dd>${fechaCorta(e.fecha ?? d.fecha)}</dd></div>
           </dl>
-          <div class="grupo-botones" style="margin-top:13px">
+          <p class="apagado" style="font-size:12px">No se cambia nada de un envío ya emitido.</p>
+          ${cancelarGuiaHTML(e)}
+          <div class="grupo-botones">
             <a class="boton boton--fantasma boton--chico" href="envio.html?guia=${encodeURIComponent(e.guia)}">Ver historial</a>
-            <button class="boton boton--sutil boton--chico" type="button">Ver etiqueta</button>
+            <a class="boton boton--sutil boton--chico" href="etiqueta.html?guias=${encodeURIComponent(e.guia)}">Ver etiqueta</a>
           </div>
         </div>
       </div>`;
     }
 
-    /* ---- Sin guía ----
-       El bloque no es una frase y un botón: la decisión real es con qué
-       paquetería y a qué precio. Se comparan las tarifas del propio cliente,
-       con su cumplimiento real al lado, porque la más barata no sirve si esa
-       paquetería falla en esa zona. */
-    const dias = diasDesde(d.fecha);
     const bloqueada = d.correccion && !d.correccion.aplicada && !editados.get(d.folio);
     const sinPago = d.pago !== "Pagado";
 
     if (sinPago || bloqueada) {
-      return `<div class="bloque">
+      return `<div class="bloque" data-bloque-envio>
         <p class="bloque__titulo">Envío</p>
         <div class="bloque__caja">
           ${franja("pendiente", ICO.alerta,
@@ -679,49 +1064,436 @@ if (exigirSesion()) {
       </div>`;
     }
 
-    const peso = d.pesoEstimado ?? 1.5;
-    const opciones = cotizar(peso);
-    const tono = dias >= 3 ? "pendiente" : "editada";
+    /* Sin una dirección de origen no hay remitente que imprimir en la etiqueta:
+       el vacío es una pantalla y no un hueco. */
+    if (!origenes.length) {
+      return `<div class="bloque" data-bloque-envio>
+        <p class="bloque__titulo">Envío</p>
+        <div class="bloque__caja">
+          <div class="vacio">
+            <h3 style="font-size:16px">No se puede generar la guía</h3>
+            <p>Sin una dirección de origen no hay remitente que imprimir en la etiqueta.</p>
+            <a class="boton boton--primario boton--chico" href="origenes.html">Agregar dirección de origen</a>
+          </div>
+        </div>
+      </div>`;
+    }
 
-    return `<div class="bloque">
+    const e = estadoEnvio(d.folio);
+    const dias = diasDesde(d.fecha);
+    const tono = dias >= 3 ? "pendiente" : "editada";
+    const pendientes = falta(d);
+    const plan = propuestaDe(e, d);
+    const paq = plan.elegida;
+
+    const ayudaCaja = e.cajaFuente === "canal"
+      ? `Peso y medidas del pedido, reportados por ${esc(d.canal)}. Las reglas de embalaje no se aplican.`
+      : e.cajaFuente === "manual" ? "Elegida a mano."
+      : e.revision ? "Ninguna regla pudo elegirla: el motivo está arriba."
+      : e.regla ? `La eligió la regla «${esc(e.regla.nombre)}».`
+      : "Elegida a mano.";
+
+    return `<div class="bloque" data-bloque-envio data-folio="${esc(d.folio)}">
       <p class="bloque__titulo">Envío</p>
       <div class="bloque__caja" style="display:grid;gap:14px">
+
+        ${e.revision ? `
+          ${franja("pendiente", ICO.alerta,
+            e.revision.clave === "veto" ? "Ninguna caja quedó disponible" : "El pedido no cabe en su caja",
+            esc(e.revision.texto))}
+          <div class="grupo-botones" style="margin-top:-6px">
+            <a class="boton boton--sutil boton--chico" href="configuracion.html#reglas-embalaje">${
+              e.revision.clave !== "veto" ? "Ver el tope"
+              : (e.revision.cajas?.length ?? 1) > 1 ? "Ver los vetos" : "Ver el veto"}</a>
+          </div>` : ""}
+
         ${franja(tono, ICO.reloj,
           dias === 0 ? "Sin guía, entró hoy" : `Sin guía desde hace ${dias} ${dias === 1 ? "día" : "días"}`,
           dias >= 3
             ? `Pagado el ${fechaCorta(d.fecha)}. A estas alturas el cliente ya suele preguntar.`
             : `Pagado el ${fechaCorta(d.fecha)}.`)}
 
-        <div>
-          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">
-            Con tus cuentas, para ${esc(d.ciudad.split(",")[0])} · ${peso} kg${d.pesoEstimado ? " estimados" : ""}:
-          </p>
-          <div class="tarifas" role="radiogroup" aria-label="Paquetería y servicio">
-            ${opciones.map((o, k) => `
-              <label class="tarifa">
-                <input type="radio" name="tarifa" value="${esc(o.paqueteria)}"
-                       data-precio="${o.precio}"${k === 0 ? " checked" : ""}>
-                <span class="tarifa__nombre">
-                  <b>${esc(o.paqueteria)}</b> · ${esc(o.servicio)}
-                  <span class="tarifa__meta">
-                    Entrega en ${esc(o.dias)}${o.aTiempo != null
-                      ? ` · <span class="tarifa__cumple" data-bajo="${o.aTiempo < 90}">${o.aTiempo}% a tiempo contigo</span>`
-                      : ""}
-                  </span>
-                </span>
-                <span class="tarifa__precio">${dinero(o.precio)}</span>
-              </label>`).join("")}
-          </div>
+        <div class="campos campos--2">
+          <label class="campo"><span>Sale de</span>
+            <select data-origen>
+              ${origenes.map((o) => `<option value="${esc(o.id)}"${
+                o.id === e.origen ? " selected" : ""}>${esc(o.nombre)}</option>`).join("")}
+            </select>
+            <span class="campo__ayuda">Es el remitente que se imprime en la etiqueta.
+              El paquete lo recoge la recolección de ${esc(
+                origenes.find((o) => o.id === e.origen)?.nombre ?? "ese origen")}.</span>
+          </label>
+
+          <label class="campo"><span>Caja</span>
+            <select data-plantilla>
+              ${e.medidas && e.cajaFuente === "canal"
+                ? `<option value=""${e.plantilla ? "" : " selected"}>Medidas del pedido — ${
+                    e.medidas.largo} × ${e.medidas.ancho} × ${e.medidas.alto} cm</option>` : ""}
+              ${e.plantilla ? "" : (e.cajaFuente === "canal" ? "" : '<option value="" selected>Sin caja</option>')}
+              ${plantillas.map((x) => `<option value="${esc(x.id)}"${
+                x.id === e.plantilla ? " selected" : ""}${
+                e.vetadas.has(x.id) ? ` disabled title="Un producto de este pedido tiene prohibida esta caja."` : ""
+                }>${esc(x.nombre)} — ${x.largo} × ${x.ancho} × ${x.alto} cm</option>`).join("")}
+            </select>
+            <span class="campo__ayuda">${ayudaCaja}</span>
+          </label>
+
+          <label class="campo campo--corto"><span>Peso</span>
+            <input type="number" min="0.1" step="0.1" inputmode="decimal" data-peso value="${e.peso}">
+            <span class="campo__ayuda" data-ayuda-peso>${ayudaPeso(e, d)}</span>
+          </label>
+
+          <label class="campo campo--corto"><span>Valor declarado</span>
+            <input type="number" min="0" step="1" inputmode="numeric" data-valor value="${e.valor}">
+            <span class="campo__ayuda">Se define antes de emitir. Después no se agrega.</span>
+          </label>
         </div>
 
-        <div class="grupo-botones">
-          <button class="boton boton--primario boton--chico" type="button" data-generar>
-            Generar guía con ${esc(opciones[0].paqueteria)} · ${dinero(opciones[0].precio)}
-          </button>
-          <button class="boton boton--sutil boton--chico" type="button">Comparar más opciones</button>
+        <div data-seguro>${seguroHTML(e, paq)}</div>
+
+        <div data-cobro>${cobroHTML(e, plan.cobro, paq)}</div>
+        <div data-tarifas>${tarifasHTML(d.folio, e, d, plan)}</div>
+        <div data-desglose>${desgloseHTML(e, plan)}</div>
+        <div data-motivo>${motivoHTML(e, plan)}</div>
+        <div data-desenlace>${e.aviso ?? ""}</div>
+
+        ${pendientes.length ? `
+          ${franja("pendiente", ICO.alerta,
+            `${pendientes.length === 1 ? "Falta" : "Faltan"} ${esc(enumerarEs(pendientes.map((x) => x.etiqueta)))}`,
+            "Una etiqueta sin colonia o sin número se pega y el paquete se pierde una semana después.")}
+          <div class="grupo-botones" style="margin-top:-6px">
+            <button class="boton boton--fantasma boton--chico" type="button"
+              data-editar="${esc(d.folio)}">Editar dirección</button>
+          </div>` : ""}
+
+        <div class="grupo-botones" data-acciones>
+          ${accionesHTML(d.folio, e, plan, pendientes)}
         </div>
       </div>
     </div>`;
+  }
+
+  /* El seguro cuesta dinero, así que dice cuánto. Una casilla que cuesta sin
+     decir cuánto tiene el mismo defecto que una guía sin precio, y callar la
+     cifra no la hace menos cara. Tres estados, uno por valor de la matriz. */
+  function seguroHTML(e, paqueteria) {
+    const s = costoSeguroDe(paqueteria, e.valor);
+
+    if (s.valor === "no") {
+      return `<p class="apagado" style="font-size:13px">${esc(nombrarAusencia(paqueteria, "costoSeguro"))}.</p>`;
+    }
+
+    const ayuda = s.valor === "si"
+      ? `${s.pct} % sobre el valor declarado, mínimo ${dinero(s.minimo)}.`
+      : `Valor declarado ${dinero(e.valor)}. Sin registro del costo del seguro de ${esc(paqueteria)}: ` +
+        `el importe aparece en la factura.`;
+
+    return `<label class="marca-campo">
+      <input type="checkbox" data-asegurar${e.asegurar ? " checked" : ""}>
+      <span>Asegurar el envío
+        <span class="campo__ayuda" style="display:block">${ayuda}${
+          s.valor === "si" ? "" : ` ${enlaceConfirmar(paqueteria, "costoSeguro")}`}</span></span>
+    </label>`;
+  }
+
+  /* El seguro es un renglón propio y nunca una suma escondida dentro del precio
+     de la guía: son dos cobros distintos y se concilian por separado. */
+  function desgloseHTML(e, plan) {
+    const paq = plan.elegida;
+    if (!e.asegurar || !paq) return "";
+    const s = costoSeguroDe(paq, e.valor);
+    if (s.importe == null) return "";
+    const guia = tarifaDe(paq, plan.cobro.cobrado)?.precio ?? 0;
+    return `<dl style="margin:0">
+      <div class="dato"><dt>Guía</dt><dd class="tabular">${dinero(guia)}</dd></div>
+      <div class="dato"><dt>Seguro</dt><dd class="tabular">${dinero(s.importe)}</dd></div>
+      <div class="dato dato--fuerte"><dt>Total</dt><dd class="tabular">${dinero(guia + s.importe)}</dd></div>
+    </dl>`;
+  }
+
+  /** Lo que de verdad se va a cobrar: guía más seguro cuando lo hay. El botón
+      dice lo que va a pasar, y el seguro pasa. */
+  function totalDe(e, plan) {
+    const paq = plan.elegida;
+    const guia = paq ? tarifaDe(paq, plan.cobro.cobrado)?.precio ?? null : null;
+    if (guia == null) return null;
+    const s = e.asegurar ? costoSeguroDe(paq, e.valor) : { importe: null };
+    return guia + (s.importe ?? 0);
+  }
+
+  const kg = (n) => `${(+n).toLocaleString("es-MX", { maximumFractionDigits: 2 })} kg`;
+
+  /* De dónde sale el peso que se está cotizando. Son cuatro y no dos, porque
+     el número cambia de origen al elegir caja o al teclearlo, y una ayuda que
+     sigue anunciando el origen anterior es peor que no anunciar ninguno. */
+  const ayudaPeso = (e, d) =>
+    e.pesoFuente === "canal" ? `Peso reportado por ${esc(d.canal)}.`
+    : e.pesoFuente === "manual" ? "Capturado a mano."
+    : e.pesoFuente === "plantilla" ? "Peso de la plantilla."
+    : "Estimado, mientras no haya caja elegida.";
+
+  /** Se repintan solo las piezas que cambian con lo que se escribe. Repintar el
+      bloque entero robaba el foco del campo en el que se estaba tecleando. */
+  function recotizar(folio) {
+    const bloque = panel.querySelector("[data-bloque-envio]");
+    if (!bloque || bloque.dataset.folio !== folio) return;
+    const d = detalleActual(folio);
+    const e = estadoEnvio(folio);
+    const plan = propuestaDe(e, d);
+
+    /* La lista de tarifas se repinta entera, y con ella se iba el foco al
+       <body>: un grupo de radios existe para recorrerse con las flechas, y así
+       no se podía pasar de la primera. Si el foco estaba dentro, vuelve al
+       radio que quedó marcado. */
+    const foco = bloque.querySelector("[data-tarifas]")?.contains(document.activeElement);
+
+    bloque.querySelector("[data-seguro]").innerHTML = seguroHTML(e, plan.elegida);
+    bloque.querySelector("[data-cobro]").innerHTML = cobroHTML(e, plan.cobro, plan.elegida);
+    bloque.querySelector("[data-tarifas]").innerHTML = tarifasHTML(folio, e, d, plan);
+    bloque.querySelector("[data-desglose]").innerHTML = desgloseHTML(e, plan);
+    if (foco) bloque.querySelector('[data-tarifas] input:checked')?.focus();
+    bloque.querySelector("[data-motivo]").innerHTML = motivoHTML(e, plan);
+    bloque.querySelector("[data-acciones]").innerHTML = accionesHTML(folio, e, plan, falta(d));
+    /* Solo el texto de la ayuda: repintar el campo entero robaría el foco al
+       que está tecleando el peso. */
+    const ayuda = bloque.querySelector("[data-ayuda-peso]");
+    if (ayuda) ayuda.textContent = ayudaPeso(e, d);
+  }
+
+  function repintarEnvio(folio) {
+    const bloque = panel.querySelector("[data-bloque-envio]");
+    if (!bloque) return;
+    const nuevo = document.createElement("div");
+    nuevo.innerHTML = bloqueEnvio(detalleActual(folio));
+    bloque.replaceWith(nuevo.firstElementChild);
+  }
+
+
+  /* ---------- El bloque Devolución, en el panel del pedido ----------
+     Va ARRIBA del bloque Envío mientras la devolución esté abierta, y debajo
+     cuando esté cerrada: lo que exige una decisión va primero, que es la misma
+     razón por la que Envío ocupa ese puesto. */
+  function bloqueDevolucion(d) {
+    const dev = devolucionesDe(d.folio)[0];
+    if (!dev) return "";
+
+    const abierta = !["Cerrada", "Rechazada", "Sin retorno"].includes(dev.estado);
+    const piezas = piezasDevueltas(dev);
+
+    if (!abierta) {
+      const c = costosDevolucion(dev);
+      return `<div class="bloque" data-bloque-devolucion>
+        <p class="bloque__titulo">Devolución</p>
+        <div class="bloque__caja" style="display:grid;gap:14px">
+          ${franja("resuelto", ICO.check, `Devolución ${dev.estado.toLowerCase()}`,
+            `${esc(dev.resolucion?.tipo ?? "Sin resolución")}${dev.resolucion
+              ? ` de ${dinero(dev.resolucion.monto)} el ${fechaCorta(dev.resolucion.fecha)}`
+              : ""}.` +
+            /* Lo que regresó solo se dice cuando algo regresó: en una cerrada
+               sin retorno el producto se quedó con el comprador, y afirmar lo
+               contrario es afirmar un movimiento que no existió. */
+            (dev.estado === "Sin retorno" ? " El producto no regresó."
+             : dev.recepcion ? ` Llegaron ${dev.recepcion.piezas} de ${
+                 dev.piezas?.regresan ?? dev.recepcion.piezas} ${
+                 (dev.piezas?.regresan ?? dev.recepcion.piezas) === 1 ? "pieza" : "piezas"}.`
+             : piezas ? ` Regresaron ${esc(piezas)} piezas.` : ""))}
+          <details class="desplegable">
+            <summary>Ver el costo de esta devolución</summary>
+            <div class="desplegable__cuerpo">
+              <dl style="margin:0">
+                <div class="dato"><dt>Flete de ida, ya pagado</dt>
+                  <dd class="tabular">${c.ida == null ? "—" : dinero(c.ida)}</dd></div>
+                <div class="dato"><dt>Flete de retorno</dt>
+                  <dd class="tabular">${c.retorno == null ? "—" : dinero(c.retorno)}</dd></div>
+                <div class="dato dato--fuerte"><dt>Costo del retorno</dt>
+                  <dd class="tabular">${dinero(c.total)}</dd></div>
+              </dl>
+            </div>
+          </details>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="bloque" data-bloque-devolucion>
+      <p class="bloque__titulo">Devolución <span class="apagado"
+        style="letter-spacing:0;text-transform:none;font-weight:400">${esc(dev.id)}</span></p>
+      <div class="bloque__caja" style="display:grid;gap:14px">
+        ${cabezaDevolucionHTML(d, dev, piezas)}
+        ${cuerpoDevolucionHTML(d, dev)}
+      </div>
+    </div>`;
+  }
+
+  function cabezaDevolucionHTML(d, dev, piezas) {
+    if (dev.estado === "Solicitada") {
+      return franja("pendiente", ICO.alerta,
+        `Devolución solicitada desde ${esc(d.canal)}`,
+        `${esc(d.cliente.nombre)} pidió devolver ${piezas
+           ? `${esc(piezas)} ${dev.piezas.regresan === 1 ? "pieza" : "piezas"}`
+           : "el pedido completo"}
+         el ${fechaCorta(dev.desde)}. Motivo: ${esc(dev.motivo.toLowerCase())}.`) +
+        `<div class="grupo-botones">
+          <button class="boton boton--primario boton--chico" type="button"
+            data-autorizar="${esc(dev.id)}">Autorizar devolución</button>
+          <button class="boton boton--sutil boton--chico" type="button"
+            data-rechazar="${esc(dev.id)}">Rechazar devolución</button>
+        </div>` +
+        (piezas ? "" : `<p class="apagado" style="font-size:13px">${esc(d.canal)} no reporta las
+          líneas de este pedido, y la devolución solo puede ser total.</p>`);
+    }
+    return franja("editada", ICO.check, `Devolución ${dev.estado.toLowerCase()}`,
+      `${esc(MECANISMOS_DEVOLUCION[dev.mecanismo].etiqueta)} · ${esc(notaDevolucion(dev))}.`);
+  }
+
+  function cuerpoDevolucionHTML(d, dev) {
+    /* La logística es del canal: un botón que duplicaría una guía que el
+       marketplace ya emitió crea dos paquetes y dos cobros. */
+    if (dev.mecanismo === "canal") {
+      return franja("pendiente", ICO.alerta,
+        `La devolución de este pedido la administra ${esc(d.canal)}`,
+        "La guía la emite el canal con su propia logística. Aquí queda el registro para que el " +
+        "costo del pedido cuadre.") +
+        `<div class="grupo-botones">
+          <button class="boton boton--fantasma boton--chico" type="button">Abrir en ${esc(d.canal)}</button>
+        </div>`;
+    }
+
+    if (dev.estado !== "Autorizada") {
+      return dev.envioRetorno ? guiaRetornoHTML(dev) : "";
+    }
+
+    return selectorRetornoHTML(dev) + guiaDelCompradorHTML(dev);
+  }
+
+  function guiaRetornoHTML(dev) {
+    const r = dev.envioRetorno;
+    const url = enlaceRastreo(r.paqueteria, r.guia);
+    return `<dl style="margin:0">
+      <div class="dato"><dt>Guía de retorno</dt>
+        <dd><span class="mono">${esc(r.guia)}</span> · ${esc(r.paqueteria)}</dd></div>
+      <div class="dato"><dt>Flete de retorno</dt>
+        <dd class="tabular">${r.costo == null ? "—" : dinero(r.costo)}${
+          r.nota ? `<div class="apagado" style="font-size:12px">${esc(r.nota)}</div>` : ""}</dd></div>
+    </dl>
+    <div class="grupo-botones">
+      ${url ? `<a class="boton boton--fantasma boton--chico" href="${esc(url)}" target="_blank"
+                  rel="noopener">Rastrear el regreso</a>` : ""}
+      <button class="boton boton--sutil boton--chico" type="button"
+        data-recibir="${esc(dev.id)}">Marcar recibida</button>
+    </div>`;
+  }
+
+  /* El selector se construye completo AHORA y funciona con cero opciones,
+     porque es genérico: lee la matriz y pinta lo que haya. Construirlo después
+     obligaría a rehacer el bloque entero el día que una paquetería conteste. */
+  function selectorRetornoHTML(dev) {
+    /* En el orden de la matriz y no en el de la tabla de tarifas: una lista de
+       paqueterías que cambia de orden entre pantallas se lee como otra lista. */
+    const emiten = PAQUETERIAS_DEL_PRODUCTO.filter((n) => ofrece(n, "guiaRetorno"));
+    const noEmiten = PAQUETERIAS_DEL_PRODUCTO.filter((n) => capacidadDe(n, "guiaRetorno").valor === "no");
+    const sinReg = PAQUETERIAS_DEL_PRODUCTO.filter((n) => sinRegistro(n, "guiaRetorno"));
+
+    if (emiten.length) {
+      return `<div>
+        <p class="apagado" style="font-size:13px;margin-bottom:10px">Para el regreso del paquete:</p>
+        <div class="tarifas" role="radiogroup" aria-label="Paquetería para la guía de retorno">
+          ${emiten.map((n, i) => {
+            const modalidad = capacidadDe(n, "guiaRetorno").modalidad;
+            const m = MODALIDADES_RETORNO[modalidad];
+            return `<label class="tarifa">
+              <input type="radio" name="retorno-${esc(dev.id)}" value="${esc(n)}"${i === 0 ? " checked" : ""}>
+              <span class="tarifa__nombre"><b>${esc(n)}</b>${m ? ` · ${esc(m.etiqueta)}` : ""}
+                <span class="tarifa__meta">${esc(m?.nota ?? "Modalidad sin registrar.")}</span></span>
+              <span class="tarifa__precio">${dinero(precioDe(n, 1))}</span>
+            </label>`;
+          }).join("")}
+        </div>
+        ${ausenciasRetornoHTML(noEmiten, sinReg)}
+      </div>`;
+    }
+
+    /* Con el selector vacío el bloque no es una pantalla muerta: es donde vive
+       el mecanismo que va a ser el más frecuente al principio. */
+    return franja("pendiente", ICO.alerta, "Ninguna de tus paqueterías emite guías de retorno",
+      ausenciasRetornoTexto(noEmiten, sinReg)) +
+      `<div class="grupo-botones">
+        <button class="boton boton--fantasma boton--chico" type="button"
+          data-copiar-origen>Copiar dirección de origen</button>
+        <button class="boton boton--fantasma boton--chico" type="button"
+          data-telefonos>Ver teléfonos de atención</button>
+      </div>` +
+      /* Con el selector vacío son ocho o nueve las que faltan por confirmar, y
+         un botón por cada una es un muro. La frase las nombra a todas —que es
+         lo que cierra el tema o abre la llamada— y la acción es una sola. */
+      (sinReg.length ? `<div class="grupo-botones" style="margin-top:-6px">
+        <a class="boton boton--sutil boton--chico" href="paqueterias.html">Confirmar con tus paqueterías</a>
+      </div>` : "");
+  }
+
+  /* Las dos ausencias no se nombran igual: la primera cierra el tema y la
+     segunda es una llamada que el comerciante puede hacer. */
+  const ausenciasRetornoTexto = (noEmiten, sinReg) => [
+    sinReg.length ? `Sin registro de si ${esc(enumerarEs(sinReg))} las ${
+      sinReg.length === 1 ? "emite" : "emiten"}.` : "",
+    noEmiten.length ? `${esc(enumerarEs(noEmiten))} no las ${
+      noEmiten.length === 1 ? "emite" : "emiten"}.` : "",
+  ].filter(Boolean).join(" ");
+
+  /* Con selector, las que faltan son pocas y cada una lleva su propia acción:
+     ahí el botón sí cierra el círculo de una paquetería concreta. */
+  const ausenciasRetornoHTML = (noEmiten, sinReg) =>
+    (noEmiten.length || sinReg.length)
+      ? `<p class="apagado" style="font-size:12px;margin-top:8px">${
+          ausenciasRetornoTexto(noEmiten, sinReg)}</p>
+         ${sinReg.length ? `<div class="grupo-botones" style="margin-top:6px">${
+           sinReg.map((n) => enlaceConfirmar(n, "guiaRetorno")).join("")}</div>` : ""}` : "";
+
+  /* El quinto mecanismo. Pide las dos cosas juntas porque con una sola no se
+     rastrea nada, y con las dos el retorno se sigue con el enlace público que
+     ya existe, sin ninguna integración nueva. */
+  function guiaDelCompradorHTML(dev) {
+    const campos = `
+      <div class="campos campos--corto-largo">
+        <label class="campo"><span>Paquetería</span>
+          <select data-comprador-paq>
+            ${Object.keys(RASTREO_PUBLICO).map((n) => `<option>${esc(n)}</option>`).join("")}
+          </select></label>
+        <label class="campo"><span>Número de guía</span>
+          <input class="mono" data-comprador-guia autocomplete="off">
+          <span class="campo__error" hidden></span></label>
+      </div>
+      <p class="campo__ayuda">Hacen falta las dos: con el número solo no se puede rastrear nada.</p>
+      <div class="grupo-botones">
+        <button class="boton boton--primario boton--chico" type="button"
+          data-registrar-comprador="${esc(dev.id)}">Registrar guía del comprador</button>
+        <!-- El salto directo desde Autorizada. Sin él, el paquete que aparece en
+             la bodega sin que nadie capturara nada deja el registro congelado
+             para siempre, y una cola con registros muertos deja de leerse. -->
+        <button class="boton boton--fantasma boton--chico" type="button"
+          data-recibir="${esc(dev.id)}">Marcar recibida</button>
+        <span style="flex:1"></span>
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-sin-retorno="${esc(dev.id)}">Cerrar sin retorno</button>
+      </div>`;
+
+    const hayEmision = PAQUETERIAS.some((n) => ofrece(n, "guiaRetorno"));
+    /* Con emisión disponible va plegado: desplegarlo siempre pondría dos
+       caminos a la misma altura cuando solo uno es el bueno. */
+    return hayEmision
+      ? `<details class="desplegable">
+           <summary>El comprador ya lo mandó por su cuenta</summary>
+           <div class="desplegable__cuerpo"><p class="campos__titulo">Cuando el comprador mande el paquete</p>${campos}</div>
+         </details>`
+      : `<p class="campos__titulo">Cuando el comprador mande el paquete</p>${campos}`;
+  }
+
+  function repintarDevolucionPanel(folio) {
+    const bloque = panel.querySelector("[data-bloque-devolucion]");
+    if (!bloque) return;
+    const nuevo = document.createElement("div");
+    nuevo.innerHTML = bloqueDevolucion(detalleActual(folio));
+    if (nuevo.firstElementChild) bloque.replaceWith(nuevo.firstElementChild);
+    repintarFila(folio);
   }
 
   function abrirPanel(folio) {
@@ -743,8 +1515,10 @@ if (exigirSesion()) {
       </div>
 
       <div class="panel__cuerpo">
+        ${devolucionAbierta(d.folio) ? bloqueDevolucion(d) : ""}
         ${bloqueEnvio(d)}
         ${bloqueDireccion(d)}
+        ${devolucionAbierta(d.folio) ? "" : bloqueDevolucion(d)}
 
         <div class="bloque">
           <p class="bloque__titulo">Cliente</p>
@@ -830,6 +1604,51 @@ if (exigirSesion()) {
     history.pushState({ panel: true }, "", u);
   }
 
+  /* ---------- Cancelar una guía emitida ----------
+     Solo llega aquí donde la matriz dice que la paquetería lo expone. El
+     diálogo es del sistema y dice qué se lleva por delante —la etiqueta
+     impresa deja de servir—, no "¿estás seguro?". */
+  const dlgConfirmar = document.getElementById("confirmar");
+
+  function pedirCancelacion(folio) {
+    const p = pedidos.find((x) => x.folio === folio);
+    if (!p?.envio) return;
+    const g = p.envio;
+
+    dlgConfirmar.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="confirmar-titulo">¿Cancelar la guía ${esc(g.guia)}?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p>Se cancela con ${esc(g.paqueteria)} y el pedido ${esc(folio)} vuelve a quedar sin guía,
+          listo para generar otra con lo que ya está capturado.</p>
+        <p style="margin-top:8px">Si la etiqueta ya se imprimió, deja de servir: el paquete tiene
+          que salir con la nueva.</p>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-confirmar>Conservar la guía</button>
+        <button class="boton boton--peligro" type="button" data-si-cancelar>Sí, cancelar</button>
+      </div>`;
+    dlgConfirmar.showModal();
+  }
+
+  dlgConfirmar.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-confirmar]")) return dlgConfirmar.close();
+    if (!e.target.closest("[data-si-cancelar]")) return;
+    const folio = folioAbierto;
+    const p = pedidos.find((x) => x.folio === folio);
+    delete p.envio;
+    delete p.error;
+    olvidarGuia(folio);
+    /* Lo capturado se tira con la guía: el peso y la caja de la guía cancelada
+       ya no describen nada, y conservarlos haría que la siguiente saliera con
+       las medidas de la anterior sin que nadie lo hubiera pedido. */
+    envios.delete(folio);
+    dlgConfirmar.close();
+    repintarFila(folio);
+    repintarEnvio(folio);
+  });
+
   /* ---------- Cierre del panel ----------
      Los manejadores se registran UNA vez, no dentro de abrirPanel: ahí se
      acumulaba uno por cada apertura, y al tercer pedido abierto un clic en
@@ -854,14 +1673,188 @@ if (exigirSesion()) {
   // para no cerrar cuando alguien selecciona texto y suelta fuera.
   panel.addEventListener("mousedown", (e) => { empezoEnElFondo = e.target === panel; });
 
-  // El botón nombra lo que va a hacer, así que cambia con la tarifa elegida.
-  panel.addEventListener("change", (e) => {
-    if (!e.target.matches('input[name="tarifa"]')) return;
-    const b = panel.querySelector("[data-generar]");
-    if (b) b.textContent = `Generar guía con ${e.target.value} · ` +
-      Number(e.target.dataset.precio).toLocaleString("es-MX",
-        { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+  /* ---------- Lo que mueve el precio ----------
+     Cualquier cambio vuelve a cotizar MIENTRAS SE ESCRIBE, no al guardar: el
+     número que importa se calcula con lo que se captura, y verlo después de
+     generar la guía es verlo demasiado tarde. */
+  const folioDelBloque = (ev) => ev.target.closest("[data-bloque-envio]")?.dataset.folio ?? null;
+
+  function pintarDesenlace(folio) {
+    const caja = panel.querySelector("[data-desenlace]");
+    if (caja) caja.innerHTML = estadoEnvio(folio).aviso ?? "";
+  }
+
+  panel.addEventListener("change", (ev) => {
+    const folio = folioDelBloque(ev);
+    if (!folio) return;
+    const e = estadoEnvio(folio);
+    const t = ev.target;
+
+    /* Cambiar el origen reescribe la premisa de la cotización y la línea de la
+       recolección: una premisa que no se enseña parece que no se usa. */
+    if (t.matches("[data-origen]")) { e.origen = t.value; return repintarEnvio(folio); }
+    else if (t.matches("[data-plantilla]")) {
+      e.plantilla = t.value || null;
+      /* Elegida a mano: la ayuda deja de atribuírsela a una regla, y el peso
+         pasa a ser el de la caja salvo que el canal haya reportado el suyo. */
+      e.cajaFuente = t.value ? "manual" : "canal";
+      const caja = plantillas.find((x) => x.id === e.plantilla);
+      /* El peso pasa a ser el de la caja, y la ayuda lo dice: un número que
+         cambió de origen y sigue anunciando el anterior es peor que no
+         anunciar ninguno. El del canal no se toca, que es el único medido. */
+      if (caja && e.pesoFuente !== "canal" && e.pesoFuente !== "manual") {
+        e.peso = caja.peso;
+        e.pesoFuente = "plantilla";
+      }
+      if (t.value) e.medidas = caja ? { largo: caja.largo, ancho: caja.ancho, alto: caja.alto } : null;
+      return repintarEnvio(folio);
+    }
+    else if (t.matches("[data-asegurar]")) e.asegurar = t.checked;
+    else if (t.matches("[data-motivo]")) e.motivo = t.value;
+    else if (t.matches('input[type="radio"][name^="tarifa-"]')) e.paqueteria = t.value;
+    else return;
+
+    recotizar(folio);
   });
+
+  panel.addEventListener("input", (ev) => {
+    const folio = folioDelBloque(ev);
+    if (!folio) return;
+    const e = estadoEnvio(folio);
+    if (ev.target.matches("[data-peso]")) {
+      const v = Number(ev.target.value);
+      if (!(v > 0)) return;
+      e.peso = v;
+      e.pesoFuente = "manual";
+      recotizar(folio);
+    } else if (ev.target.matches("[data-valor]")) {
+      e.valor = Number(ev.target.value) || 0;
+    }
+  });
+
+  /* ---------- La comprobación al confirmar ----------
+     No hay bloqueo por edición: un arriendo con temporizador protege de que dos
+     personas choquen, y este producto no tiene modelo de usuarios ni reloj
+     compartido con el que sostenerlo. Lo que protege de lo que de verdad cuesta
+     dinero —la guía duplicada— es esta comprobación, y funciona sin servidor.
+
+     Una comprobación que pasa no se anuncia: se emite y no se ve nada. */
+  function generar(folio) {
+    const p = pedidos.find((x) => x.folio === folio);
+    const e = estadoEnvio(folio);
+    const d = detalleActual(folio);
+    const plan = propuestaDe(e, d);
+    const cobro = plan.cobro;
+    const paq = plan.elegida;
+
+    const auto = GENERADA_MIENTRAS_TANTO[folio];
+    if (!p.envio && auto) {
+      p.envio = { guia: auto.guia, paqueteria: auto.paqueteria, servicio: auto.servicio,
+                  estado: "Creada", costo: auto.costo, peso: e.peso, fecha: HOY,
+                  original: "label_created", generadaPor: "regla", regla: auto.regla };
+      guardarGuia(folio, p.envio);
+      repintarFila(folio);
+    }
+
+    /* Dos guías para un pedido son dos paquetes y dos cobros: por eso no se
+       emite la segunda y se enseña la primera. */
+    if (p.envio) {
+      const g = p.envio;
+      e.aviso =
+        franja("pendiente", ICO.alerta, "Este pedido ya tiene guía",
+          `${auto && g.guia === auto.guia
+            ? `Una regla la generó con ${esc(g.paqueteria)} ${esc(g.servicio ?? "")} a las ${esc(auto.hora)}, mientras este panel estaba abierto.`
+            : `Se generó con ${esc(g.paqueteria)}.`} <span class="mono">${esc(g.guia)}</span>`) +
+        `<div class="grupo-botones" style="margin-top:-6px">
+          <a class="boton boton--fantasma boton--chico"
+             href="envio.html?guia=${encodeURIComponent(g.guia)}">Ver la guía</a>
+          ${ofrece(g.paqueteria, "cancelaGuia")
+            ? '<button class="boton boton--sutil boton--chico" type="button" data-cancelar-guia>Cancelar guía y generar otra</button>'
+            : ""}
+        </div>` +
+        (ofrece(g.paqueteria, "cancelaGuia")
+          ? ""
+          : instruccionHTML(g.paqueteria, "cancelaGuia", pasosCancelar(g.paqueteria, g.guia), "cancela guías"));
+      pintarDesenlace(folio);
+      /* El botón deja de ofrecer lo que ya no puede pasar. Si se queda vivo,
+         el segundo clic repinta la misma franja y parece que no hizo nada. */
+      return recotizar(folio);
+    }
+
+    const cambios = CAMBIOS_EN_CANAL[folio];
+    if (cambios && !cambiosAceptados.has(folio)) {
+      e.aviso =
+        franja("pendiente", ICO.alerta, `El pedido cambió en ${esc(d.canal)}`,
+          "Con los datos viejos, la etiqueta sale a una dirección que el comprador ya corrigió.") +
+        `<div style="margin-top:-6px">${listaCambios(cambios)}</div>
+         <div class="grupo-botones">
+           <button class="boton boton--primario boton--chico" type="button" data-cambios="nuevos">Generar guía con los datos nuevos</button>
+           <button class="boton boton--sutil boton--chico" type="button" data-cambios="conservar">Conservar lo capturado</button>
+         </div>`;
+      return pintarDesenlace(folio);
+    }
+
+    /* Idempotencia: folio + intento. Con el folio solo, la protección contra el
+       doble clic bloquea también el reintento. */
+    e.intento += 1;
+    const llave = `${folio}:${e.intento}`;
+    if (emitidas.has(llave)) return;
+    emitidas.add(llave);
+
+    const boton = panel.querySelector("[data-generar]");
+    if (boton) {
+      boton.setAttribute("aria-busy", "true");
+      boton.disabled = true;
+      boton.innerHTML = '<span class="girador"></span>Generando guía…';
+    }
+
+    setTimeout(() => {
+      const res = simularGeneracion(p, cobro.cobrado, e.intento);
+
+      if (res.estado !== "generado") {
+        const cp = d.direccion.campos?.cp ?? "";
+        const reintentable = res.estado === "fallido" && res.reintentable !== false;
+        e.fallo = res;
+        /* Ofrecer "Reintentar" cuando reintentar no cambia nada es mentir: la
+           paquetería sin cobertura sale de la lista y queda elegida la siguiente. */
+        if (!reintentable) { e.descartadas.push(paq); e.paqueteria = null; }
+        const titulo = reintentable
+          ? `Sin respuesta de ${paq}`
+          : /cobertura/i.test(res.motivo) ? `${paq} no tiene cobertura en ${cp}` : res.motivo;
+        const cuerpo = reintentable
+          ? (res.detalle ?? res.motivo)
+          : "Reintentar no cambia nada. Estas son las otras opciones cotizadas para este pedido.";
+        e.aviso = franja("pendiente", ICO.alerta, esc(titulo), esc(cuerpo));
+        /* Un fallo que solo vive en un panel cerrado es un pedido que nadie va
+           a volver a intentar. Y la fila cuenta lo mismo que el panel: con el
+           texto enlatado del lote, la tabla nombraba una paquetería distinta de
+           la que de verdad falló. */
+        p.error = reintentable ? `${titulo}. ${cuerpo}` : `${titulo}. Hay que cotizar con otra.`;
+        repintarFila(folio);
+        recotizar(folio);
+        return pintarDesenlace(folio);
+      }
+
+      const tarifa = tarifaDe(paq, cobro.cobrado);
+      delete p.error;
+      p.envio = {
+        guia: res.guia, paqueteria: paq, servicio: tarifa.servicio, estado: "Creada",
+        costo: tarifa.precio, peso: cobro.cobrado, fecha: HOY, original: "label_created",
+        generadaPor: "persona",
+        plantilla: e.plantilla, origen: e.origen,
+        /* Dos cantidades distintas y por eso dos campos: `seguro` es lo que vale
+           la mercancía y `costoSeguro` lo que costó asegurarla. Bajo el mismo
+           rótulo se suman mal justo en la pantalla donde no puede fallar. */
+        seguro: e.asegurar ? e.valor : null,
+        costoSeguro: e.asegurar ? costoSeguroDe(paq, e.valor).importe : null,
+        motivoCambio: e.motivo || null,
+      };
+      guardarGuia(folio, p.envio);
+      e.aviso = null;
+      repintarFila(folio);
+      repintarEnvio(folio);
+    }, 520);
+  }
 
   panel.addEventListener("click", (e) => {
     if (e.target.closest("[data-cerrar-panel]")) return panel.close();
@@ -873,6 +1866,110 @@ if (exigirSesion()) {
     if (descartar) {
       editados.delete(descartar.dataset.descartar);
       return repintarDireccion(descartar.dataset.descartar);
+    }
+
+    const aplicar = e.target.closest("[data-aplicar]");
+    if (aplicar) {
+      correccionesAplicadas.add(aplicar.dataset.aplicar);
+      repintarDireccion(aplicar.dataset.aplicar);
+      /* El panel no se cierra, no se vuelve a la tabla, no se busca otra vez el
+         pedido: el bloque de Envío se repinta solo, porque el código postal
+         pudo cambiar de zona y la cotización ya no es la misma. */
+      return repintarEnvio(aplicar.dataset.aplicar);
+    }
+
+    /* Copiar el número de guía: la instrucción existe para que nadie tenga que
+       dictar trece dígitos leyéndolos de la pantalla. El botón confirma lo que
+       hizo, porque copiar no se ve. */
+    const copiar = e.target.closest("[data-copiar]");
+    if (copiar) {
+      navigator.clipboard?.writeText(copiar.dataset.copiar).then(() => {
+        const antes = copiar.textContent;
+        copiar.textContent = "Guía copiada";
+        setTimeout(() => { copiar.textContent = antes; }, 1800);
+      }, () => { /* sin permiso de portapapeles: el dato sigue a la vista */ });
+      return;
+    }
+
+    if (e.target.closest("[data-cancelar-guia]")) {
+      const folio = e.target.closest("[data-bloque-envio]")?.dataset.folio ?? folioAbierto;
+      return pedirCancelacion(folio);
+    }
+
+    const autorizar = e.target.closest("[data-autorizar]");
+    if (autorizar) {
+      const dev = devoluciones.find((x) => x.id === autorizar.dataset.autorizar);
+      /* Autorizar es SIEMPRE una decisión humana: es comercial y tiene costo,
+         y no hay regla que la automatice sin conocer la política del negocio. */
+      return moverDevolucion(dev, { estado: "Autorizada" });
+    }
+
+    const rechazar = e.target.closest("[data-rechazar]");
+    if (rechazar) return abrirRechazo(devoluciones.find((x) => x.id === rechazar.dataset.rechazar));
+
+    const sinRetorno = e.target.closest("[data-sin-retorno]");
+    if (sinRetorno) {
+      return abrirSinRetorno(devoluciones.find((x) => x.id === sinRetorno.dataset.sinRetorno));
+    }
+
+    const recibir = e.target.closest("[data-recibir]");
+    if (recibir) return abrirRecepcion(devoluciones.find((x) => x.id === recibir.dataset.recibir));
+
+    if (e.target.closest("[data-copiar-origen]")) {
+      const o = origenDeEtiqueta();
+      const texto = [o.nombre, `${o.calle} ${o.numExt}${o.numInt ? ` Int. ${o.numInt}` : ""}`,
+                     o.colonia, `${o.ciudad}, ${o.estado}`, `CP ${o.cp}`, o.telefono]
+        .filter(Boolean).join("\n");
+      const b = e.target.closest("[data-copiar-origen]");
+      navigator.clipboard?.writeText(texto).then(() => {
+        b.textContent = "Dirección copiada";
+        setTimeout(() => { b.textContent = "Copiar dirección de origen"; }, 1800);
+      }, () => { /* sin permiso de portapapeles */ });
+      return;
+    }
+
+    if (e.target.closest("[data-telefonos]")) return abrirTelefonos();
+
+    const registrar = e.target.closest("[data-registrar-comprador]");
+    if (registrar) {
+      const caja = registrar.closest(".bloque__caja");
+      const paq = caja.querySelector("[data-comprador-paq]").value;
+      const campo = caja.querySelector("[data-comprador-guia]");
+      const err = campo.parentElement.querySelector(".campo__error");
+      if (!campo.value.trim()) {
+        campo.parentElement.classList.add("campo--error");
+        err.textContent = "Falta el número de guía. Con la paquetería sola no se rastrea nada.";
+        err.hidden = false;
+        campo.focus();
+        return;
+      }
+      const dev = devoluciones.find((x) => x.id === registrar.dataset.registrarComprador);
+      /* La pagó el comprador: no es nuestra y entra en cero. Meterla en el
+         mismo cajón que las que emitimos mete un costo que no existe. */
+      return moverDevolucion(dev, {
+        estado: "Con guía de retorno", mecanismo: "comprador",
+        envioRetorno: { guia: campo.value.trim(), paqueteria: paq, via: null, costo: 0,
+                        estado: "Generada", nota: "La pagó el comprador" },
+      });
+    }
+
+    const bloque = e.target.closest("[data-bloque-envio]");
+    if (bloque?.dataset.folio) {
+      const folio = bloque.dataset.folio;
+      if (e.target.closest("[data-generar]")) return generar(folio);
+      if (e.target.closest("[data-comparar]")) {
+        const est = estadoEnvio(folio);
+        est.todas = !est.todas;
+        return recotizar(folio);
+      }
+      const cambios = e.target.closest("[data-cambios]");
+      if (cambios) {
+        cambiosAceptados.add(folio);
+        estadoEnvio(folio).aviso = null;
+        pintarDesenlace(folio);
+        if (cambios.dataset.cambios === "nuevos") generar(folio);
+        return;
+      }
     }
 
     if (e.target === panel && empezoEnElFondo) cerrarUnaCapa();
@@ -920,9 +2017,49 @@ if (exigirSesion()) {
     guias: {
       titulo: "Generar guías",
       verbo: "Generar",
+      /* Se generan guías, no pedidos: el objeto del botón es lo que sale de la
+         acción, no sobre qué se ejecuta. */
+      objeto: ["guía", "guías"],
       aplica: (p) => motivoOmision(p),
       resumen: "Se usará la regla de envío configurada para elegir paquetería y servicio.",
     },
+    /* Lo único que sí se hace sobre varios: forzar una paquetería para la
+       selección completa, con el mismo motivo obligatorio. Es el caso real del
+       día en que una paquetería no está recogiendo.
+
+       El lote NO se convierte en captura masiva: un lote donde se puede cambiar
+       el peso de cada pedido es la pantalla de detalle otra vez, dibujada peor
+       y sin sitio para el porqué. */
+    forzar: {
+      titulo: "Forzar paquetería",
+      verbo: "Generar",
+      aplica: (p) => motivoOmision(p),
+      resumen: "Queda anotado en cada guía con su motivo.",
+      campos: () => `
+        <div class="campos campos--2">
+          <label class="campo"><span>Paquetería</span>
+            <select data-forzar-paqueteria>
+              ${cuentasTarifa()
+                .slice()
+                .sort((a, b) => puestoDe(a) - puestoDe(b) || a.localeCompare(b, "es"))
+                .map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("")}
+            </select>
+          </label>
+          <label class="campo"><span>Motivo</span>
+            <select data-forzar-motivo>
+              <option value="">Elige un motivo</option>
+              <!-- Sin la opción de cobertura: en el lote no hay una propuesta
+                   única que nombrar, y "la propuesta no tiene cobertura" se lee
+                   raro al lado de una paquetería ya elegida. -->
+              ${motivosCambioPaqueteria(null).filter((m) => m.id !== "cobertura").map((m) =>
+                `<option value="${esc(m.id)}">${esc(m.etiqueta)}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <p class="aviso aviso--info">El peso y la caja salen de tus reglas de embalaje.
+          Para cambiarlos en un pedido, ábrelo.</p>`,
+    },
+
     etiquetas: {
       titulo: "Imprimir etiquetas",
       verbo: "Preparar",
@@ -1016,6 +2153,7 @@ if (exigirSesion()) {
           Quedan ${cortados} fuera; ejecútalos en una segunda pasada.</p>` : ""}
 
         ${cfg.detalle ? cfg.detalle(aprocesar) : ""}
+        ${cfg.campos ? cfg.campos() : ""}
 
         <p style="color:var(--muted);font-size:13px">${cfg.resumen}</p>
       </div>
@@ -1023,12 +2161,39 @@ if (exigirSesion()) {
         <button class="boton boton--sutil" type="button" data-cerrar-lote>Cancelar</button>
         <button class="boton boton--primario" type="button" data-ejecutar
           ${aprocesar.length ? "" : "disabled"}>
-          ${cfg.verbo} ${aprocesar.length} ${aprocesar.length === 1 ? "pedido" : "pedidos"}
+          ${cfg.verbo} ${aprocesar.length} ${cfg.objeto
+            ? (aprocesar.length === 1 ? cfg.objeto[0] : cfg.objeto[1])
+            : (aprocesar.length === 1 ? "pedido" : "pedidos")}
         </button>
       </div>`;
 
-    dlg.querySelector("[data-ejecutar]")?.addEventListener("click", () => {
-      if (accion === "guias") ejecutarGuias(aprocesar, fuera);
+    const ejecutar = dlg.querySelector("[data-ejecutar]");
+
+    /* El botón nombra la paquetería que va a salir en las doce guías, y no se
+       habilita sin motivo: salirse de la regla sin dejar el porqué es
+       exactamente lo que hace parecer equivocado un orden que no lo está. */
+    if (cfg.campos && ejecutar) {
+      const paq = dlg.querySelector("[data-forzar-paqueteria]");
+      const motivo = dlg.querySelector("[data-forzar-motivo]");
+      const refrescar = () => {
+        ejecutar.textContent = `${cfg.verbo} ${aprocesar.length} ${
+          aprocesar.length === 1 ? "guía" : "guías"} con ${paq.value}`;
+        ejecutar.disabled = !aprocesar.length || !motivo.value;
+        ejecutar.title = motivo.value ? "" : "Falta el motivo del cambio de paquetería.";
+      };
+      paq.addEventListener("change", refrescar);
+      motivo.addEventListener("change", refrescar);
+      refrescar();
+    }
+
+    ejecutar?.addEventListener("click", () => {
+      if (accion === "forzar") {
+        ejecutarGuias(aprocesar, fuera, {
+          paqueteria: dlg.querySelector("[data-forzar-paqueteria]").value,
+          motivo: dlg.querySelector("[data-forzar-motivo]").value,
+        });
+      }
+      else if (accion === "guias") ejecutarGuias(aprocesar, fuera);
       else if (cfg.ir) location.href = cfg.ir(aprocesar);
       else cerrarConAviso(cfg, aprocesar);
     });
@@ -1048,7 +2213,7 @@ if (exigirSesion()) {
   }
 
   /* ---- Paso 2 y 3: progreso en vivo y resultado por pedido ---- */
-  async function ejecutarGuias(lista, fuera) {
+  async function ejecutarGuias(lista, fuera, forzado = null) {
     corriendo = true;
     ultimoFallidos = [];
     const cuerpo = dlg.querySelector(".dialogo__cuerpo");
@@ -1085,8 +2250,22 @@ if (exigirSesion()) {
       fila.children[2].textContent = "Procesando…";
       await new Promise((r) => setTimeout(r, 380));
 
-      const peso = detalleDe(p.folio)?.pesoEstimado ?? 1.5;
+      /* El peso que se cotiza es el facturable de la caja que eligió la regla,
+         no el estimado: con el real, una caja que se cobra por volumen sale con
+         un precio que no existe. */
+      const caja = embalajeDe(p.folio);
+      const peso = caja?.plantilla
+        ? pesoCobrado({ peso: caja.peso, ...caja.medidas },
+            divisorDe(forzado?.paqueteria ?? p.envio?.paqueteria ?? "DHL")).cobrado
+        : (detalleDe(p.folio)?.pesoEstimado ?? 1.5);
       const res = simularGeneracion(p, peso, intento);
+      if (res.estado === "generado" && forzado) {
+        const t = tarifaDe(forzado.paqueteria, peso);
+        res.paqueteria = forzado.paqueteria;
+        res.servicio = t.servicio;
+        res.costo = t.precio;
+        res.regla = null;
+      }
       hechas.add(clave);
       intentos.set(p.folio, intento);
 
@@ -1095,7 +2274,9 @@ if (exigirSesion()) {
         delete porFolio.get(p.folio).fila.dataset.fallido;
         p.envio = { guia: res.guia, paqueteria: res.paqueteria, servicio: res.servicio,
                     estado: "Creada", costo: res.costo, peso, fecha: HOY,
-                    original: "label_created" };
+                    original: "label_created", generadaPor: "persona",
+                    plantilla: caja?.plantilla?.id ?? null,
+                    motivoCambio: forzado?.motivo ?? null };
         /* Se persiste para que la etiqueta exista al cambiar de pantalla: sin
            esto la guía vivía solo en esta variable y se perdía al navegar. */
         guardarGuia(p.folio, p.envio);
@@ -1214,9 +2395,15 @@ if (exigirSesion()) {
      aparecería y la lista se quedaría corta sin que nada explique por qué. */
   let foco = null;
 
+  /* El conjunto que abre una cifra del panel de la regla, en Configuración. No
+     es un pendiente ni un estado: es "estos pedidos y no otros", y viene con su
+     propia etiqueta para que se lea de dónde salió el filtro. */
+  let conjunto = null;
+
   const hayFiltro = () =>
-    !!(foco || desde.value || hasta.value || selPaq.value || selCanal.value ||
-       (busqueda?.value || "").trim());
+    !!(foco || conjunto || desde.value || hasta.value || selPaq.value || selCanal.value ||
+       (busqueda?.value || "").trim() ||
+       fdEstado.value || fdMotivo.value || fdMecanismo.value || devQuietas || focoDev);
 
   /* El filtrado está partido en tres a propósito.
 
@@ -1238,6 +2425,7 @@ if (exigirSesion()) {
   function pasa(item) {
     if (vista !== "todos" && item.fila.dataset.vista !== vista) return false;
     if (foco && !PENDIENTES[foco].pasa(item.p)) return false;
+    if (conjunto && !conjunto.folios.has(item.p.folio)) return false;
     return pasaBase(item);
   }
 
@@ -1257,6 +2445,16 @@ if (exigirSesion()) {
 
   function aplicar(reiniciar = true) {
     if (reiniciar) pagina = 1;
+
+    /* La lente de devoluciones no filtra las mismas filas: es otra tabla con
+       otras columnas. Comparte la pantalla, no el predicado. */
+    if (esVistaDev()) {
+      aplicarVista();
+      limpiar.hidden = !hayFiltro();
+      return;
+    }
+    aplicarVista();
+
     const coinciden = [...porFolio.values()].filter(pasa);
     const tam = +porPagina.value;
     const paginas = Math.max(1, Math.ceil(coinciden.length / tam));
@@ -1302,11 +2500,34 @@ if (exigirSesion()) {
     barra.querySelector("[data-n]").textContent = marcadas.length;
     // Cada acción dice sobre cuántos va a operar, no sobre "los seleccionados":
     // de siete marcados puede que solo cinco apliquen.
+    /* Y en cero dice POR QUÉ. Un botón apagado sin motivo, al final de un enlace
+       que prometía trabajo por hacer, deja al que llegó sin nada que leer: el
+       diálogo que agrupa los motivos no se puede abrir justo cuando todos se
+       omiten, que es cuando más falta hace. */
+    let motivosGenerar = [];
     for (const b of barra.querySelectorAll("[data-lote]")) {
       const cfg = ACCIONES[b.dataset.lote];
-      const n = marcadas.filter((f) => !cfg.aplica(porFolio.get(f.dataset.folio).p)).length;
+      const fuera = marcadas.map((f) => cfg.aplica(porFolio.get(f.dataset.folio).p));
+      const n = fuera.filter((m) => !m).length;
       b.textContent = `${cfg.titulo} (${n})`;
       b.disabled = n === 0;
+      const porQue = [...new Set(fuera.filter(Boolean))];
+      b.title = n === 0 && marcadas.length
+        ? `Ninguno de los ${marcadas.length} seleccionados aplica: ${enumerarEs(porQue).toLowerCase()}.`
+        : "";
+      if (b.dataset.lote === "guias") motivosGenerar = n === 0 ? porQue : [];
+    }
+
+    /* El `title` no llega con el dedo, y el motivo importa justo cuando se
+       llega desde un atajo que prometía trabajo por hacer. La nota habla solo
+       de generar guías: mezclar los motivos de las cuatro acciones metía
+       "todavía no tiene guía" en una barra donde de lo que se trata es de
+       generarla. */
+    const nota = barra.querySelector("[data-sin-accion]");
+    nota.hidden = !(motivosGenerar.length && marcadas.length);
+    if (!nota.hidden) {
+      nota.textContent = `No se genera ninguna guía. Se omiten porque: ` +
+        `${enumerarEs(motivosGenerar).toLowerCase()}. Se resuelven abriendo el pedido.`;
     }
     const posibles = filas.filter((f) => !f.hidden && f.querySelector(".sel:not([disabled])"));
     todosCheck.checked = posibles.length > 0 && marcadas.length === posibles.length;
@@ -1338,6 +2559,11 @@ if (exigirSesion()) {
     selPaq.value = selCanal.value = "";
     if (busqueda) busqueda.value = "";
     foco = null;
+    conjunto = null;
+    fdEstado.value = fdMotivo.value = fdMecanismo.value = "";
+    devQuietas = false;
+    focoDev = null;
+    fdQuietas.setAttribute("aria-pressed", "false");
     marcarAtajo();
     aplicar();
   });
@@ -1355,11 +2581,12 @@ if (exigirSesion()) {
       document.querySelectorAll(".conmutador button")
         .forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
       const mosaico = b.dataset.modo === "mosaico";
-      document.getElementById("vista-tabla").hidden = mosaico;
-      document.getElementById("vista-mosaico").hidden = !mosaico;
+      document.getElementById("vista-tabla").hidden = mosaico || esVistaDev();
+      document.getElementById("vista-mosaico").hidden = !mosaico || esVistaDev();
     }));
 
   busqueda?.addEventListener("input", aplicar);
+
   cuerpo.addEventListener("change", (e) => { if (e.target.matches(".sel")) revisarSeleccion(); });
   todosCheck.addEventListener("change", () => {
     filas.filter((f) => !f.hidden).forEach((f) => {
@@ -1392,6 +2619,544 @@ if (exigirSesion()) {
     if (b) { e.preventDefault(); abrirPanel(b.dataset.abrir); }
   });
 
+
+  /* ================================================================
+     Devoluciones · la sexta lente
+     ================================================================
+     Una devolución no es un objeto nuevo: es un segundo envío del mismo
+     pedido. Por eso vive aquí y no en una pantalla aparte, y por eso la
+     primera columna es el PEDIDO y no la devolución: es la única llave que el
+     comerciante, el comprador y la paquetería comparten. */
+  const tablaDev = document.querySelector("#tabla-dev tbody");
+  const vistaDev = document.getElementById("vista-devoluciones");
+  const vacioDev = document.getElementById("vacio-dev");
+  const dlgDev = document.getElementById("dlg-dev");
+  const fdEstado = document.getElementById("fd-estado");
+  const fdMotivo = document.getElementById("fd-motivo");
+  const fdMecanismo = document.getElementById("fd-mecanismo");
+  const fdQuietas = document.getElementById("fd-quietas");
+  const botonNuevaDev = document.getElementById("nueva-devolucion");
+
+  /* Los desplegables se llenan con los estados que de verdad hay: una opción
+     que nunca devuelve nada es una opción que estorba. */
+  [...new Set(devoluciones.map((d) => d.estado))].sort()
+    .forEach((v) => fdEstado.add(new Option(v, v)));
+  MOTIVOS_DEVOLUCION.forEach((v) => fdMotivo.add(new Option(v, v)));
+  Object.entries(MECANISMOS_DEVOLUCION).forEach(([k, m]) => fdMecanismo.add(new Option(m.etiqueta, k)));
+
+  let devQuietas = false;
+  let focoDev = null;
+
+  const clienteDe = (folio) => pedidos.find((p) => p.folio === folio) ?? null;
+
+  function pasaDev(d) {
+    if (fdEstado.value && d.estado !== fdEstado.value) return false;
+    if (fdMotivo.value && d.motivo !== fdMotivo.value) return false;
+    if (fdMecanismo.value && d.mecanismo !== fdMecanismo.value) return false;
+    /* Cubre a la vez la autorizada sin guía y la guía sin usar, porque son el
+       mismo problema visto en dos estados. */
+    if (devQuietas && !(["Autorizada", "Con guía de retorno"].includes(d.estado)
+        && diasSinMoverse(d) > 7)) return false;
+    if (focoDev && d.pedido !== focoDev) return false;
+    if (desde.value && d.desde < desde.value) return false;
+    if (hasta.value && d.desde > hasta.value) return false;
+    const q = (busqueda?.value || "").trim().toLowerCase();
+    if (q) {
+      const p = clienteDe(d.pedido);
+      const texto = [d.pedido, d.id, p?.cliente.nombre, d.envioRetorno?.guia].join(" ").toLowerCase();
+      if (!texto.includes(q)) return false;
+    }
+    return true;
+  }
+
+  function filaDevHTML(d) {
+    const p = clienteDe(d.pedido);
+    const paso = siguientePaso(d);
+    const piezas = piezasDevueltas(d);
+    const r = d.envioRetorno;
+    return `
+      <tr data-dev="${esc(d.id)}">
+        <td>${d.pedido
+          ? `<button class="mono" type="button" data-abrir="${esc(d.pedido)}"
+               style="background:none;border:0;padding:0;font:inherit;color:var(--enlace);cursor:pointer;text-decoration:underline">${esc(d.pedido)}</button>`
+          : '<span class="pastilla pastilla--aviso">Sin pedido</span>'}
+          <div class="apagado" style="font-size:12px">${esc(d.id)}</div></td>
+        <td style="max-width:200px">${esc(p?.cliente.nombre ?? "—")}
+          ${p ? `<div class="apagado" style="font-size:12px">${esc(p.ciudad)}</div>` : ""}</td>
+        <td>${esc(d.motivo)}</td>
+        <td>${piezas
+          ? `<span class="tabular">${esc(piezas)}</span>`
+          : '<span class="nota-celda apagado">El pedido completo</span>'}</td>
+        <td>${esc(MECANISMOS_DEVOLUCION[d.mecanismo].etiqueta)}</td>
+        <td><span class="pastilla pastilla--${tonoDevolucion(d)}">${esc(d.estado)}</span>
+          <div class="apagado" style="margin-top:5px;font-size:12px">${esc(notaDevolucion(d))}</div></td>
+        <td>${r
+          ? `<span class="mono">${esc(r.guia)}</span>
+             <div class="apagado" style="margin-top:4px;font-size:12px">${
+               r.via ? esc(r.via) : d.mecanismo === "comprador" ? "Del comprador" : "Directo"}</div>`
+          : '<span class="pastilla pastilla--neutra">Sin guía</span>'}</td>
+        <td><button class="boton boton--fantasma boton--chico" type="button"
+              data-paso="${esc(paso.accion)}" data-dev-id="${esc(d.id)}">${esc(paso.texto)}</button></td>
+      </tr>`;
+  }
+
+  function pintarDevoluciones() {
+    const lista = devolucionesOrdenadas().filter(pasaDev);
+
+    tablaDev.innerHTML = lista.map(filaDevHTML).join("");
+    vistaDev.hidden = !lista.length;
+    vacioDev.hidden = !!lista.length;
+    botonNuevaDev.hidden = !lista.length;
+
+    if (!lista.length) {
+      const conFiltros = !!(fdEstado.value || fdMotivo.value || fdMecanismo.value || devQuietas ||
+        desde.value || hasta.value || (busqueda?.value || "").trim() || focoDev);
+      vacioDev.innerHTML = conFiltros
+        ? `<h3 style="font-size:16px">Ninguna devolución coincide</h3>
+           <p>Cambia el rango de fechas o quita los filtros.</p>
+           <div class="vacio__acciones">
+             <button class="boton boton--primario" type="button" data-limpiar-dev>Quitar filtros</button>
+           </div>`
+        : `<h3 style="font-size:16px">Todavía no hay ninguna devolución</h3>
+           <p>Una devolución cuelga de su pedido y lleva su propio envío de regreso. Se registra
+              desde el pedido, o entra sola cuando una paquetería reporta un retorno al remitente.</p>
+           <div class="vacio__acciones">
+             <button class="boton boton--primario" type="button" data-nueva-dev>Registrar devolución</button>
+           </div>`;
+    }
+
+    /* Informativas, nunca pulsables: informar y actuar se separan. */
+    const porAutorizar = devoluciones.filter((d) => d.estado === "Solicitada");
+    const quietas = devoluciones.filter((d) => d.estado === "Autorizada");
+    const sinUsar = devoluciones.filter((d) => d.estado === "Con guía de retorno");
+    const masVieja = (xs) => xs.length ? Math.max(...xs.map(diasSinMoverse)) : null;
+
+    document.getElementById("metricas").innerHTML =
+      metrica("Por autorizar", porAutorizar.length, "Esperan una decisión") +
+      metrica("Autorizadas sin movimiento", quietas.length,
+              quietas.length ? `La más antigua lleva ${masVieja(quietas)} días` : "Ninguna") +
+      metrica("Guías de retorno sin usar", sinUsar.length,
+              sinUsar.length ? `La más antigua lleva ${masVieja(sinUsar)} días` : "Ninguna");
+
+    /* El costo va en el pie como total del periodo: comparado con el valor de
+       la mercancía solo sirve al cerrar, y una comparación no cabe en una celda. */
+    const total = lista.reduce((s, d) => s + (costosDevolucion(d).retorno ?? 0), 0);
+    rangoPagina.innerHTML = lista.length
+      ? `Mostrando <b>${lista.length}</b> de <b>${devoluciones.length}</b> · ${dinero(total)} en retornos del periodo`
+      : "Ninguna devolución coincide";
+    paginacion.hidden = true;
+  }
+
+  /* ---------- Cambiar de lente ----------
+     La vista de devoluciones no filtra las mismas filas: es otra tabla, con
+     otras columnas y otros filtros. Lo que se comparte es la pantalla. */
+  function esVistaDev() { return vista === "devoluciones"; }
+
+  function aplicarVista() {
+    const dev = esVistaDev();
+    document.getElementById("vista-tabla").hidden = dev || mosaicoActivo();
+    document.getElementById("vista-mosaico").hidden = dev || !mosaicoActivo();
+    document.querySelectorAll("[data-solo-dev]").forEach((x) => { x.hidden = !dev; });
+    for (const id of ["fp", "fc"]) document.getElementById(id).hidden = dev;
+    document.querySelector(".conmutador").hidden = dev;
+    document.getElementById("seleccion").hidden = dev || document.getElementById("seleccion").hidden;
+    if (dev) {
+      document.querySelector("[data-sin-resultados]").hidden = true;
+      pintarDevoluciones();
+    } else {
+      vistaDev.hidden = true;
+      vacioDev.hidden = true;
+      botonNuevaDev.hidden = true;
+      pintarMetricasPedidos();
+    }
+  }
+
+  const mosaicoActivo = () =>
+    document.querySelector('.conmutador [data-modo="mosaico"]')?.getAttribute("aria-pressed") === "true";
+
+  [fdEstado, fdMotivo, fdMecanismo].forEach((s) => s.addEventListener("change", aplicar));
+  fdQuietas.addEventListener("click", () => {
+    devQuietas = !devQuietas;
+    fdQuietas.setAttribute("aria-pressed", String(devQuietas));
+    aplicar();
+  });
+
+  vacioDev.addEventListener("click", (e) => {
+    if (e.target.closest("[data-limpiar-dev]")) {
+      fdEstado.value = fdMotivo.value = fdMecanismo.value = "";
+      devQuietas = false;
+      focoDev = null;
+      fdQuietas.setAttribute("aria-pressed", "false");
+      desde.value = hasta.value = "";
+      if (busqueda) busqueda.value = "";
+      return aplicar();
+    }
+    if (e.target.closest("[data-nueva-dev]")) abrirNuevaDevolucion();
+  });
+  botonNuevaDev.addEventListener("click", abrirNuevaDevolucion);
+
+  /* El siguiente paso de cada fila. Autorizar abre el PANEL y no un diálogo:
+     la decisión necesita ver los artículos y el total, que están ahí. */
+  tablaDev.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-paso]");
+    if (!b) return;
+    const d = devoluciones.find((x) => x.id === b.dataset.devId);
+    if (b.dataset.paso === "recibir") return abrirRecepcion(d);
+    if (b.dataset.paso === "cerrar") return abrirCierre(d);
+    if (d.pedido) abrirPanel(d.pedido);
+    else avisarDev("Esta devolución no está amarrada a ningún pedido. Sin esa llave no se puede cerrar.");
+  });
+
+
+
+  /* ---------- Los diálogos de la devolución ---------- */
+  function abrirRechazo(d) {
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-dev-titulo">¿Rechazar la devolución ${esc(d.id)}?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p>Termina aquí, con su motivo, y el pedido deja de tener una devolución abierta.</p>
+        <label class="campo" style="margin-top:12px"><span>Motivo del rechazo</span>
+          <textarea id="motivo-rechazo" rows="3" maxlength="200"></textarea>
+          <span class="campo__error" hidden></span></label>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Conservarla abierta</button>
+        <button class="boton boton--peligro" type="button" data-guardar-rechazo="${esc(d.id)}">Sí, rechazar</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* Se autoriza el reembolso y el producto no regresa. Es frecuente con
+     mercancía de bajo valor, donde el flete de vuelta cuesta más que el
+     producto, y forzar una guía que nadie va a usar ensucia el cumplimiento de
+     recolecciones y el rastreo con envíos fantasma. */
+  function abrirSinRetorno(d) {
+    const c = costosDevolucion(d);
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-dev-titulo">¿Cerrar sin retorno del producto?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <p>${esc(d.id)} se cierra con su resolución y <b>no se emite ninguna guía de regreso</b>.
+          El producto se queda con el comprador.</p>
+        <form id="form-sin-retorno" class="campos" style="margin-top:12px" novalidate>
+          <div class="campos campos--2">
+            <label class="campo"><span>Resolución</span>
+              <select name="tipo">
+                ${RESOLUCIONES_DEVOLUCION.filter((x) => x !== "Rechazo tras revisión")
+                  .map((x) => `<option>${esc(x)}</option>`).join("")}
+              </select></label>
+            <label class="campo campo--corto"><span>Monto</span>
+              <input type="number" name="monto" min="0" step="1" inputmode="numeric"
+                     value="${c.mercancia ?? 0}"></label>
+          </div>
+          <p class="campo__ayuda">El flete de ida, ${c.ida == null ? "que no consta" : dinero(c.ida)},
+            no se recupera. Es parte del costo real de este pedido.</p>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Conservar la devolución abierta</button>
+        <button class="boton boton--primario" type="button"
+          data-guardar-sin-retorno="${esc(d.id)}">Sí, cerrar sin retorno</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* Lo único que se puede ofrecer sin integración: llevar el teléfono a quien
+     tiene que llamar. */
+  function abrirTelefonos() {
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="dlg-dev-titulo">Teléfonos de atención</h2></div>
+      <div class="dialogo__cuerpo">
+        <dl style="margin:0">
+          ${Object.keys(CAPACIDADES).map((n) => {
+            const tel = telefonoDe(n);
+            return tel ? `<div class="dato"><dt>${esc(n)}</dt>
+              <dd><a href="tel:${esc(tel.replace(/\s/g, ""))}">${esc(tel)}</a></dd></div>` : "";
+          }).join("")}
+        </dl>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--primario" type="button" data-cerrar-dev>Entendido</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  function avisarDev(texto) {
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="dlg-dev-titulo">Falta amarrarla a un pedido</h2></div>
+      <div class="dialogo__cuerpo"><p class="aviso aviso--info">${esc(texto)}</p></div>
+      <div class="dialogo__pie">
+        <button class="boton boton--primario" type="button" data-cerrar-dev>Entendido</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* Registra qué llegó, NO quién lo recibió: un campo necesita de dónde salir
+     y el producto no tiene modelo de usuarios. Y "qué llegó" es lo que sostiene
+     la nota de crédito parcial, que es la razón por la que este paso existe. */
+  function abrirRecepcion(d) {
+    const esperadas = d.piezas?.regresan ?? 1;
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-dev-titulo">Registrar lo que llegó de ${esc(d.id)}</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <form id="form-recepcion" class="campos" novalidate>
+          <label class="campo campo--corto"><span>Fecha de recepción</span>
+            <input type="date" name="fecha" value="${HOY}"></label>
+
+          <label class="campo campo--corto"><span>Piezas que llegaron</span>
+            <input type="number" name="piezas" min="0" max="${esperadas}" step="1"
+                   inputmode="numeric" value="${esperadas}">
+            <span class="campo__ayuda">De ${esperadas} ${esperadas === 1 ? "esperada" : "esperadas"}.</span>
+          </label>
+
+          <div class="campo"><span>Estado de la mercancía</span>
+            ${ESTADOS_MERCANCIA.map((x, i) => `
+              <label class="marca-campo">
+                <input type="radio" name="estado" value="${esc(x)}"${i === 0 ? " checked" : ""}>
+                <span>${esc(x)}</span>
+              </label>`).join("")}
+          </div>
+
+          <label class="campo"><span>Nota</span>
+            <textarea name="nota" rows="3" maxlength="200"></textarea>
+            <span class="campo__ayuda">Es lo que sostiene una nota de crédito parcial.</span>
+          </label>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-guardar-recepcion="${esc(d.id)}">Registrar recepción</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* La resta que sostiene la decisión. Con ella a la vista el comerciante
+     decide solo si le conviene pedir el retorno o reembolsar sin producto. */
+  function abrirCierre(d) {
+    const c = costosDevolucion(d);
+    const guiaIda = pedidos.find((p) => p.folio === d.pedido)?.envio?.guia ?? null;
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-dev-titulo">¿Cerrar la devolución ${esc(d.id)}?</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <form id="form-cierre" class="campos" novalidate>
+          <label class="campo"><span>Resolución</span>
+            <select name="tipo">
+              ${RESOLUCIONES_DEVOLUCION.map((x) => `<option>${esc(x)}</option>`).join("")}
+            </select></label>
+
+          <div class="campos campos--2">
+            <label class="campo campo--corto"><span>Monto</span>
+              <input type="number" name="monto" min="0" step="1" inputmode="numeric"
+                     value="${c.mercancia ?? 0}"></label>
+            <label class="campo campo--corto"><span>Fecha</span>
+              <input type="date" name="fecha" value="${HOY}"></label>
+          </div>
+
+          <label class="campo"><span>Quién pagó el flete de retorno</span>
+            <select name="quienPago">
+              ${QUIEN_PAGA_FLETE.map((x) => `<option>${esc(x)}</option>`).join("")}
+            </select></label>
+
+          <dl style="margin:6px 0 0">
+            <div class="dato"><dt>Flete de ida, ya pagado</dt>
+              <dd class="tabular">${c.ida == null ? "—" : dinero(c.ida)}</dd></div>
+            <div class="dato"><dt>Flete de retorno</dt>
+              <dd class="tabular">${c.retorno == null ? "—" : dinero(c.retorno)}${
+                c.notaRetorno ? `<div class="apagado" style="font-size:12px">${esc(c.notaRetorno)}</div>` : ""}</dd></div>
+            ${d.mecanismo === "rto" ? `
+              <div class="dato"><dt>Cargo por retorno al remitente</dt>
+                <dd>${c.rto != null ? `<span class="tabular">${dinero(c.rto)}</span>` : `
+                  <span class="apagado">Sin cargo en factura todavía.</span>
+                  <button class="boton boton--sutil boton--chico" type="button"
+                    data-capturar-cargo="${esc(guiaIda ?? "")}" data-dev="${esc(d.id)}">Capturar cargo</button>`}</dd></div>` : ""}
+            <div class="dato dato--fuerte"><dt>Costo del retorno</dt>
+              <dd class="tabular">${dinero(c.total)}</dd></div>
+            <div class="dato"><dt>Mercancía que regresa</dt>
+              <dd class="tabular">${c.mercancia == null ? "—" : dinero(c.mercancia)}</dd></div>
+          </dl>
+
+          <p class="campo__ayuda">El reembolso se registra, no se cobra: el dinero se mueve
+            en tu canal de venta.</p>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Conservarla abierta</button>
+        <button class="boton boton--primario" type="button" data-guardar-cierre="${esc(d.id)}">Cerrar devolución</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* El cargo del RTO se captura de la factura, no se estima, y se captura
+     AQUÍ: mandar a alguien a otra pantalla a teclear una cifra que necesita en
+     ésta es partir la tarea en dos viajes. */
+  function abrirCaptura(guia, devId) {
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza">
+        <h2 id="dlg-dev-titulo">Capturar el cargo por retorno al remitente</h2>
+      </div>
+      <div class="dialogo__cuerpo">
+        <form id="form-cargo" class="campos" novalidate>
+          <div class="campos campos--2">
+            <label class="campo campo--corto"><span>Monto</span>
+              <input type="number" name="monto" min="0" step="1" inputmode="numeric"></label>
+            <label class="campo"><span>Factura</span>
+              <input name="factura" placeholder="F-2026-0918"></label>
+          </div>
+          <label class="campo"><span>Nota</span>
+            <input name="nota" placeholder="Tal como viene en la factura"></label>
+          <p class="campo__ayuda">Queda pegado a la guía ${esc(guia)}, que es lo que hace que
+            deje de ser un cargo huérfano y empiece a sumar.</p>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Cancelar</button>
+        <button class="boton boton--primario" type="button"
+          data-guardar-cargo="${esc(guia)}" data-dev="${esc(devId)}">Capturar cargo</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /* Una devolución cuelga de un pedido. Sin esa llave no se cierra, y por eso
+     el pedido es lo primero que se pide. */
+  function abrirNuevaDevolucion() {
+    const candidatos = pedidos.filter((p) => p.envio && !devolucionAbierta(p.folio));
+    dlgDev.innerHTML = `
+      <div class="dialogo__cabeza"><h2 id="dlg-dev-titulo">Registrar devolución</h2></div>
+      <div class="dialogo__cuerpo">
+        <form id="form-nueva-dev" class="campos" novalidate>
+          <label class="campo"><span>Pedido</span>
+            <select name="pedido">
+              ${candidatos.map((p) => `<option value="${esc(p.folio)}">${esc(p.folio)} · ${
+                esc(p.cliente.nombre)}</option>`).join("")}
+            </select>
+            <span class="campo__ayuda">Es la única llave que el comerciante, el comprador y la
+              paquetería comparten.</span></label>
+
+          <label class="campo"><span>Motivo</span>
+            <select name="motivo">
+              ${MOTIVOS_DEVOLUCION.map((x) => `<option>${esc(x)}</option>`).join("")}
+            </select></label>
+
+          <label class="campo"><span>Mecanismo</span>
+            <select name="mecanismo">
+              ${Object.entries(MECANISMOS_DEVOLUCION)
+                .filter(([k]) => k !== "rto")
+                .map(([k, m]) => `<option value="${esc(k)}">${esc(m.etiqueta)}</option>`).join("")}
+            </select>
+            <span class="campo__ayuda">El retorno al remitente no se elige: lo crea el rastreo
+              cuando la paquetería lo declara.</span></label>
+        </form>
+      </div>
+      <div class="dialogo__pie">
+        <button class="boton boton--sutil" type="button" data-cerrar-dev>Cancelar</button>
+        <button class="boton boton--primario" type="button" data-guardar-nueva>Registrar devolución</button>
+      </div>`;
+    dlgDev.showModal();
+  }
+
+  /** Aplica un cambio, lo persiste y repinta las dos vistas que lo enseñan. */
+  function moverDevolucion(d, cambios) {
+    Object.assign(d, cambios, { desde: HOY });
+    guardarDevolucion(d);
+    if (esVistaDev()) pintarDevoluciones();
+    if (folioAbierto === d.pedido) repintarDevolucionPanel(d.pedido);
+  }
+
+  dlgDev.addEventListener("click", (e) => {
+    if (e.target.closest("[data-cerrar-dev]")) return dlgDev.close();
+
+    const sr = e.target.closest("[data-guardar-sin-retorno]");
+    if (sr) {
+      const d = devoluciones.find((x) => x.id === sr.dataset.guardarSinRetorno);
+      const v = Object.fromEntries(new FormData(dlgDev.querySelector("#form-sin-retorno")).entries());
+      dlgDev.close();
+      return moverDevolucion(d, {
+        estado: "Sin retorno",
+        resolucion: { tipo: v.tipo, monto: +v.monto, fecha: HOY, quienPago: "Tu cuenta" },
+      });
+    }
+
+    const rechazo = e.target.closest("[data-guardar-rechazo]");
+    if (rechazo) {
+      const campo = dlgDev.querySelector("#motivo-rechazo");
+      const err = campo.parentElement.querySelector(".campo__error");
+      if (!campo.value.trim()) {
+        campo.parentElement.classList.add("campo--error");
+        err.textContent = "Falta el motivo del rechazo.";
+        err.hidden = false;
+        campo.focus();
+        return;
+      }
+      const d = devoluciones.find((x) => x.id === rechazo.dataset.guardarRechazo);
+      dlgDev.close();
+      return moverDevolucion(d, {
+        estado: "Rechazada",
+        resolucion: { tipo: "Rechazo tras revisión", monto: 0, fecha: HOY, quienPago: "—",
+                      nota: campo.value.trim() },
+      });
+    }
+
+    const rec = e.target.closest("[data-guardar-recepcion]");
+    if (rec) {
+      const d = devoluciones.find((x) => x.id === rec.dataset.guardarRecepcion);
+      const f = dlgDev.querySelector("#form-recepcion");
+      const v = Object.fromEntries(new FormData(f).entries());
+      dlgDev.close();
+      return moverDevolucion(d, {
+        estado: "Recibida",
+        recepcion: { fecha: v.fecha, piezas: +v.piezas, estado: v.estado, nota: v.nota },
+      });
+    }
+
+    const cierre = e.target.closest("[data-guardar-cierre]");
+    if (cierre) {
+      const d = devoluciones.find((x) => x.id === cierre.dataset.guardarCierre);
+      const f = dlgDev.querySelector("#form-cierre");
+      const v = Object.fromEntries(new FormData(f).entries());
+      dlgDev.close();
+      return moverDevolucion(d, {
+        estado: "Cerrada",
+        resolucion: { tipo: v.tipo, monto: +v.monto, fecha: v.fecha, quienPago: v.quienPago },
+      });
+    }
+
+    const capturar = e.target.closest("[data-capturar-cargo]");
+    if (capturar) return abrirCaptura(capturar.dataset.capturarCargo, capturar.dataset.dev);
+
+    const cargo = e.target.closest("[data-guardar-cargo]");
+    if (cargo) {
+      const f = dlgDev.querySelector("#form-cargo");
+      const v = Object.fromEntries(new FormData(f).entries());
+      agregarCargo(cargo.dataset.guardarCargo, {
+        tipo: "rto", monto: +v.monto || 0, factura: v.factura || null, nota: v.nota || null,
+      });
+      dlgDev.close();
+      return abrirCierre(devoluciones.find((x) => x.id === cargo.dataset.dev));
+    }
+
+    if (e.target.closest("[data-guardar-nueva]")) {
+      const f = dlgDev.querySelector("#form-nueva-dev");
+      const v = Object.fromEntries(new FormData(f).entries());
+      const n = `DV-${String(9000 + devoluciones.length).slice(-4)}`;
+      const nueva = {
+        id: n, pedido: v.pedido, origenDevolucion: "comerciante", motivo: v.motivo,
+        mecanismo: v.mecanismo, estado: "Autorizada", desde: HOY,
+        piezas: null, envioRetorno: null, resolucion: null, recepcion: null,
+      };
+      devoluciones.push(nueva);
+      guardarDevolucion(nueva);
+      dlgDev.close();
+      if (esVistaDev()) pintarDevoluciones();
+    }
+  });
+
   /* ---------- Franja "Hoy" ----------
      Cada cifra es un botón y cada botón hace lo que su número promete. Lo que
      se cuenta y lo que se filtra salen del MISMO predicado (`PENDIENTES`), así
@@ -1403,14 +3168,15 @@ if (exigirSesion()) {
   const fichaFoco = document.getElementById("ficha-foco");
 
   function pintarFoco() {
-    fichaFoco.hidden = !foco;
-    if (foco) {
+    const etiqueta = foco ? PENDIENTES[foco].etiqueta : conjunto?.etiqueta ?? null;
+    fichaFoco.hidden = !etiqueta;
+    if (etiqueta) {
       fichaFoco.setAttribute("aria-pressed", "true");
-      fichaFoco.innerHTML = `${PENDIENTES[foco].etiqueta}<span aria-hidden="true">✕</span>`;
-      fichaFoco.setAttribute("aria-label", `Quitar el filtro ${PENDIENTES[foco].etiqueta}`);
+      fichaFoco.innerHTML = `${esc(etiqueta)}<span aria-hidden="true">✕</span>`;
+      fichaFoco.setAttribute("aria-label", `Quitar el filtro ${etiqueta}`);
     }
   }
-  fichaFoco.addEventListener("click", () => { foco = null; aplicar(); });
+  fichaFoco.addEventListener("click", () => { foco = null; conjunto = null; aplicar(); });
 
   /* Enfocar: la pestaña vuelve a "Todos" porque si no, una pestaña activa
      podría esconder justo lo que el número prometió. */
@@ -1444,6 +3210,23 @@ if (exigirSesion()) {
   if (pendienteURL && PENDIENTES[pendienteURL]) {
     enfocar(pendienteURL, { seleccionar: AL_ENTRAR_SELECCIONAN.has(pendienteURL) });
     if (pendienteURL === "sin-recoleccion") abrirLote("recoleccion");
+  }
+
+  /* ?cumplen=<condiciones> deja la lista con exactamente esos pedidos delante.
+     Es lo que convierte una cifra del panel de la regla en algo que se puede
+     contar a mano, en vez de en un resultado que hay que creerse. */
+  const cumplenURL = new URLSearchParams(location.search).get("cumplen");
+  if (cumplenURL) {
+    try {
+      const condiciones = JSON.parse(cumplenURL);
+      const tomadosPor = new URLSearchParams(location.search).get("tomadosPor");
+      conjunto = {
+        folios: new Set(foliosQueCumplen(condiciones, { tomadosPor })),
+        etiqueta: new URLSearchParams(location.search).get("etiqueta") || "Cumplen la condición",
+      };
+      vista = "todos";
+      pestanas.forEach((o) => o.setAttribute("aria-selected", String(o.dataset.vista === "todos")));
+    } catch { /* una condición que no se puede leer no filtra nada */ }
   }
 
   const abrirAlEntrar = new URLSearchParams(location.search).get("pedido");

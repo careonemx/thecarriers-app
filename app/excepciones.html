@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Tracking · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=deddf32a">
-<script src="../assets/vigia.js?v=deddf32a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
+<script src="../assets/vigia.js?v=923d07fd" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
@@ -42,6 +42,9 @@
       <button class="ficha-filtro" type="button" aria-pressed="true" data-rango="">Todo</button>
 
       <span class="filtros__div" aria-hidden="true"></span>
+      <button class="ficha-filtro" type="button" aria-pressed="false" id="solo-regreso">Van de regreso</button>
+
+      <span class="filtros__div" aria-hidden="true"></span>
       <label class="sr-only" for="desde">Desde</label>
       <input type="date" id="desde" aria-label="Desde">
       <span class="filtros__etiqueta">al</span>
@@ -74,9 +77,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=deddf32a";
-import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta,
-         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=deddf32a";
+import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
+import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta, declaraRetorno,
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=923d07fd";
 if (exigirSesion()) {
   montar();
 
@@ -96,9 +99,15 @@ if (exigirSesion()) {
      cliente: el número de guía, el nombre, la ciudad o el motivo. */
   const texto = (e) => sinAcentos([e.guia, e.cliente, e.paqueteria, e.via ?? "", e.destino, e.motivo, e.original].join(" "));
 
-  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim());
+  /* Solo los que la paquetería declaró que regresan. No es una predicción
+     nuestra: es su texto, traducido. */
+  const soloRegreso = document.getElementById("solo-regreso");
+  let filtroRegreso = false;
+
+  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() || filtroRegreso);
 
   function pasa(e) {
+    if (filtroRegreso && !declaraRetorno(e.original)) return false;
     if (desde.value && e.detenidoDesde < desde.value) return false;
     if (hasta.value && e.detenidoDesde > hasta.value) return false;
     const q = sinAcentos(buscar.value.trim());
@@ -133,6 +142,8 @@ if (exigirSesion()) {
         </td>
         <td style="max-width:34ch">
           <span class="pastilla pastilla--${d >= 3 ? "mal" : "aviso"}">${dias(d)}</span>
+          ${declaraRetorno(e.original)
+            ? '<span class="pastilla pastilla--mal">Va de regreso</span>' : ""}
           <div style="margin-top:6px">${esc(e.motivo)}</div>
           <div class="apagado" style="margin-top:4px;font-size:11px">
             desde ${esc(fechaCorta(e.detenidoDesde))} · texto original:
@@ -153,6 +164,13 @@ if (exigirSesion()) {
                     target="_blank" rel="noopener">Ver en ${esc(e.paqueteria)}</a>`
               : `<button class="boton boton--fantasma boton--chico" type="button" disabled
                     title="Falta confirmar la URL de rastreo de ${esc(e.paqueteria)}">Sin rastreo</button>`}
+            <!-- Lo que se gana no es tiempo para evitarlo —ya no se puede— sino
+                 saberlo antes de que la caja aparezca en la bodega: abrir el
+                 registro, reservar el costo y avisarle al cliente. -->
+            ${declaraRetorno(e.original)
+              ? `<a class="boton boton--fantasma boton--chico"
+                    href="pedidos.html?vista=devoluciones&rto=${encodeURIComponent(e.pedido)}"
+                 >Registrar devolución</a>` : ""}
           </div>
         </td>
       </tr>`;
@@ -216,7 +234,15 @@ if (exigirSesion()) {
 
   [desde, hasta].forEach((i) => i.addEventListener("change", () => { marcarAtajo(); pintar(); }));
   buscar.addEventListener("input", pintar);
+  soloRegreso.addEventListener("click", () => {
+    filtroRegreso = !filtroRegreso;
+    soloRegreso.setAttribute("aria-pressed", String(filtroRegreso));
+    pintar();
+  });
+
   limpiar.addEventListener("click", () => {
+    filtroRegreso = false;
+    soloRegreso.setAttribute("aria-pressed", "false");
     desde.value = hasta.value = ""; buscar.value = "";
     marcarAtajo();
     pintar();
