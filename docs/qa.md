@@ -1,393 +1,263 @@
-# QA — matriz de capacidades, guías manuales y reglas de embalaje
+# QA — segunda pasada, con las cuatro funciones
 
-Prototipo en `http://localhost:4400`. Todo lo que sigue se probó con el navegador:
-clics, tecleo, arrastre real, Tab, anchos y almacenamiento bloqueado. Nada de esto
-sale de leer el código; cuando cito una línea es para que el desarrollador sepa
-dónde mirar, no como prueba.
+Prototipo en `http://localhost:4400`. Todo lo que sigue se probó con el navegador: clics,
+tecleo, celdas de la matriz cambiadas a mano, Tab, anchos de 768 a 1280 y almacenamiento
+bloqueado. Cuando cito una línea de código es para que el desarrollador sepa dónde mirar,
+no como prueba: la prueba está en los pasos.
 
-Sesión: `sessionStorage.setItem("tc_sesion", JSON.stringify({correo:"bea@ejemplo.mx", desde: Date.now()}))`.
-
----
-
-## Lo que funciona (una línea cada cosa, para no repetirlo abajo)
-
-- El veto no se puede saltar desde el panel: el Sobre sale deshabilitado con el motivo en su `title` y el botón bloqueado con "Falta elegir la caja del paquete."
-- `#1018` cae en revisión manual con el motivo escrito en la fila; `#1019` se genera con Caja mediana por «Cristalería acompañada». Las dos demostraciones del documento se cumplen.
-- El arrastre **no** es decorativo: arrastré «Pedido caro» del puesto 5 al 4 con `dragstart`/`dragover`/`drop` reales y `#1011` pasó de Sobre a Caja chica. Cambia el orden y cambia la decisión.
-- El precio se recalcula mientras se teclea el peso y al soltar la caja; las tarifas se recotizan con el peso facturable.
-- Elegir una paquetería distinta de la propuesta exige motivo, con el botón deshabilitado y el porqué en su `title`.
-- Los tres desenlaces de la comprobación al confirmar funcionan: `#1013` no emite la segunda guía, `#1017` enseña los `.cambio` del canal, `#0997` distingue el fallo que no se reintenta y repinta las tarifas sin DHL.
-- El panel no se cierra en ningún fallo ni al corregir la dirección, y lo capturado se queda.
-- Los tres valores de `cancelaGuia` se comportan distinto en Pedidos, y cambiar la celda de DHL en Paqueterías cambia el bloque Envío de `#1006` en el acto. La prueba de fuego la pasa.
-- "Confirmar con FedEx" abre `paqueterias.html` con la ficha desplegada y la celda enfocada.
-- El lote omite los pedidos en revisión manual y lo dice con su motivo agrupado.
-- Teclado: en las tres pantallas se llega a todo, el foco se ve siempre y el panel del pedido atrapa el foco correctamente.
+Este informe sustituye al de la primera pasada.
 
 ---
 
-# Graves
+## Lo que quedó cerrado de la primera pasada
 
-## G1. Se ofrece cancelar la guía de paqueterías que no cancelan, y el botón no hace nada
+Verificado a mano, uno por uno:
 
-**Gravedad:** grave. Es la violación exacta del principio de la capa de en medio, y además el panel se contradice a sí mismo.
+- **G1 · Cancelar guía sin consultar la matriz.** Cerrado. Probado en `#10401` (Estafeta, "no"), `#1007` (FedEx, "sin registro"), `#10415` (UPS) y `#1006` (DHL): el bloque Dirección ya no duplica el botón, la franja remite a Envío —*"Lo que se puede hacer con la guía está arriba, en Envío"*— y el "Generar guía" muerto desapareció. Con `cancelaGuia` en "sí" el botón vuelve.
+- **G2 · Modo privado.** Cerrado a medias, y la mitad que falta es aceptable. Ya no hay `SecurityError` sin capturar; el acceso dice, impersonal y exacto: *"Este navegador tiene bloqueado el almacenamiento del sitio y la sesión no se puede guardar. Permite los datos de sitio para este dominio, o sal del modo privado."* Lo que no hay es sesión: se sigue rebotando a `login.html?destino=…`. Como degradación honesta está bien; ver **m5**.
+- **G3 · Las reglas no persistían.** Cerrado. Bajé «Pedido caro» un puesto, recargué y aguantó; `tc:embalaje` existe.
+- **G4 · Regla sin condiciones.** Cerrado, y mejor de lo que pedí: *"Marca al menos una condición. Una regla sin condiciones se cumple siempre y dejaría a «Por defecto» sin ganar nunca; para que todos los pedidos salgan en otra caja, cámbiale la caja a «Por defecto»."*
+- **G5 · Aviso de regla muerta.** Cerrado: *"Esta regla no ha ganado ninguna vez: «Pedidos de una pieza», en el puesto 4, ya cubre sus condiciones"* con **Subirla sobre «Pedidos de una pieza»**, que nombra a la regla y no a un puesto que envejece.
+- **G6 · La matriz solo cubría cinco paqueterías.** Cerrado. Nueve filas, tres zonas (`Tus cuentas` · `Las demás paqueterías` · `Se pueden conectar`), las cinco sin cuenta en `.ficha--apagada` con su pliegue funcionando, las dos capas visibles (*"DHL en general sí cancela guías. En tu cuenta no, y eso es lo que manda."*) y el `.aviso--info` de "sin cuenta conectada". Seguí un "Confirmar con UPS" real desde Pedidos y abre la ficha con la celda enfocada.
+- **G7 · El orden de las reglas.** Cerrado: el documento se corrigió y el principio —lo específico arriba, lo general abajo— está en la cabeza de la tarjeta. `#1018` sigue cayendo en revisión manual y `#1019` sigue saliendo con Caja mediana.
+- **M9 · Primera persona.** Cerrado. Cero apariciones de "hemos", "no hemos", "corregimos", "sabemos" o "avisamos" en Configuración, Paqueterías, Pedidos, Recolecciones y Tracking. La excepción deliberada sobrevive sola: *"Estafeta no ha confirmado la cancelación"*, en `recolecciones.html:320`, y es la única.
+- **M10 · "Lo que falta" nombraba un dato de dos.** Cerrado: *"Faltan el número exterior y la colonia"*, y el `title` del botón dice lo mismo.
+- **M11 · El origen no movía el precio.** Cerrado por el camino honesto: la cabecera ahora dice *"de Almacén Puebla a Ciudad de México"*, cada tarifa lleva `Estimado` y debajo la razón: *"Estimado por peso. La tarifa final depende de la zona entre el origen y el destino, y sale de la cotización en vivo de la paquetería."*
+- **M12 · El seguro no tenía cifra.** Cerrado, y con las tres formas: DHL *"1.5 % sobre el valor declarado, mínimo $35.00"*; Estafeta sustituye la casilla por *"Estafeta no asegura envíos desde aquí"*; UPS *"Sin registro del costo del seguro de UPS: el importe aparece en la factura"* con su **Confirmar con UPS**.
+- **M13 · El foco se perdía.** Cerrado. Tras mover una regla con ↓ el foco sigue en "Bajar Pedido caro"; tras cambiar de tarifa con ↓ el foco sigue en el radio elegido.
+- **M14 · Desbordes a 768.** Cerrado: la tarjeta de reglas ya no se sale. A 768/834/1024/1280 no hay desplazamiento horizontal de página en ninguna de las pantallas nuevas; solo las tablas se desplazan dentro de su propia caja, como siempre.
+- **M15 · El lote se apagaba sin decir por qué.** Cerrado: *"Ninguno de los 3 seleccionados aplica: el pedido no cabe en su caja y ninguna caja quedó disponible."*
+- **M16 · El motivo nombraba una caja vetada de dos.** Cerrado: *"Pantalla de 55 pulgadas no puede ir en Sobre y Caja chica, y la última que quedaba era la caja de la regla por defecto."*
+- **M17 · Dos cifras que no cuadraban.** Cerrado: el editor ahora acota la suya —*"Sobre los pedidos de hoy, esta condición alcanza a 1 de 44"*— y el documento ganó la sección que explica por qué las dos no se parecen.
+- **M18 · Faltaba "Copiar guía".** Cerrado; el botón está en la instrucción.
+- **M8 · "así que".** Los cinco de la primera pasada están muertos. Aparecieron **dos nuevos**: ver **V7**.
+- **Menores:** la séptima regla ya sale con pastilla **Desactivada**; quitar un veto pide confirmación.
+
+**Regresiones: ninguna.** Recorrí Inicio, Pedidos, Tracking, Recolecciones, Cobros, Desempeño, Correcciones, Configuración, Paqueterías, Plantillas, Orígenes, Canales y Plan. Cero errores de consola, cero `NaN`, `undefined` o `[object Object]` en pantalla. De los cinco choques avisados: `recoleccionesPasadas()` devuelve las citas "sin piezas" con `recogidas: null` y ninguna suma se envenena —se pintan como "—"—; los estados nuevos de `tonos` salen todos con su pastilla; `origenDe(p)` resuelve para los 22 envíos y no hay filas fantasma; las cinco lentes originales siguen filtrando (Detenidos 3, Entregados 7, el resto paginado) y la barra de selección sigue contando por acción; y la pestaña de devoluciones, aunque no pase por `vistaDe()`, tiene buscador que encuentra por pedido, cliente, folio `DV-` y guía de retorno, sus tres filtros propios, su pie y su paginación.
+
+**"Sin piezas" fuera del cumplimiento: correcto, comprobado a mano.** DHL tiene 9 citas en el historial, tres de ellas "sin piezas"; el cumplimiento cuenta **6 citas** y **63 de 63 piezas**. Estafeta: 7 citas, 54 piezas, 29 recogidas, 54 %. El total, 122 de 147, da el 83 % que se enseña. La cifra con la que se reclama es la correcta, y el pie lo afirma sin fecharlo.
+
+**El quinto mecanismo, de punta a punta: funciona.** Autoricé `DV-0031`, salió la franja *"Ninguna de tus paqueterías emite guías de retorno"* con las dos ausencias nombradas distinto, las dos acciones pareadas y los dos campos. Sin número de guía: *"Falta el número de guía. Con la paquetería sola no se rastrea nada."* Con los dos: estado **Con guía de retorno**, mecanismo **Guía del comprador**, flete **$0.00** con *"La pagó el comprador"* y un enlace de rastreo público real. Después "Marcar recibida" registra qué llegó y no quién.
+
+---
+
+# Lo que sigue vivo
+
+## Graves
+
+### V1. Con una paquetería que sí emite retorno, no hay manera de emitirlo
+
+**Gravedad:** grave. Es la función 1 entera detrás de una celda de la matriz.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=10401` (Estafeta, `cancelaGuia: "no"`).
-2. En el bloque Dirección de envío, **Editar dirección**.
-3. Cambia cualquier campo, por ejemplo la calle. **Guardar dirección**.
+1. `http://localhost:4400/app/paqueterias.html?paqueteria=DHL&capacidad=guiaRetorno`.
+2. Pon **Emitir guía de retorno** en **Sí** y elige una modalidad. El aviso confirma: *"Guardado. DHL aparece en el selector de guía de retorno."*
+3. Abre `http://localhost:4400/app/pedidos.html?pedido=1016` (DV-0030, autorizada).
 
-**Qué esperaba** — Que la acción saliera de la matriz, igual que en el bloque Envío: con `cancelaGuia` en "no" no se ofrece cancelar, se ofrece la `.instruccion--no`.
+**Qué esperaba** — Lo que dice ux.md §1.4: el selector con la modalidad declarada antes de elegir y el botón **Generar guía de retorno con DHL · $103.00**.
 
-**Qué pasó** — Aparece un botón rojo **"Cancelar guía y generar otra"** y el texto *"La guía 6050000998877 ya estaba generada con la anterior, así que hay que cancelarla y generar otra."* Tres centímetros más arriba, el mismo panel dice **"Estafeta no cancela guías desde aquí"** y da los pasos para llamar por teléfono. Al pulsar el botón **no ocurre absolutamente nada**: ni diálogo, ni aviso, ni cambio.
+**Qué pasó** — El selector se pinta perfecto: *"DHL · Guía de retorno en PDF — Se manda al correo del comprador. Tiene que imprimirla. — $103.00"*, con la opción ya elegida, y debajo las ausencias bien nombradas. **Y no hay ningún botón para emitir.** Los únicos del bloque son "Registrar guía del comprador", "Marcar recibida" y "Cerrar sin retorno". Busqué "Generar guía de retorno" en el panel entero: no existe.
 
-Lo mismo con `?pedido=1007` (FedEx, "sin confirmar") y `?pedido=10415` (UPS, que ni siquiera está en la matriz). El origen está en `app/pedidos.html:368`, donde el botón se pinta con `d.envio ? … : …` sin preguntarle a `ofrece(paqueteria, "cancelaGuia")`.
-
-**A quién le toca:** al desarrollador. El diseño está bien escrito en ux.md §4.3; el bloque Dirección no lo aplicó.
-
----
-
-## G2. En modo privado no se puede ni entrar, y no se dice por qué
-
-**Gravedad:** grave.
-
-**Cómo reproducirlo**
-1. Ventana privada, o cualquier navegador con el almacenamiento del sitio bloqueado.
-2. `http://localhost:4400/login.html`, escribe cualquier correo y clave, **Entrar**.
-
-**Qué esperaba** — O que entre, o que diga que hace falta permitir el almacenamiento.
-
-**Qué pasó** — La consola lanza `Uncaught SecurityError: The operation is insecure.`, la pantalla no se mueve y no aparece ningún mensaje. Entrando por una URL interna, el guardián rebota a `login.html?destino=…` y el ciclo se repite. `assets/datos.js` sí envuelve sus accesos en `try/catch` con el comentario "modo privado"; `assets/app.js:19` y `:21` (`sesion.abrir` y `sesion.cerrar`) no.
-
-Es infraestructura compartida, no de estas tres funciones, pero las bloquea a las tres.
+Hoy no se nota, porque ninguna paquetería emite y el selector sale vacío. Se nota el día que una conteste que sí, que es justo el día para el que el documento dice que el selector *"se construye completo ahora"*. Probado también en DV-0029.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-## G3. La zona de embalaje dice "Guardado." y no guarda nada
+### V2. "Sin registro" no se puede elegir, y la interfaz dice que sí
 
-**Gravedad:** grave. La interfaz afirma algo que no es cierto, y hace imposible la demostración que más importa.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/configuracion.html`, zona "Con qué caja sale cada pedido".
-2. Mueve «Pedido caro» un puesto arriba con ↓ o arrastrando. Sale el aviso **"Guardado. «Pedido caro» queda en el puesto 4."**
-3. Recarga la página, o ve a Pedidos y vuelve.
-
-**Qué esperaba** — Que el orden aguantara al menos lo que dura la sesión, como aguantan las guías generadas (`tc:guias`) y las celdas de la matriz (`tc:capacidades`).
-
-**Qué pasó** — Todo vuelve al orden original. Lo mismo con agregar o borrar una regla, quitar o poner un veto, cambiar una caja, escribir un motivo y tocar el tope de revisión manual: nada sobrevive a un cambio de pantalla.
-
-La consecuencia práctica: **no se puede enseñar que cambiar una regla cambia lo que pasa en Pedidos**, porque al llegar a Pedidos la regla ya volvió a ser la de antes. La matriz sí persiste; las reglas no. Dos funciones hermanas con dos comportamientos.
-
-**A quién le toca:** al desarrollador. Si la decisión es deliberada, entonces la palabra "Guardado." no puede quedarse.
-
----
-
-## G4. Una regla sin ninguna condición se guarda, se lee igual que «Por defecto» y la deja muerta
-
-**Gravedad:** grave.
+**Gravedad:** grave. El control acepta un valor, informa "Guardado." y se queda con el contrario.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/configuracion.html` → **Agregar regla**.
-2. Escribe solo un nombre, por ejemplo "Prueba". No marques ninguna condición.
-3. **Agregar regla**.
+1. `http://localhost:4400/app/paqueterias.html?paqueteria=DHL&capacidad=cancelaRecoleccion`. La celda dice **Sí**.
+2. Elige **Sin registro** en el `select`.
 
-**Qué esperaba** — O que no deje guardar una regla que se cumple siempre, o que avise de lo que acaba de pasar.
+**Qué esperaba** — Que quede en "sin registro", que la acción deje de ofrecerse en Recolecciones y que el aviso lo diga, como especifica ux.md §0.2 con sus tres frases.
 
-**Qué pasó** — Se guarda con `condiciones: {}`. Queda en el último puesto movible, justo encima de «Por defecto», y:
-- Su columna Regla dice **"Cualquier pedido que no haya ganado arriba"**, exactamente la misma frase que la fila «Por defecto». Dos filas que se leen igual, una con número y otra con guion.
-- Como se cumple siempre, **«Por defecto» no puede ganar nunca más**, y sin embargo su `.cobro` sigue diciendo "El 18 % de las guías… 39 de 214".
-- No aparece ningún aviso.
+**Qué pasó** — El `select` vuelve solo a **Sí**, el valor efectivo sigue siendo `si`, `ofrece()` sigue devolviendo `true`, y el aviso dice **"Guardado. El botón de cancelar aparece en las recolecciones de DHL."** En Recolecciones, las filas de DHL siguen ofreciendo **Cancelar recolección** y el diálogo con "Sí, cancelar".
 
-El nombre sí es obligatorio (sale "Falta el nombre de la regla."), lo que hace más raro que las condiciones no lo sean.
+Acotado con precisión: falla **solo en las celdas que tienen capa de producto**. En la misma celda, "No" funciona y "Sí" funciona. En una celda sin capa de producto —UPS · Cancelar guía— los tres valores funcionan. O sea: todas las celdas confirmadas de DHL, Estafeta y FedEx, y la fila del divisor en las nueve, son celdas de las que ya no se puede salir.
 
-**A quién le toca:** al desarrollador, y al PM si hay que decidir si una regla sin condiciones debe existir.
-
----
-
-## G5. El aviso de regla muerta no existe
-
-**Gravedad:** grave, porque es uno de los dos avisos que justifican la tarjeta y el brief pedía comprobar justo este caso.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/configuracion.html`, mira la fila 6, «Una pieza a entrega local».
-
-**Qué esperaba** — Lo que dice ux.md §3.2:
-> `.aviso--alerta` **Esta regla no ha ganado ninguna vez: «Pedidos de una pieza», en el puesto 4, ya cubre sus condiciones.**
-> `.boton--fantasma.boton--chico` **Subirla al puesto 1**
-
-**Qué pasó** — Solo hay un `.cobro` que dice *"Esta regla no generó ninguna guía en los últimos 30 días."* No dice **por qué**, no dice **quién** se la come, y no ofrece la salida. `grep -rn "no ha ganado\|Subirla al puesto"` en `app/` y `assets/` no devuelve nada.
-
-Lo curioso es que la información sí existe: si abres **Editar** en esa regla, la franja dice *"Los toma antes «Pedidos de una pieza», en el puesto 4."* Está calculado y no se pinta donde hace falta. Para enterarte tienes que abrir las siete reglas una por una.
-
-El aviso hermano, el del SKU que no aparece en ningún pedido, sí está y funciona en la fila 7.
+Eso deja sin salida el caso que §0.2 diseña expresamente: *"Cuando un valor puesto por el comerciante falla contra la realidad, el fallo ofrece deshacerlo… **Quitar el registro de «Cancelar recolección»**"*. Ese botón no existe en ninguna parte del código, y el camino manual —elegir "Sin registro"— no funciona.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-## G6. "Sin confirmar" no cierra el círculo en 5 de las 9 paqueterías, y una de ellas es el ejemplo del documento
+### V3. `sumaPiezas` no tiene ninguna pantalla, y la matriz promete que sí
 
-**Gravedad:** grave. Es la distinción sobre la que se apoya la matriz entera.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=10409` (Paquetexpress) o `?pedido=10415` (UPS).
-2. Mira el bloque Envío.
-
-**Qué esperaba** — ux.md §0.3 dice que el modificador `--sin-confirmar` **siempre** agrega un paso final y el botón **Confirmar con Paquetexpress**, y usa Paquetexpress como ejemplo textual.
-
-**Qué pasó** — Sale la `.instruccion--sin-confirmar` con el encabezado correcto, pero **sin el tercer paso y sin el botón**. Queda indistinguible de un "no", salvo por la redacción del título. Con DHL, Estafeta y FedEx sí aparece, porque esas tres tienen ficha en `paqueterias.html`.
-
-La causa es de datos: `cuentasEnvio` solo trae DHL, Estafeta, FedEx y T1 Envíos. `CAPACIDADES` tiene cinco paqueterías (Paquetexpress y Redpack incluidas) y **esas dos filas no se pueden editar desde ninguna pantalla**. UPS, 99minutos y AMPM aparecen en el orden de preferencia y se cotizan en Pedidos, pero no están en la matriz: caen al "sin confirmar" por omisión, sin manera de confirmarlas.
-
-ux.md ya pedía las tres cuentas que hay, pero la tabla de `CAPACIDADES` del mismo documento tiene cinco. El documento se contradice consigo mismo.
-
-**A quién le toca:** al PM. Hay que decidir si la matriz cubre todas las paqueterías del producto o solo las que tienen cuenta, y completar `cuentasEnvio` en consecuencia.
-
----
-
-## G7. Arbitraje: el orden que hay en pantalla es el correcto. El documento está mal
-
-**Gravedad:** grave, como defecto del documento. La pantalla no tiene nada que arreglar aquí.
-
-**Cómo lo comprobé** — Con el orden literal de ux.md («Pedidos de una pieza», «Pedido caro», «Ventilador solo», «Ventilador acompañado», «Cristalería acompañada», la muerta) y con el de pantalla, sobre los mismos pedidos:
-
-| Pedido | Orden del documento | Orden de pantalla |
-|---|---|---|
-| `#1010` | Sobre · Pedidos de una pieza | Sobre · Pedidos de una pieza |
-| `#1011` | Sobre · Pedidos de una pieza | Sobre · Pedidos de una pieza |
-| `#1015` | **Sobre · Pedidos de una pieza** | Caja grande · **Ventilador solo** |
-| `#1016` | Caja grande · Ventilador acompañado | Caja grande · Ventilador acompañado |
-| `#1018` | **Revisión manual** | **Revisión manual** |
-| `#1019` | **Caja chica · Pedido caro** | **Caja mediana · Cristalería acompañada** |
-| `#1021` | Revisión manual (veto) | Revisión manual (veto) |
-
-Dos demostraciones se rompen con el orden del documento:
-
-- **`#1015` deja de demostrar «Ventilador solo»**, que era su único trabajo según la tabla de datos de ux.md. Con «Pedidos de una pieza» en el puesto 1, esa regla no puede ganar nunca.
-- **`#1019` sale en Caja chica por «Pedido caro»**, no en Caja mediana por «Cristalería acompañada». El documento dice explícitamente que Cristalería *"es la que salva a `#1019`"*. Y el motivo escrito en esa misma regla dice *"En una caja chica se rompieron tres veces."* Siguiendo el documento al pie de la letra, las copas acaban en la caja que las rompe.
-
-El desarrollador tenía razón y su argumento es correcto. **Hay que corregir ux.md**, la lista de "Las reglas de embalaje — `export const reglasEmbalaje`": las condiciones por producto van arriba de las genéricas, porque una condición más específica que está debajo de una más general es una regla muerta por construcción.
-
-Hay un segundo error en la misma sección, independiente del orden: **`#1021` no puede demostrar nunca el tope por peso**. El documento le asigna ese papel, pero también le pone dos vetos a `MON-TV-55` (nunca Sobre, nunca Caja chica), y con cualquiera de los dos órdenes el pedido se queda sin caja y cae por veto antes de que el peso llegue a medirse. En el build, el tope lo demuestra `#1014`, al que el documento le había asignado otro papel. Eso también hay que arreglarlo en el documento.
-
-**A quién le toca:** al PM y al de UX.
-
----
-
-# Medios
-
-## M8. Hay dos "así que" más en pantalla, además de los tres ya detectados
-
-**Gravedad:** medio.
-
-Los tres conocidos están confirmados **visibles**, no solo en el fuente:
-
-- `assets/datos.js:2149` → es el valor del `textarea` de Motivo de la fila 6 en `configuracion.html`. Se lee en pantalla.
-- `app/configuracion.html:383` → para verlo hay que poner las seis paqueterías en "No usar" una por una: *"Ninguna paquetería está marcada como Se puede usar, así que no hay preferida…"*. Esa frase tiene además un segundo error: termina diciendo *"y cada envío se resuelve entre las de evitar"* cuando ninguna está en "Evitar".
-- `app/pedidos.html:365` → sale al guardar una dirección editada a mano en un pedido con guía (ver G1).
-
-Y dos que no estaban en la lista:
-
-- **`app/plantillas.html:304`** — *"Pesa 2 kg y la caja no abulta más que eso, **así que** pagas por lo que pesa."* Se ve al elegir una caja en Plantillas. Lo llamativo: el `.cobro` nuevo de Pedidos dice la misma idea bien escrita, *"Pesa 0.5 kg y la caja no abulta más que eso."* Las dos copias del mismo texto ya divergieron, que es exactamente lo que ux.md §3.6 quería evitar al convertir `.cobro` en componente.
-- **`app/etiqueta.html:303`** — *"La guía ya existe con esa dirección, **así que** corregirla aquí no cambia la etiqueta…"*
-
-**A quién le toca:** al desarrollador.
-
----
-
-## M9. "No hemos confirmado si X…" está en primera persona, que está prohibido
-
-**Gravedad:** medio, y hace falta que alguien lo decida antes de tocarlo.
-
-`sistema.html:813` dice: *"Nunca en primera persona. La interfaz no dice «corregimos» ni «te avisamos»."* Y ux.md §0.3 manda textualmente **"No hemos confirmado si Paquetexpress cancela recolecciones desde aquí"**, que es primera persona del plural y sale hoy en pantalla en Pedidos.
-
-ux.md dice de sí mismo que `sistema.html` manda sobre él. Entonces la redacción actual está mal, pero no la puede cambiar el desarrollador por su cuenta: la gracia de esa frase es que dice quién no ha confirmado, y una versión impersonal ("Está sin confirmar si Paquetexpress…") pierde justo eso.
-
-**A quién le toca:** al PM y al de UX, para arbitrar. No al desarrollador: hizo lo que decía el documento.
-
----
-
-## M10. "Lo que falta" nombra un dato cuando faltan dos, y el recorrido cuesta dos viajes
-
-**Gravedad:** medio. Rompe el recorrido principal de la función 4 tal como está escrito en ux.md §4.9.
+**Gravedad:** grave, por lo que afirma, no por lo que falta.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=0997`.
-2. La franja dice **"Falta la colonia"**. **Editar dirección**.
-3. Escribe la colonia. **Guardar dirección**.
+1. `http://localhost:4400/app/paqueterias.html?paqueteria=Redpack&capacidad=sumaPiezas`, pon **Sumar piezas** en **Sí**.
+2. El aviso dice: *"Guardado. Una guía generada después del corte **se puede sumar** a la recolección de Redpack del mismo día."*
+3. Ve a `recolecciones.html` y busca esa acción.
 
-**Qué esperaba** — Que se guarde, la franja desaparezca y el botón se reactive, que es lo que el documento describe paso a paso.
+**Qué esperaba** — Lo de ux.md §2.7: con valor afirmativo, `.boton--sutil.boton--chico` **Sumar 2 guías a esta recolección**; con negativo o sin registro, la línea *"DHL no acepta sumar piezas a una solicitud confirmada. Estas 2 entran a la del día siguiente."*, y en el segundo caso su **Confirmar con Redpack**.
 
-**Qué pasó** — El formulario rechaza el guardado con **"Falta el número exterior."**, un campo que la franja nunca mencionó. Hay que escribirlo y volver a guardar. Solo entonces funciona todo bien (la franja se va, el panel no se cierra, vuelve a cotizar y el botón se activa).
+**Qué pasó** — No existe ni la acción ni la línea. En todo `app/`, `sumaPiezas` solo se lee en `paqueterias.html`, para pintar su propia celda. Las tres frases de guardado están escritas y las tres son distintas y correctas; lo que no hay es la consecuencia que anuncian.
 
-Además, al abrir el formulario el foco cae en **"Nombre de contacto"** y ningún campo está marcado: para encontrar la colonia hay que recorrer catorce campos con la vista. Alguien que no sabe de esto va a tardar más en encontrar el campo que en escribirlo.
+De las cinco superficies que había que auditar, cuatro obedecen —cancelar guía, cancelar recolección, emitir retorno y el seguro, las tres primeras probadas con los tres valores—. Ésta no existe.
 
-**A quién le toca:** al desarrollador la lista incompleta; al de UX el que no se señale el campo que falta.
+**A quién le toca:** al desarrollador si entra en esta versión; al PM si no, y entonces hay que quitar la fila de la matriz o cambiar el aviso, porque hoy promete un botón.
 
 ---
 
-## M11. Cambiar "Sale de" no mueve el precio
+## Medios
+
+### V4. El panel de una devolución recibida no deja cerrarla, y repite el paso ya hecho
 
 **Gravedad:** medio.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=1018`, elige Caja mediana.
-2. Cambia **Sale de** de "Almacén Puebla" a "Tienda Roma". El destino es Ciudad de México.
+1. `http://localhost:4400/app/pedidos.html?pedido=1019` (DV-0023, estado **Recibida**).
 
-**Qué esperaba** — Que un envío local costara distinto que uno foráneo, o al menos que la línea de encabezado dijera de dónde sale.
+**Qué esperaba** — El cierre, que es donde ux.md §1.9 lo pone y lo único que queda por hacer.
 
-**Qué pasó** — Las cuatro tarifas y el botón se quedan idénticos al peso ($444.00 en los dos casos). El encabezado sigue diciendo *"Con tus cuentas, para Ciudad de México · 12 kg facturables:"* sin nombrar el origen. `cotizar(peso)` solo mira el peso.
-
-ux.md justifica el bloque entero diciendo que *"todo lo que mueve el precio se pueda cambiar sin salir"*, y pone "Sale de" el primero de esos campos. Hoy cambia el remitente de la etiqueta, que es real, pero no el precio. Un cliente va a probar justo eso.
-
-**A quién le toca:** al desarrollador si se puede meter la zona en el cálculo; al PM si se decide que el prototipo cotiza solo por peso, y entonces hay que decirlo antes de enseñarlo.
-
----
-
-## M12. "Asegurar el envío" no tiene ninguna consecuencia visible
-
-**Gravedad:** medio.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=1018`, elige una caja.
-2. Marca **Asegurar el envío**.
-
-**Qué esperaba** — Alguna cifra. Es una casilla que cuesta dinero.
-
-**Qué pasó** — No cambia nada en pantalla: ni el botón, ni las tarifas, ni aparece una línea con el costo del seguro. La ayuda dice *"El seguro se cobra aparte de la guía, sobre el valor declarado"*, lo cual es honesto, pero deja al operador marcando una casilla sin saber cuánto va a pagar. Después de emitir, el bloque sí muestra "Seguro sobre el valor declarado · $1,480.00", que es el valor asegurado, no lo que cuesta asegurarlo.
-
-**A quién le toca:** al PM primero (¿sabemos el costo del seguro o no?), y al de UX después. Si no lo sabemos, la casilla tiene que decir que el importe se ve en la factura.
-
----
-
-## M13. Al mover una regla o al cambiar de tarifa con el teclado, el foco se pierde
-
-**Gravedad:** medio. Es accesibilidad, y es también velocidad para cualquiera.
-
-**Cómo reproducirlo (reglas)**
-1. `http://localhost:4400/app/configuracion.html`.
-2. Con Tab, llega al botón **↓** de «Pedido caro». Pulsa Enter.
-3. Pulsa Tab.
-
-**Qué pasó** — La lista se repinta entera y `document.activeElement` pasa a ser `<body>`. El siguiente Tab empieza desde el principio del documento. Para bajar una regla dos puestos hay que volver a recorrer toda la lista con Tab.
-
-**Lo mismo en Pedidos:** en la lista de tarifas, con el foco en el radio y pulsando ↓, la tarifa cambia correctamente pero el foco se va a `<body>`. No se puede recorrer la lista con las flechas, que es justo para lo que sirve un grupo de radios.
-
-Lo demás del teclado está bien: en las tres pantallas se llega a todo, el `outline` se ve siempre (`solid 2px`), las flechas tienen nombre accesible ("Subir Ventilador solo"), el asa está `aria-hidden` y fuera del recorrido, el panel del pedido atrapa el foco y todos los campos tienen etiqueta.
+**Qué pasó** — El bloque ofrece **"Rastrear el regreso"** y **"Marcar recibida"** — el paso que ya se dio. No hay "Cerrar devolución". La tabla de la pestaña sí lo ofrece y el diálogo funciona bien, así que el camino existe; el panel es un callejón. Lo mismo pasa al recibir una devolución desde el propio panel: el estado avanza a "Recibida" y la única acción que queda es volver a marcarla recibida.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-## M14. A 768 px la fila de reglas se corta y "Editar" queda partido
+### V5. Una devolución se cierra sin resolución y sin monto
 
 **Gravedad:** medio.
 
 **Cómo reproducirlo**
-1. Ventana de **768 px** de ancho. `http://localhost:4400/app/configuracion.html`, baja a "Tu orden de reglas".
+1. Pedidos → pestaña **Devoluciones** → fila de una "Recibida" → **Cerrar devolución**.
+2. Sin tocar **Resolución** ni **Monto**, pulsa **Cerrar devolución**.
 
-**Qué pasó** — El contenedor mide 718 px y el contenido 746. El botón **Editar** se ve como "Edita", el `.cobro` se sale por la derecha ("…Diferencia" cortado) y la cabecera "REGLA · CAJA · MOTIVO" no acompaña al desplazamiento. No hay barra horizontal visible que invite a desplazar.
+**Qué esperaba** — Que pidiera lo que el diálogo existe para capturar.
 
-834, 1024 y 1280 están bien: sin desbordes en ninguna de las tres pantallas. En Paqueterías no hay desbordes a ningún ancho. La tabla de Pedidos se desborda en su propio contenedor con desplazamiento, que es su comportamiento de siempre.
-
-768 es un iPad en vertical, que es el equipo más probable en un almacén.
+**Qué pasó** — Se cierra. La fila pasa a **Cerrada · Cerrada el 21-sep** con la resolución vacía. El resto del producto valida bien —el nombre de la regla, las condiciones, el número de guía del comprador, la ventana contra el horario, los días—, así que aquí desentona.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-## M15. Desde el filtro de revisión manual, el lote se apaga sin decir por qué
+### V6. El cargo de retorno que se captura no llega a Cobros
 
 **Gravedad:** medio.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/configuracion.html` → "Verlos en Pedidos", que lleva a `pedidos.html?pendiente=revision-manual`.
-2. Marca la casilla de la cabecera para seleccionar los tres.
+1. Pestaña Devoluciones, filtro Mecanismo = **Retorno al remitente**, recibe `DV-0024` y ábrele **Cerrar devolución**.
+2. En "Cargo por retorno al remitente" pulsa **Capturar cargo**, pon monto 310 y factura.
+3. Ve a `cobros.html`.
 
-**Qué esperaba** — Lo que ux.md §4.6 pide: *"Se omiten porque: Ninguna caja quedó disponible — #1018 #1019."*
+**Qué esperaba** — Lo de ux.md §1.1: *"El costo del retorno se refleja en Cobros, como un cargo tipificado."* El diálogo de captura lo promete otra vez: *"Queda pegado a la guía PX-220914, que es lo que hace que deje de ser un cargo huérfano y empiece a sumar."*
 
-**Qué pasó** — La barra dice **"Forzar paquetería (0)"** y **"Generar guías (0)"**, los dos en gris, sin `title` y sin ningún texto. Nada explica por qué. El usuario llegó ahí por un enlace que le prometía trabajo por hacer y se encuentra dos botones apagados.
+**Qué pasó** — La resta del diálogo sí se actualiza ($245 + $310 = $555), pero en Cobros no aparece nada: los únicos motivos son Sobrepeso, Reexpedición y Zona extendida, y ni la guía ni el monto ni la palabra "retorno" figuran. El cargo se queda donde se capturó.
 
-La frase correcta **sí existe**: si seleccionas una mezcla de pedidos (pon 50 por página y marca todo), el diálogo dice *"Se omiten porque: … El pedido no cabe en su caja — #1014 · Ninguna caja quedó disponible — #1018 #1021."* Está perfecto. Solo falta el caso en que **todos** los seleccionados se omiten, que es justo al que lleva el enlace.
+**A quién le toca:** al desarrollador, o al PM si el enlace con Cobros no entra en esta versión — en cuyo caso el texto del diálogo no puede prometerlo.
+
+---
+
+### V7. Dos "así que" nuevos en pantalla, uno de ellos en la frase estrella
+
+**Gravedad:** medio.
+
+Los cinco de la primera pasada están corregidos. Estos dos son texto nuevo:
+
+- **`app/configuracion.html:55`**, cabeza de "Tu orden de reglas": *"Se recorre de arriba abajo: gana la primera que se cumple, **así que** lo específico va arriba y lo general abajo."* Es precisamente el principio que el documento presume de haber colocado ahí.
+- **`app/recolecciones.html:380`**, diálogo de cancelar recolección: *"Las guías vuelven a contar como sin recolección, **así que** la siguiente ejecución de la regla las incluye sola."*
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-## M16. El motivo de revisión manual nombra una caja vetada cuando hay dos
+### V8. "Invalid Date" en las nueve fichas, y el divisor pasa a "confirmado" sin estarlo
 
-**Gravedad:** medio. Es un dato incompleto sobre una decisión del sistema.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pendiente=revision-manual`, fila `#1021`.
-
-**Qué pasó** — La fila dice *"Pantalla de 55 pulgadas no puede ir en Sobre, y Sobre es la caja de la regla por defecto."* Pero `MON-TV-55` tiene **dos** vetos: Sobre y Caja chica. La regla «Pedido caro» le había asignado Caja chica y también se la quitó el veto. Al abrir el panel el operador encuentra dos cajas bloqueadas cuando el motivo le habló de una.
-
-**A quién le toca:** al desarrollador. `embalajeDe()` se queda con la última regla bloqueada y solo cuenta esa.
-
----
-
-## M17. Las cifras de la misma tarjeta no cuadran entre sí
-
-**Gravedad:** medio. Confunde, y es lo primero que va a preguntar un cliente.
+**Gravedad:** medio. Son dos cosas con una sola causa.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/configuracion.html`, fila «Cristalería acompañada»: *"Esta regla generó 9 guías en los últimos 30 días."*
-2. Pulsa **Editar** en esa misma fila: *"De los 40 pedidos de los últimos 30 días, 1 cumple estas condiciones."*
+1. `http://localhost:4400/app/paqueterias.html`, abre el pliegue **Qué expone esta paquetería** de cualquier ficha.
+2. Baja hasta **Divisor del peso volumétrico**.
 
-**Qué pasó** — Dos números sobre el mismo periodo que no se pueden conciliar: 9 guías contra 1 pedido que cumple. El pie de la tarjeta habla de 214 guías y los pedidos de ejemplo son 40. `efectoEmbalaje` es un histórico inventado y `hechosDeRegla` se calcula sobre los pedidos reales del prototipo; las dos cifras conviven en la misma pantalla sin puente.
+**Qué esperaba** — *"Sin registro."*, que es lo que dice la tabla de datos de ux.md para esa fila.
 
-**A quién le toca:** al PM. O los datos de ejemplo se cuadran, o el `.cobro` dice de qué periodo y de qué universo habla.
+**Qué pasó** — Dice **"Confirmado con DHL el Invalid Date."** Y lo mismo en las nueve: Estafeta, FedEx, T1 Envíos, Paquetexpress, Redpack, UPS, 99minutos y AMPM. La causa es que `divisorVolumetrico` trae capa de producto sin fecha (`{ producto: { valor: 5000 } }`), así que `procedenciaDe()` entra por la rama de "confirmado" y formatea `undefined`.
 
----
-
-## M18. Falta "Copiar guía" en la instrucción
-
-**Gravedad:** medio.
-
-ux.md §4.3 escribe el paso así:
-> **1.** Llama a Estafeta al 800 378 2338 y pide la cancelación de la guía `6050000112233`. — **Copiar guía**
-
-En pantalla (`pedidos.html?pedido=1018` tras generar con Estafeta) el número sale en un `<span class="instruccion__dato">` sin botón. Hay que leerlo de la pantalla y dictarlo por teléfono sin equivocarse. El componente existe precisamente para quitar esa fricción; ux.md §0.4 pide el dato "en monoespaciado y copiable".
+El efecto de fondo importa más que el texto roto: al contar como confirmado, **desapareció de la tarjeta de reglas la nota que ux.md §3.2 pide** —*"Calculado con divisor 5000. No está confirmado con la paquetería."*—. Busqué "divisor" en toda la pantalla de Configuración: ya no sale. El documento razona que presentar el divisor como dato del transportista sin haberlo confirmado *"es inventar la cifra que más importa"*, y ahora se presenta exactamente así.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-# Menores
+### V9. Al autorizar una devolución no se ve qué piezas regresan
 
-- **m1.** Regla nueva: antes de escribir nada la franja dice *"De los 40 pedidos…, 40 cumplen estas condiciones"* y lista cinco reglas que se los llevan. Es correcto y es ruido: el formulario está vacío. Y el foco al abrir cae en el `<dialog>`, no en "Nombre de la regla". — dev
-- **m2.** Una regla recién creada no pinta ningún `.cobro`, mientras que las de cero guías dicen "Esta regla no generó ninguna guía en los últimos 30 días." Dos silencios distintos para el mismo hecho. — dev
-- **m3.** El aviso de guardado de "No" y el de "Sin confirmar" son **idénticos** palabra por palabra ("Los pedidos con guía de DHL dejan de ofrecer la cancelación…"). Borra justo la distinción que la matriz existe para hacer. El de "Sí" sí es distinto y está bien. — dev
-- **m4.** En la cabeza de la matriz: *"Ofrecer una acción que quizá funcione se averigua con un paquete real."* La frase está rota; el original de ux.md es *"…es la forma más cara de averiguarlo: se averigua con un paquete real."* — dev
-- **m5.** **"Quitar veto"** borra en el acto, sin confirmación. Es lo que protege un producto frágil y lo quita un clic de más. — UX
-- **m6.** Tarjeta 3: la etiqueta dice *"Veces que el peso del pedido puede superar el de la plantilla"* y ux.md pide *"Pasar a revisión manual cuando el peso del pedido supere el de la plantilla por [3] veces"*. La ayuda también lleva una frase de más al principio. — dev
-- **m7.** Tras la comprobación "Este pedido ya tiene guía" (`?pedido=1013`), un segundo clic en Generar hace desaparecer la franja y no pasa nada más. No emite la segunda guía, que es lo importante, pero el segundo clic parece no hacer nada. — dev
-- **m8.** En esa misma franja no se explica por qué falta "Cancelar guía y generar otra" (Estafeta no cancela). En §4.3 la ausencia sí se explica con la `.instruccion`; aquí es silencio. — dev
-- **m9.** El `select` de Paquetería del diálogo de lote va en orden arbitrario (Estafeta, 99minutos, Redpack, Paquetexpress, DHL, FedEx, UPS): ni el de preferencia ni alfabético. — dev
-- **m10.** En el lote de "Generar guías" el botón dice **"Generar 6 pedidos"**. El objeto está mal: se generan guías, no pedidos. El de "Forzar paquetería" sí dice "Generar 6 guías con Estafeta". — dev
-- **m11.** El motivo del cambio de paquetería en el lote incluye *"La propuesta no tiene cobertura"*, que es el texto de reserva de `motivosCambioPaqueteria(null)`. En el lote no hay una propuesta única, así que se entiende, pero se lee raro al lado de una paquetería ya elegida. — UX
-- **m12.** El `.cobro` de las reglas consulta siempre `capacidadDe("DHL", "divisorVolumetrico")` aunque la guía pueda salir con otra paquetería (`configuracion.html`, `cobroHTML`). Hoy las cinco tienen 5000 y no se nota; el día que una difiera, la cifra será de otra. — dev
-- **m13.** `ux.md` §3.4 pide que el `select` de motivo de la vista de revisión manual liste solo los motivos que ocurrieron. No hay ningún `select` de motivo. El motivo sí va escrito en cada fila, que es la parte que sostiene el diseño. — dev
-- **m14.** La séptima regla, «Ventilador de repuesto», ux.md la pide **desactivada**. En los datos está activa. No cambia ninguna decisión porque su SKU no aparece en ningún pedido, pero el estado "desactivada" no se puede ver en ninguna parte de la pantalla. — PM / dev
+**Gravedad:** medio.
+
+**Cómo reproducirlo**
+1. `http://localhost:4400/app/pedidos.html?pedido=1011`, bloque **Devolución**, estado Solicitada.
+
+**Qué esperaba** — ux.md §1.3: *"Las piezas, en una `.tabla-caja` chica: artículo, SKU, cantidad que regresa, precio."* Y cuando el pedido no trae líneas, la frase que lo dice en vez de inventarlo.
+
+**Qué pasó** — Ni la tabla ni la frase. El bloque tiene la franja, el resumen y los dos botones, y ninguna tabla. `#1011` sí tiene líneas con SKU. En una devolución de 1 de 1 casi no estorba; en `DV-0029`, que es **1 de 3**, o en `DV-0030`, que es **2 de 3**, el que autoriza no ve cuál de los tres artículos regresa. Es la decisión para la que el bloque existe.
+
+**A quién le toca:** al desarrollador.
+
+---
+
+### V10. La lista de ausencias trata a T1 Envíos como paquetería, y apila siete botones
+
+**Gravedad:** medio.
+
+**Cómo reproducirlo**
+1. `http://localhost:4400/app/pedidos.html?pedido=1013`, bloque Devolución.
+
+**Qué pasó** — Debajo del selector: *"Sin registro de si Estafeta, FedEx, Redpack, UPS, 99minutos, AMPM **y T1 Envíos** las emiten."* Y una fila con **siete** botones: "Confirmar con Estafeta · Confirmar con FedEx · Confirmar con Redpack · Confirmar con UPS · Confirmar con 99minutos · Confirmar con AMPM · Confirmar con T1 Envíos".
+
+Dos cosas. T1 Envíos es una plataforma que revende guías, no una paquetería: pedirle al comerciante que la llame para preguntarle si emite guías de retorno es mandarlo con quien no lo sabe. Y siete botones iguales en fila dejan de ser una acción y pasan a ser un muro; el ejemplo del documento tiene dos.
+
+Que T1 Envíos tenga fila en la matriz viene del documento —la tabla de `CAPACIDADES` la incluye como novena— mientras §0.1 dice que las plataformas *"no son paqueterías y no tienen fila en la matriz"*. El documento se contradice y la pantalla hereda la contradicción.
+
+**A quién le toca:** al PM la fila de T1 Envíos; al de UX cómo se agrupan las confirmaciones cuando son más de dos.
+
+---
+
+### V11. El panel de la regla de recolección dice dos hechos ciertos y calla la conclusión
+
+**Gravedad:** medio.
+
+**Cómo reproducirlo**
+1. Configuración, zona **Cuando hay guías sin recoger**, fila "Almacén Puebla · DHL" → **Editar regla**.
+
+**Qué pasó** — La franja dice *"Ahora mismo hay **4** guías de DHL sin recolección en Almacén Puebla"* y, más abajo, *"**4 de esas 4** se compraron en Skydropx. Con «Se pide directo», esas 4 quedan fuera de la solicitud y se programan a mano."* Las dos son ciertas. Juntas significan que la regla, tal como está guardada, **hoy no recoge nada**, y eso no se dice en ninguna parte.
+
+Es la misma familia que el producto ya resuelve bien dos veces —la regla de embalaje muerta y la paquetería sin cuenta en el primer puesto—, con el mismo remedio disponible: nombrarlo donde se lee. El ejemplo del documento tiene 4 de 9, donde quedan cinco; aquí no queda ninguna.
+
+**A quién le toca:** al de UX.
+
+---
+
+## Menores
+
+- **m1.** El buscador de la pestaña Devoluciones dice `Filtrar por pedido, cliente o destino`; ux.md §1.2 pide `Filtrar por pedido, cliente o guía de retorno`. Busca bien por guía de retorno —lo comprobé—, pero no lo anuncia. — dev
+- **m2.** Las parejas de recolección se ordenan por el id interno del origen, así que "Tienda Roma" sale arriba de "Almacén Puebla", que es el origen predeterminado y el que tiene toda la actividad. — dev
+- **m3.** El pie de esa tarjeta dice *"Solo aparecen las parejas que han tenido envíos"*, pero también aparecen las que solo han tenido citas de recolección (Tienda Roma · FedEx y · UPS no tienen ningún envío). La frase promete un criterio más estrecho que el real. — dev
+- **m4.** `?cuenta=dhl&capacidad=…` sigue funcionando para las paqueterías con cuenta y no hace nada para las otras cinco; el parámetro vivo es `?paqueteria=`. Ningún enlace del producto usa el viejo, así que solo afecta a marcadores de la versión anterior. — dev
+- **m5.** Con el almacenamiento bloqueado el mensaje es correcto, pero la copia en memoria no cubre la sesión: sigue sin poderse entrar. Si la intención era que el prototipo funcionara en ventana privada, falta; si era avisar y no romper, está hecho. — PM, para decidir cuál de las dos era.
+- **m6.** Tras un guardado fallido en el panel de regla, el error *"Falta el nombre de la regla"* se queda a la vista aunque el campo ya esté lleno, hasta el siguiente intento. — dev
+- **m7.** El pie de Devoluciones dice *"$794.00 en retornos del periodo"* y no se mueve al cerrar una devolución ni al capturar un cargo de $310. Puede ser correcto —el flete existe desde que se compra la guía, no desde que se cierra—, pero no hay forma de saber qué suma; la etiqueta no dice si cuenta fletes, cargos o los dos. — PM
+- **m8.** En una devolución "Recibida" el panel ofrece **Marcar recibida** otra vez, sin marca de que ya se hizo. — dev
 
 ---
 
 # Veredicto
 
-**Se puede enseñar a un cliente, pero no tal como está hoy. Faltan tres arreglos, y son de una tarde.**
+**Sí se sube y sí se le enseña a un cliente, con una condición: arreglar V2 antes, y no enseñar la emisión de guías de retorno.**
 
-Lo que hay debajo está bien pensado y, salvo lo que sigue, bien hecho. La matriz funciona de verdad de punta a punta: cambias una celda en Paqueterías y la pantalla de Pedidos cambia en el acto, con los tres valores comportándose distinto y con el camino de vuelta ("Confirmar con FedEx") llevando a la celda exacta. El bloque de guías manuales hace lo que el documento prometió: se corrige la dirección sin salir, el precio se mueve mientras se teclea, el cambio de paquetería exige motivo, el fallo que no se reintenta lo dice y repinta las alternativas. El arrastre de reglas no es decorativo, y lo comprobé moviendo una regla y viendo cambiar la caja de un pedido.
+El salto entre pasadas es grande y conviene decirlo con números: de los siete graves y once medios de la primera pasada, quedan cerrados todos menos el "así que", que volvió por dos sitios nuevos. Y las dos funciones que no había visto llegan mejor terminadas que las dos que ya conocía. Recolecciones enseña las cinco filas de la tabla de cancelación funcionando con datos reales —botón, botón con corte, corte pasado, "no" y "sin registro"—, valida la ventana contra el horario del origen con las tres frases exactas, avisa de las guías que la regla no va a tomar en los tres sitios donde el documento lo pide, y la cifra de cumplimiento está bien calculada, que era lo que había que comprobar: 63 de 63 para DHL con tres citas vacías correctamente fuera. Devoluciones tiene los cinco mecanismos, el quinto funciona de punta a punta, Tracking marca "Va de regreso" solo en las dos filas donde la paquetería lo declaró con sus palabras y deja en paz la tercera, y el cargo del RTO se captura donde hace falta para la resta.
 
-Antes de ponerlo delante de nadie:
+**V2 hay que arreglarlo antes de subir** porque no es un hueco, es una afirmación falsa: el comerciante elige "Sin registro", lee "Guardado." y se queda con "Sí". Es el mismo tipo de defecto que V1 de la primera pasada, en la pantalla que existe justamente para que el producto no mienta sobre lo que la paquetería expone. Y no hay otra salida: el botón de quitar el registro que el documento diseña no está construido.
 
-1. **G1** — Quitar el "Cancelar guía y generar otra" del bloque Dirección o hacerlo depender de la matriz. Tal como está, el prototipo se contradice a sí mismo dentro del mismo panel y, si el cliente pulsa el botón, no pasa nada. Es el defecto que desmonta el argumento de la capa de en medio en la propia demostración.
-2. **G3** — O las reglas persisten en la sesión, o el aviso deja de decir "Guardado.". Sin esto, la demostración más vistosa de la función 3 —cambia el orden, mira cambiar el pedido— no se puede hacer, porque al llegar a Pedidos el orden ya volvió atrás.
-3. **G5** — Pintar el aviso de regla muerta. El dato ya está calculado y ya se enseña dentro del panel de edición; solo hay que sacarlo a la fila. Es una de las dos cosas que hacen que la lista de reglas valga más que una tabla.
+**V1 y V3 no bloquean la demostración pero sí acotan lo que se puede prometer.** Mientras ninguna paquetería emita retorno —que es el día de lanzamiento retratado en los datos— el selector sale vacío y nadie ve que no hay botón. Lo que no se puede hacer es enseñar la matriz cambiando `guiaRetorno` a "Sí" para lucir el selector, porque lo que aparece no lleva a ninguna parte. Con `sumaPiezas` igual: la celda se puede enseñar, la consecuencia que anuncia no existe.
 
-**G4** y **G2** pueden esperar a la demostración siguiente si nadie va a crear reglas en vivo ni abrir una ventana privada, pero son dos minas: la primera deja la lista en un estado incoherente con un solo clic, y la segunda convierte cualquier prueba en ventana privada en una pantalla de acceso que no responde y no explica nada.
+De los medios, V8 es el que más se ve en una demostración —"Invalid Date" nueve veces en la pantalla que es el vocabulario del producto— y es de una línea. V4 y V5 están en el camino que un cliente va a recorrer solo si se le enseña cerrar una devolución; si se enseña, se ven los dos seguidos.
 
-**G6** y **G7** no son del desarrollador y no bloquean la demostración, pero hay que resolverlos antes de estimar la siguiente tanda: el documento pide una matriz de cinco paqueterías con fichas para tres, y el orden de reglas que propone rompe dos de sus propias demostraciones.
+**Sobre el criterio del dueño del producto, que es lo que preguntaste aparte:**
 
-Sobre el segundo criterio, el del dueño del producto: alguien que no sabe de esto **sí** genera una guía manual rápido —la caja, el peso y el precio están a la vista y el botón dice lo que va a pasar y cuánto cuesta— pero **no** entiende rápido la pantalla de reglas. Se encuentra siete filas sin saber cuál gana, una que no gana nunca sin que nada se lo diga, dos cifras en la misma tarjeta que no cuadran, y si crea una regla sin condiciones acaba con dos filas que dicen exactamente lo mismo. Esa pantalla necesita otra vuelta.
+- **La pantalla de reglas ahora sí se entiende.** Los tres defectos que señalé desaparecieron: la regla que no ganaba nunca lo dice en su fila y ofrece la salida, la regla sin condiciones no se puede crear y el error explica qué hacer en su lugar, y las dos cifras dejaron de contradecirse porque cada una dice de qué habla. Y la cabeza de la tarjeta ahora enseña el principio del orden, que es lo que le faltaba a alguien que llega por primera vez: ya no hay que deducir por qué siete filas están en ese orden.
+- **Recolecciones se entiende rápido.** La tabla de parejas contesta de un vistazo qué está automatizado y qué no, el panel compara los tres modos en vez de esconderlos, cada campo dice su consecuencia, y los avisos de fallas y de `via` están en la fila, no en un informe. Lo único que pediría es V11: que cuando los dos hechos sumen cero, lo diga.
+- **Devoluciones es la más difícil de las cuatro y aun así se sigue**, porque la tabla lleva el mecanismo y el estado juntos y la columna de acción dice el siguiente paso. Donde se tropieza es al final: se recibe y no se puede cerrar desde donde se estaba (V4), y al autorizar no se ve qué regresa (V9). Las dos cosas le pasan a quien haga el recorrido completo, que es exactamente lo que va a hacer un cliente al que se le enseñe.

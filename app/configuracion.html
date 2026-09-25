@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
-<script src="../assets/vigia.js?v=923d07fd" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
+<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -52,7 +52,7 @@
         <div>
           <h2>Tu orden de reglas</h2>
           <p class="apagado" style="font-size:12px;margin-top:3px">
-            Se recorre de arriba abajo: gana la primera que se cumple, así que
+            Se recorre de arriba abajo y gana la primera que se cumple:
             lo específico va arriba y lo general abajo.
             <span class="solo-raton">Arrastra una regla para cambiar su puesto,
               o muévela con las flechas.</span><span
@@ -146,7 +146,7 @@
         </table>
       </div>
       <div class="tarjeta__pie">
-        <span>Solo aparecen las parejas que han tenido envíos.</span>
+        <span>Solo aparecen las parejas que han tenido envíos o recolecciones.</span>
         <span class="filtros__sep"></span>
         <button class="boton boton--sutil boton--chico" type="button" id="nueva-pareja">Agregar pareja</button>
       </div>
@@ -159,7 +159,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
+import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
 import { origenes, plantillas, reglasPaqueteria, PAPELES,
          reglasEmbalaje, vetosEmbalaje, efectoEmbalaje, embalaje, CONDICIONES_EMBALAJE,
          DESTINOS, cobroDefecto, guiasConReglas, hechosDeRegla,
@@ -170,7 +170,7 @@ import { origenes, plantillas, reglasPaqueteria, PAPELES,
          validarReglaRecoleccion, cortePropuesto, viasDeLaPareja,
          guiasSinRecoleccion, sinRegistro, enumerarEs,
          FACTOR_VOLUMETRICO, capacidadDe, guardarEmbalaje,
-         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=923d07fd";
+         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=cdaf6d84";
 if (exigirSesion()) {
   montar();
 
@@ -1181,6 +1181,14 @@ if (exigirSesion()) {
     refrescarHechos();
   });
   panelRegla.addEventListener("input", (e) => {
+    /* Un error que sigue a la vista con el campo ya lleno acusa de algo que
+       acaba de dejar de ser cierto. */
+    const campo = e.target.closest(".campo--error");
+    if (campo && e.target.value.trim()) {
+      campo.classList.remove("campo--error");
+      const err = campo.querySelector(".campo__error");
+      if (err) err.hidden = true;
+    }
     if (e.target.matches("input, select, textarea")) refrescarHechos();
   });
 
@@ -1613,12 +1621,23 @@ if (exigirSesion()) {
       <div class="franja franja--pendiente" style="margin-top:10px">
         <span class="franja__icono">${svgIco(ICO_LISTA)}</span>
         <div>
-          <b>${fuera.length} de esas ${esperando.length} se ${
-            fuera.length === 1 ? "compró" : "compraron"} en ${
-            esc(enumerarEs([...new Set(fuera.map((p) => p.envio.via ?? "directo"))]))}.</b>
-          <p>Con "Se pide ${r.via ? `a ${esc(r.via)}` : "directo"}", ${
-            fuera.length === 1 ? "esa queda fuera" : `esas ${fuera.length} quedan fuera`} de la
-            solicitud y se programan a mano.</p>
+          <b>${fuera.length === esperando.length
+            ? `Con "Se pide ${r.via ? `a ${esc(r.via)}` : "directo"}", esta regla no recogería ninguna de las ${
+                esperando.length}.`
+            : `${fuera.length} de esas ${esperando.length} se ${
+                fuera.length === 1 ? "compró" : "compraron"} en ${
+                esc(enumerarEs([...new Set(fuera.map((p) => p.envio.via ?? "directo"))]))}.`}</b>
+          <p>${fuera.length === esperando.length
+            /* Los dos hechos por separado son ciertos y juntos significan que
+               la regla no recoge nada. Callar la conclusión deja al comerciante
+               deduciéndola, y es la misma familia que la regla muerta y la
+               paquetería sin cuenta: se nombra donde se lee. */
+            ? `Todas se compraron en ${esc(enumerarEs([...new Set(fuera.map((p) => p.envio.via ?? "directo"))]))}
+               y se programan a mano. Para que esta regla las tome, elige esa plataforma en
+               "Se pide a".`
+            : `Con "Se pide ${r.via ? `a ${esc(r.via)}` : "directo"}", ${
+                fuera.length === 1 ? "esa queda fuera" : `esas ${fuera.length} quedan fuera`} de la
+               solicitud y se programan a mano.`}</p>
         </div>
       </div>` : ""}`;
   }

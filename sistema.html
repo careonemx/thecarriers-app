@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=923d07fd">
+<link rel="stylesheet" href="assets/app.css?v=cdaf6d84">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=923d07fd" defer></script>
+<script src="assets/vigia.js?v=cdaf6d84" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -862,6 +862,11 @@
         <div class="regla"><b>Marcada, no cancelada</b><span>Donde la paquetería no expone la cancelación, lo único cierto que se puede hacer es dejar constancia de que se pidió por teléfono y <b>seguir contándola</b>. La fila dice “Cancelación solicitada” y debajo “Estafeta no ha confirmado la cancelación”: ahí no falta un dato de la matriz, falta una respuesta sobre esa recolección. Y el botón que cierra es fantasma, no primario, porque no completa la tarea: la completa una llamada.</span></div>
         <div class="regla"><b>El prototipo tiene hora, no reloj</b><span>Igual que <code>HOY</code>, existe una hora fija. Hay decisiones que dependen de la hora del día —si el corte para cancelar ya pasó— y con el reloj real la misma pantalla se comporta distinto por la mañana que por la tarde, y entonces no se puede discutir en una reunión.</span></div>
         <div class="regla"><b>Lo que no entra se dibuja apagado</b><span>Los modos que no están en esta versión se enseñan con su consecuencia y su razón, no se esconden. Esconderlos haría creer que el producto no los contempla; enseñarlos apagados dice qué viene.</span></div>
+        <div class="regla"><b>El control conserva lo que se eligió</b><span>Si un valor elegido no puede mandar, el control no lo ofrece; y si lo ofrece, lo conserva. Un <code>select</code> que acepta “sin registro”, anuncia “Guardado.” y vuelve solo al valor anterior es la pantalla afirmando algo falso, justo en la que existe para que el producto no mienta. Y el aviso se escribe con el valor <b>resuelto</b>, no con el elegido.</span></div>
+        <div class="regla"><b>Deshacer se llama por su nombre</b><span>Volver una celda a lo que dice la capa de abajo es una acción propia —“Quitar el registro de…”—, no un valor más del desplegable. Elegir otro valor escribe otro registro; no lo borra.</span></div>
+        <div class="regla"><b>Una capacidad que no se traduce en nada enseña más de lo que da</b><span>Si la matriz dice que algo se puede, la pantalla donde se hace tiene que ofrecerlo; y si no está construido, la celda no puede prometerlo. Lo mismo con un selector que se llena y no lleva a ninguna parte: peor que uno vacío.</span></div>
+        <div class="regla"><b>Sin fecha no se afirma una confirmación</b><span>Un “Confirmado el Invalid Date” afirma algo que no consta y, peor, hace pasar por confirmado un valor que nadie confirmó. Sin fecha, la procedencia es “Sin registro”.</span></div>
+        <div class="regla"><b>Dos hechos ciertos no dicen su conclusión</b><span>“Hay 4 guías” y “4 son de otra plataforma” son verdad por separado y juntas significan que la regla no recoge nada. Eso se dice; deducirlo es trabajo que la pantalla puede ahorrar.</span></div>
         <div class="regla"><b>Una devolución cuelga de su pedido</b><span>No es un pedido nuevo: es un segundo envío del mismo, y el folio del pedido es la única llave que el comerciante, el comprador y la paquetería comparten. Por eso la primera columna de la tabla es el pedido y no la devolución, y por eso una recibida sin pedido amarrado no se puede cerrar.</span></div>
         <div class="regla"><b>Quién emite y quién paga</b><span>Son las dos preguntas que separan los cinco mecanismos, y las que deciden si un costo entra en la conciliación. Una guía que el comprador compró entra en cero con su nota: meterla en el mismo cajón que las que emitimos mete un costo que no existe.</span></div>
         <div class="regla"><b>El selector se construye con cero opciones</b><span>Lee la matriz y pinta lo que haya, incluido nada. Construirlo después obligaría a rehacer el bloque entero el día que una paquetería conteste, y ahora cuesta lo mismo con cero que con tres. Vacío no es una pantalla muerta: es donde vive el mecanismo que va a ser el más frecuente al principio.</span></div>

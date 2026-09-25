@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=923d07fd">
-<script src="../assets/vigia.js?v=923d07fd" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
+<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -89,13 +89,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=923d07fd";
+import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
          origenes, menosDias, HOY,
          parejasRecoleccion, guiasSinRecoleccion,
          comoCancelar, marcarCancelacionSolicitada,
-         nombrarAusencia, capacidadDe, telefonoDe } from "../assets/datos.js?v=923d07fd";
+         nombrarAusencia, capacidadDe, telefonoDe, ofrece, sinRegistro } from "../assets/datos.js?v=cdaf6d84";
 if (exigirSesion()) {
   montar();
 
@@ -323,7 +323,7 @@ if (exigirSesion()) {
         <td class="tabular">${esc(r.ventana)}</td>
         <td class="tabular">${r.piezas}</td>
         <td class="mono apagado">${esc(r.folio)}</td>
-        <td style="text-align:right">${accionCancelarHTML(r, c)}</td>
+        <td style="text-align:right">${accionCancelarHTML(r, c)}${sumarPiezasHTML(r)}</td>
       </tr>`; }).join("")}`).join("");
 
     return `
@@ -366,6 +366,39 @@ if (exigirSesion()) {
         cancelar fue a las ${esc(c.corte)}.</div>` : ""}`;
   }
 
+  /* ---------- Sumar piezas a una solicitud ya confirmada ----------
+     Sale de la matriz, como todo lo demás. Con "sí" hay acción; con "no" o sin
+     registro NO hay acción y sí hay una línea que dice qué pasa con esas
+     guías, porque una capacidad que no se traduce en nada enseña más de lo que
+     da. Solo en las de hoy: en las de mañana todavía no hay corte que perder. */
+  function sumarPiezasHTML(r) {
+    if (r.fecha !== HOY) return "";
+    /* Las que entrarían en ESTA solicitud: mismo origen, misma paquetería y la
+       misma plataforma con la que se pidió. */
+    const tarde = guiasSinRecoleccion({ origen: r.origen, paqueteria: r.paqueteria,
+                                        via: r.via ?? null });
+    if (!tarde.length) return "";
+
+    const n = tarde.length;
+    const cuantas = `${n} ${n === 1 ? "guía" : "guías"}`;
+
+    if (ofrece(r.paqueteria, "sumaPiezas")) {
+      return `<div style="margin-top:6px">
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-sumar="${esc(r.folio)}" data-piezas="${n}">Sumar ${cuantas} a esta recolección</button>
+      </div>`;
+    }
+
+    return `<div class="apagado" style="margin-top:6px;font-size:12px">
+      ${esc(nombrarAusencia(r.paqueteria, "sumaPiezas"))}. ${
+        n === 1 ? "Esta entra" : `Estas ${n} entran`} a la del día siguiente.
+      ${sinRegistro(r.paqueteria, "sumaPiezas")
+        ? `<a class="boton boton--sutil boton--chico"
+              href="paqueterias.html?paqueteria=${encodeURIComponent(r.paqueteria)}&capacidad=sumaPiezas"
+           >Confirmar con ${esc(r.paqueteria)}</a>` : ""}
+    </div>`;
+  }
+
   const dlgCancelar = document.getElementById("dlg-cancelar");
 
   /* El diálogo del sistema de siempre: cancelar nombra lo que conserva. */
@@ -377,7 +410,7 @@ if (exigirSesion()) {
       <div class="dialogo__cuerpo">
         <p>${esc(r.paqueteria)} deja de venir por las ${plural(r.piezas, "pieza", "piezas")} de
           ${esc(nombreOrigen(r.origen))} el ${esc(corta(r.fecha))}.</p>
-        <p style="margin-top:8px">Las guías vuelven a contar como sin recolección, así que la
+        <p style="margin-top:8px">Las guías vuelven a contar como sin recolección y la
           siguiente ejecución de la regla las incluye sola.</p>
       </div>
       <div class="dialogo__pie">
@@ -586,6 +619,24 @@ if (exigirSesion()) {
     const instruccion = e.target.closest("[data-instruccion]");
     if (instruccion) {
       return abrirInstruccion(recolecciones.find((r) => r.folio === instruccion.dataset.instruccion));
+    }
+
+    const sumar = e.target.closest("[data-sumar]");
+    if (sumar) {
+      const n = +sumar.dataset.piezas;
+      dlgCancelar.innerHTML = `
+        <div class="dialogo__cabeza">
+          <h2 id="dlg-cancelar-titulo">Sumar ${plural(n, "guía", "guías")} a ${esc(sumar.dataset.sumar)}</h2>
+        </div>
+        <div class="dialogo__cuerpo">
+          <p class="aviso aviso--info">La solicitud ya confirmada pasaría a declarar
+            ${plural(n, "pieza", "piezas")} más. En el prototipo la acción llega hasta aquí:
+            falta el endpoint de la paquetería.</p>
+        </div>
+        <div class="dialogo__pie">
+          <button class="boton boton--primario" type="button" data-cerrar-cancelar>Entendido</button>
+        </div>`;
+      dlgCancelar.showModal();
     }
   });
 

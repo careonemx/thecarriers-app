@@ -1447,7 +1447,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: { valor: "si", pct: 1.5, minimo: 35, fecha: "2026-08-14" } },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "Estafeta": {
     cancelaRecoleccion: { producto: { valor: "no", corte: null, fecha: "2026-07-30" } },
@@ -1458,7 +1461,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: { valor: "no", fecha: "2026-07-30" } },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "FedEx": {
     cancelaRecoleccion: { producto: { valor: "si", corte: "16:00", fecha: "2026-09-02" } },
@@ -1469,7 +1475,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   /* Sin cuenta conectada y es el ejemplo textual de todo el documento: si su
      fila no existiera, "Confirmar con Paquetexpress" no tendría a dónde ir. */
@@ -1482,7 +1491,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "Redpack": {
     cancelaRecoleccion: { producto: null },
@@ -1497,7 +1509,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "UPS": {
     cancelaRecoleccion: { producto: null },
@@ -1508,7 +1523,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   /* Sin cuenta y con un "no" confirmado: es el caso que demuestra que las dos
      preguntas son independientes, y que conectar no resuelve la segunda. */
@@ -1521,7 +1539,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "AMPM": {
     cancelaRecoleccion: { producto: null },
@@ -1532,7 +1553,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
   "T1 Envíos": {
     cancelaRecoleccion: { producto: null },
@@ -1543,7 +1567,10 @@ export const CAPACIDADES = {
     caducidadRetorno: { producto: null },
     intentosNumerados: { producto: null },
     costoSeguro: { producto: null },
-    divisorVolumetrico: { producto: { valor: 5000 } },
+    /* Sin capa: 5000 es lo que se ha visto funcionar, no algo confirmado con
+       la paquetería, y presentarlo como dato suyo es inventar la cifra que más
+       importa. `divisorDe()` cae a la constante y la cotización lo dice. */
+    divisorVolumetrico: { producto: null },
   },
 };
 
@@ -1577,10 +1604,20 @@ export function marcarCapacidad(paqueteria, clave, cambios) {
 
 const filaCapacidad = (clave) => CAPACIDADES_FILAS.find((f) => f.clave === clave);
 
-/* Una capa cuenta como registro cuando existe y trae valor. En las de tres
-   valores, "sin-registro" escrito a mano es lo mismo que no tener capa. */
-const capaValida = (capa) =>
-  !!capa && capa.valor != null && capa.valor !== "sin-registro";
+/**
+ * Una capa existe cuando alguien la escribió, aunque lo que diga sea "sin
+ * registro".
+ *
+ * Esto NO es un detalle: "en mi cuenta no me consta" es una afirmación del
+ * comerciante sobre su contrato y tiene que poder ganarle a lo que la
+ * paquetería expone en general. Tratando "sin-registro" como ausencia de capa,
+ * elegirlo devolvía el control al valor de producto y la pantalla se quedaba
+ * diciendo "Sí" después de anunciar que había guardado otra cosa.
+ *
+ * Para volver a lo que dice el producto está `marcarCapacidad(..., null)`, que
+ * es otra acción y se llama por su nombre: quitar el registro.
+ */
+const capaValida = (capa) => !!capa && capa.valor !== undefined && capa.valor !== null;
 
 /**
  * La celda resuelta: el valor que manda, de qué capa sale y qué dicen las dos.
@@ -1605,15 +1642,35 @@ export const capacidadDe = (paqueteria, clave) => {
   };
 };
 
+/** Si el comerciante escribió algo sobre su cuenta. Es lo que decide si se
+    puede quitar ese registro y volver a lo que diga el producto. */
+export const hayRegistroDeCuenta = (paqueteria, clave) =>
+  !!capacidadDe(paqueteria, clave).cuenta;
+
 /** La única pregunta que decide si una acción se dibuja. */
 export const ofrece = (paqueteria, clave) => capacidadDe(paqueteria, clave).valor === "si";
 
-/** Sin registro: ninguna de las dos capas tiene valor. */
-export const sinRegistro = (paqueteria, clave) => !capacidadDe(paqueteria, clave).fuente;
+/**
+ * Sin registro: lo que manda no dice nada.
+ *
+ * Y "no dice nada" incluye una capa de cuenta que dice exactamente eso. Mirar
+ * solo si hay capa daba por registrado un hueco que el comerciante acababa de
+ * declarar.
+ */
+export const sinRegistro = (paqueteria, clave) => {
+  const c = capacidadDe(paqueteria, clave);
+  return !c.fuente || c.valor === "sin-registro" || c.valor == null;
+};
 
 /** Tres frases distintas porque significan tres cosas distintas. */
 export const procedenciaDe = (paqueteria, clave) => {
   const c = capacidadDe(paqueteria, clave);
+  /* Sin fecha no hay nada que fechar, y un "Confirmado el Invalid Date" es
+     peor que no decir de dónde salió: afirma una confirmación que no consta. */
+  if (!c.fecha) return "Sin registro.";
+  if (c.fuente === "cuenta" && c.valor === "sin-registro") {
+    return `Sin registro en tu cuenta. Lo marcaste tú el ${fechaEnTexto(c.fecha)}.`;
+  }
   if (c.fuente === "producto") return `Confirmado con ${paqueteria} el ${fechaEnTexto(c.fecha)}.`;
   if (c.fuente === "cuenta") return `Lo marcaste tú el ${fechaEnTexto(c.fecha)}, sobre tu cuenta.`;
   return "Sin registro.";
@@ -1627,9 +1684,12 @@ export const porQueDifiere = (paqueteria, clave) => {
      pantalla ofrece, y aquí de lo que la paquetería hace en general. */
   const fila = filaCapacidad(clave);
   const accion = fila?.corta ?? fila?.accion ?? "expone esta acción";
-  return c.producto.valor === "si"
-    ? `${paqueteria} en general sí ${accion}. En tu cuenta no, y eso es lo que manda.`
-    : `${paqueteria} en general no ${accion}. En tu cuenta sí, y eso es lo que manda.`;
+  const general = c.producto.valor === "si" ? `sí ${accion}` : `no ${accion}`;
+  /* Tres finales, no dos: "en tu cuenta no consta" no es lo mismo que "en tu
+     cuenta no", y es justo la distinción que la matriz existe para hacer. */
+  const enTuCuenta = c.cuenta.valor === "sin-registro" ? "En tu cuenta no consta"
+    : c.cuenta.valor === "si" ? "En tu cuenta sí" : "En tu cuenta no";
+  return `${paqueteria} en general ${general}. ${enTuCuenta}, y eso es lo que manda.`;
 };
 
 /**
@@ -2905,7 +2965,13 @@ export function parejasRecoleccion({ dias = 30 } = {}) {
       esperando: esperando.length,
       fuera,
     };
-  }).sort((a, b) => a.origen.localeCompare(b.origen) || a.paqueteria.localeCompare(b.paqueteria));
+  /* El origen predeterminado primero, y dentro de cada origen por nombre: es el
+     que tiene la actividad, y ordenar por el id interno lo mandaba abajo. */
+  }).sort((a, b) =>
+    (a.origen === origenPredeterminado()?.id ? 0 : 1) - (b.origen === origenPredeterminado()?.id ? 0 : 1) ||
+    (origenes.find((o) => o.id === a.origen)?.nombre ?? a.origen)
+      .localeCompare(origenes.find((o) => o.id === b.origen)?.nombre ?? b.origen, "es") ||
+    a.paqueteria.localeCompare(b.paqueteria, "es"));
 }
 
 /** Las plataformas por las que esa pareja ha comprado guías. El campo "Se pide
