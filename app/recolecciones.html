@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -19,7 +19,13 @@
          y verifica su cumplimiento.</p>
     </div>
     <div class="encabezado__acciones">
-      <button class="boton boton--primario" type="button">Programar recolección</button>
+      <!-- Una recolección se programa sobre guías, no sobre la nada: el camión
+           recoge bultos. La acción lleva a Pedidos con las guías sin recolección
+           delante y ya seleccionadas, que es donde el flujo existe, en vez de
+           abrir aquí un segundo formulario que acabaría divergiendo. -->
+      <a class="boton boton--primario" href="pedidos.html?pendiente=sin-recoleccion">
+        Programar recolección
+      </a>
     </div>
   </div>
 
@@ -89,13 +95,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
          origenes, menosDias, HOY,
          parejasRecoleccion, guiasSinRecoleccion,
          comoCancelar, marcarCancelacionSolicitada,
-         nombrarAusencia, capacidadDe, telefonoDe, ofrece, sinRegistro } from "../assets/datos.js?v=cdaf6d84";
+         nombrarAusencia, capacidadDe, telefonoDe, ofrece, sinRegistro } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 

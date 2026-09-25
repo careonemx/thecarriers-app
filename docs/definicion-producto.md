@@ -9,6 +9,10 @@ Dos reglas mandan sobre todo lo de abajo, y están tomadas de `sistema.html`:
 - **Somos la capa intermedia.** Ninguna acción se ofrece si depende de una integración con la paquetería que no existe. Cuando la acción existe a medias, la interfaz dice qué hace el sistema y qué le toca a la persona.
 - **No se inventa lo que no nos informan.** Un dato que no viene del transportista no se muestra, o se muestra marcado como estimación nuestra con el método a la vista.
 
+**Constancia de revisión — quinta versión.** Cuatro ajustes salidos del diseño de las dos funciones nuevas. El más importante: el rastreo **crea o convierte, nunca duplica** (1.4), porque un envío detenido acaba normalmente en retorno y ese es justo el caso donde el comerciante ya registró la devolución a mano; de ahí sale además que el motivo comercial y la causa del transportista sean **dos campos** (1.3), porque son dos hechos verdaderos sobre el mismo paquete. Los otros tres: la serie del envío suelto es `E-0043` porque `TC` ya lo usan las guías (5.2), el contador de días en *Autorizada* no corre mientras la ida va en tránsito (1.5), y capturar y despachar un envío suelto son dos bloques del mismo panel que nunca se cierra (5.3).
+
+**Constancia de revisión — cuarta versión.** El dueño del producto pidió dos funciones que ponen a prueba la frontera del intermediario. **El envío suelto** —una guía sin pedido detrás— entra como sección 5 y se modela como un pedido sin canal, no como una lista aparte, porque `envios` se deriva de `pedidos` y una tercera colección rompería todas las pantallas que leen esa derivación. **El retorno desde una guía con estatus** no es una función nueva sino una puerta de entrada más (1.4) y una condición nueva (1.7): el estatus de la guía de ida decide qué se puede hacer, y en cuatro de los seis estatus la respuesta es que todavía no se emite nada. Las secciones 1.7 a 1.11 corrieron un número.
+
 **Constancia de revisión — tercera versión.** QA probó las funciones construidas y devolvió seis arbitrajes. Dos corrigen este documento con el código delante: el orden de las reglas de embalaje, que estaba al revés y rompía dos de sus propias demostraciones (3.4), y el orden de evaluación, que hacía imposible el caso que ilustraba el tope de peso (3.3). Los otros cuatro cierran huecos: la matriz pasa a tener una fila por paquetería y no por cuenta conectada (0), "sin confirmar" se redacta como hueco del registro y no en primera persona (0), el costo del seguro se vuelve una celda de la matriz (4.3) y la tarifa por zona se declara fuera de la primera versión diciendo qué se enseña mientras tanto (4.4).
 
 **Constancia de revisión — segunda versión.** La primera versión dejaba veintitrés preguntas abiertas con las paqueterías y daba por hecho que se contestarían antes de construir. No se van a contestar. Esta versión resuelve doce contradicciones que encontró el equipo de diseño y sustituye la espera por una pieza: **la matriz de capacidades** de la sección 0, que declara lo desconocido como desconocido y deja que la interfaz se dibuje sin la respuesta. Además cierran tres supuestos que el prototipo no sostiene: no hay servidor, no hay modelo de usuarios y no hay reloj compartido. Lo que dependía de ellos se resolvió sin ellos o salió de la primera versión, y en la sección "Alcance de la primera versión" está dicho cuál fue cuál.
@@ -77,7 +81,7 @@ Antes de definir el flujo hay que separar cinco mecanismos distintos que hoy se 
 | **Guía del comprador** | El comprador, por su cuenta | El comprador | Solo captura el número y rastrea |
 | **Devolución del canal de venta** | El marketplace | Según su política | No interviene. La logística es del canal. |
 
-**El RTO es el más frecuente y es el que hoy no se ve.** Un envío con `estado: "Detenido"` y motivo "Destinatario ausente, segundo intento" termina, si nadie lo atiende, en un retorno que la paquetería cobra completo. Es la primera funcionalidad a construir, y conviene decir con precisión qué promete y qué no: la sección 1.7 lo acota.
+**El RTO es el más frecuente y es el que hoy no se ve.** Un envío con `estado: "Detenido"` y motivo "Destinatario ausente, segundo intento" termina, si nadie lo atiende, en un retorno que la paquetería cobra completo. Es la primera funcionalidad a construir, y conviene decir con precisión qué promete y qué no: la sección 1.8 lo acota.
 
 **La guía del comprador va a ser el caso más frecuente al principio**, precisamente porque puede que ninguna paquetería exponga emisión de retorno el día del lanzamiento. Es un mecanismo y no un atributo del segundo: emite otro y paga otro, que son las dos preguntas que definen la tabla. *Porque meter una guía que nosotros nunca emitimos ni pagamos en el mismo cajón que las que sí, mete en la conciliación un costo que no existe.*
 
@@ -93,7 +97,10 @@ Campos mínimos del registro de devolución:
 
 - `pedido` — folio del pedido original. Obligatorio.
 - `origenDevolucion` — quién la inició: `comprador`, `comerciante`, `paqueteria` (RTO) o `canal`.
-- `motivo` — de una lista corta y fija: producto equivocado, producto dañado, no era lo esperado, entrega fallida, arrepentimiento, garantía. Lista fija para poder contarlos; un campo libre no se agrupa.
+- `motivo` — **por qué el cliente devuelve**, de una lista corta y fija: producto equivocado, producto dañado, no era lo esperado, entrega fallida, arrepentimiento, garantía. Lista fija para poder contarlos; un campo libre no se agrupa.
+- `causaTransportista` — **por qué el paquete regresó**, tal como lo reportó la paquetería, con su texto original. Null mientras no haya retorno del transportista.
+
+**Son dos campos y no uno.** "El cliente se arrepintió" y "destinatario ausente" son dos hechos verdaderos sobre el mismo paquete y contestan preguntas distintas: el primero decide el reembolso, el segundo decide a quién se le reclama. *Porque metidos en un solo campo, el que se escriba después borra al que se escribió antes, y el que se borra es siempre el que hacía falta.*
 - `piezas` — qué artículos del pedido regresan.
 - `mecanismo` — cuál de los cinco de arriba.
 - `envioRetorno` — guía, paquetería, `via`, costo, estado. Null mientras no exista.
@@ -103,13 +110,30 @@ Campos mínimos del registro de devolución:
 
 ### 1.4 Quién la origina
 
-Tres puertas de entrada. Las tres terminan en el mismo registro.
+Cuatro puertas de entrada. Las cuatro terminan en el mismo registro, y eso es literal: **nunca hay dos devoluciones abiertas del mismo envío.**
 
 **Desde el canal de venta.** Shopify y WooCommerce reportan solicitudes de devolución por webhook. Cuando llega una, el sistema crea el registro en estado `Solicitada` y lo pone en la cola. *Porque la solicitud ya existe del lado del comprador y volver a capturarla a mano es trabajo duplicado que además diverge.* En Mercado Libre y Amazon la solicitud existe pero la logística es del canal: el registro se crea igual, sin guía nuestra, para que la contabilidad del pedido cuadre.
 
 **Desde el comerciante, sobre un pedido.** Acción "Registrar devolución" en el panel del pedido en Pedidos. Vive ahí y no en una pantalla aparte, por la regla "un pendiente vive donde se resuelve". *Porque quien decide una devolución está mirando el pedido, no una cola abstracta.*
 
-**Desde el rastreo, automáticamente.** Cuando un envío registra un evento de retorno al remitente, el sistema crea el registro con `origenDevolucion: "paqueteria"`, `mecanismo: "RTO"` y el envío de regreso ya identificado si la paquetería lo reporta. *Porque ese paquete ya viene de regreso exista o no el registro, y descubrirlo cuando llega a la bodega es descubrirlo tarde.*
+**Desde el rastreo: crea o convierte, nunca duplica.** Cuando un envío registra un evento de retorno al remitente, el sistema **busca primero una devolución abierta de ese envío**. Si no la hay, la crea con `origenDevolucion: "paqueteria"` y `mecanismo: "RTO"`. Si la hay, **la convierte**. *Porque el camino normal de un envío detenido es acabar en retorno, y ese es justo el caso en el que el comerciante ya registró la devolución a mano: crear una segunda deja el mismo paquete con dos registros abiertos y una cola que no cuadra con la realidad.*
+
+Qué hace la conversión, campo por campo, que es donde se decide si sirve o estorba:
+
+- **Se conserva todo lo que capturó una persona:** el motivo comercial, las piezas, quién paga el flete, las notas. Nada de lo tecleado se pierde.
+- **Se conserva `origenDevolucion`.** Quien la originó sigue siendo quien la originó. El RTO cambió cómo regresa el paquete, no quién pidió que regresara, y pisarlo borraría el hecho de que hubo intención comercial antes.
+- **Se llena `causaTransportista`** con lo que reportó la paquetería. No toca el motivo comercial.
+- **Se fija `mecanismo: "RTO"`.** El paquete ya regresa por esa vía, y cualquier mecanismo que se hubiera elegido —guía prepagada, guía del comprador— dejó de aplicar.
+- **El estado salta a *En tránsito de regreso***, sin pasar por los intermedios: el rastreo ya registró movimiento.
+- **Si ya se había emitido una guía de retorno, no se pisa.** Queda marcada como emitida y sin usar, y se ofrece cancelarla donde la matriz lo permita. *Porque es dinero, y desaparecerla del registro no la desaparece de la factura.*
+
+**La conversión se avisa dentro de la devolución**, con las dos fechas: *"La paquetería inició el retorno el 19 de septiembre: destinatario ausente. Se conservó la devolución registrada el 17."* *Porque el registro cambió sin que nadie lo pidiera, y un cambio automático que no se ve es un cambio que nadie puede comprobar.*
+
+Un RTO creado desde cero arranca con el motivo comercial en "entrega fallida", que ya está en la lista fija, y la persona puede corregirlo.
+
+**Desde una guía con estatus.** Acción "Registrar devolución" en el bloque de envío del panel del pedido y en la pantalla del envío, que es donde vive una guía en tránsito o entregada. *Porque el momento en que el comerciante se entera de que el cliente quiere devolver es mientras mira el rastreo de esa guía, y mandarlo a otra pantalla a capturar de cero un pedido que tiene delante es el mismo defecto que ya se corrigió al generar guías.* Qué permite hacer cada estatus está en 1.7, y no es lo mismo en todos.
+
+La acción se llama **"Registrar devolución"**, no "Generar guía de retorno". *Porque el botón tiene que nombrar lo que hace en todos los casos, y hoy, con la matriz como está, en la mayoría no termina en una guía.*
 
 No existe puerta de entrada directa para el comprador. El comprador no tiene cuenta en The Carriers.
 
@@ -131,7 +155,9 @@ Más dos salidas laterales:
 
 **De *Autorizada* se puede saltar directo a *Recibida*, sin pasar por guía.** Es el camino del paquete que aparece en la bodega sin que nadie capturara nada, y es el que impide que una devolución autorizada sin mecanismo se quede congelada para siempre. *Porque una cola que solo avanza con una guía se llena de registros que nunca van a avanzar, y una cola con registros muertos deja de leerse.*
 
-Una devolución en *Autorizada* **cuenta los días que lleva ahí**, igual que los detenidos. Es la señal de que el comprador no ha hecho su parte, y es el único dato duro que hay.
+Una devolución en *Autorizada* **cuenta los días que lleva esperando al comprador**, igual que los detenidos. Es el único dato duro que hay sobre si el comprador va a devolver o no.
+
+**El contador corre desde el más tardío de dos hechos: la autorización y la entrega de la guía de ida.** Mientras la ida va en tránsito no corre, y la fila dice que espera la entrega en lugar de una cifra. *Porque el contador significa que el comprador no ha hecho su parte, y con el paquete todavía en camino no puede hacerla: contar esos días mide el tránsito del transportista y lo presenta como demora del comprador.* Es la misma disciplina que en los detenidos, donde la antigüedad se mide desde el último evento de la paquetería y no desde que se creó la guía.
 
 ### 1.6 Cómo se genera la guía de retorno
 
@@ -149,7 +175,38 @@ El selector de paquetería para el retorno **no es el mismo control que el de un
 
 **Qué se construye y qué espera.** El selector se construye completo ahora, porque es genérico: lee la matriz y pinta lo que haya, incluido nada. Lo que espera es el adaptador de emisión de cada paquetería, que es lo único que de verdad necesita la respuesta. *Porque construir el selector después obligaría a rehacer el bloque entero el día que una paquetería conteste, y construirlo ahora cuesta lo mismo con cero opciones que con tres.*
 
-### 1.7 Cómo se rastrea, y qué se avisa de un envío que va de regreso
+### 1.7 Qué permite el estatus de la guía de ida
+
+Arrancar la devolución desde la guía hereda contexto, y eso hace fácil prometer de más. **El estatus de la guía de ida decide qué se puede hacer**, y en la mitad de los estatus la respuesta es que no se puede emitir nada todavía.
+
+| Estatus de la ida | Qué se ofrece | Por qué |
+|---|---|---|
+| Generada, sin recolectar | Cancelar la guía de ida, si la matriz lo permite. No hay retorno | El paquete sigue en la bodega. Devolver algo que nunca salió es cancelar, no devolver. |
+| Recolección pendiente | Lo mismo | Igual: el paquete no ha salido |
+| En tránsito | Se **registra** la devolución y queda en *Autorizada*. No se emite guía | El comprador todavía no tiene el paquete: no hay quién lo devuelva |
+| Entregado | El flujo completo, incluida la emisión si la matriz la permite | Es el único estatus donde devolver es lo que se está haciendo |
+| Detenido o con incidencia | No hay retorno. Se registra la devolución y se ofrece el rastreo público y el contacto | El paquete está en poder de la paquetería y quien decide qué pasa con él es ella |
+| Ya va de regreso (RTO) | No hay retorno, y se dice por qué: ya hay uno en curso | Un segundo retorno sobre el mismo paquete duplica el costo |
+
+**El caso de "en tránsito" es el que más se va a usar y el que más fácil se hace mal.** El comerciante se entera hoy, el paquete llega en tres días. Se registra ahora, se emite después: el sistema vigila el rastreo de la ida y, cuando pasa a *Entregado*, la devolución se mueve sola a "lista para emitir" y aparece en la cola. *Porque obligarlo a volver dentro de tres días es garantizar que no vuelve, y emitir hoy una guía de retorno para un paquete que el comprador todavía no tiene es emitir una guía que nadie puede usar.*
+
+**Qué se hereda de la guía de ida y qué se vuelve a preguntar.** La herencia silenciosa es lo que convierte un atajo en un error caro:
+
+- **Se hereda y no se pregunta:** los dos extremos, invertidos. El destinatario de la ida es el remitente del retorno y el origen de la ida es su destino. Es lo único que el sistema puede resolver solo sin suponer nada.
+- **Se propone, no se hereda:** la paquetería. La de ida puede no exponer retorno; manda la matriz, no la costumbre.
+- **Se propone y se dice de dónde sale:** peso y medidas de la ida. *Porque lo que regresa casi nunca pesa lo mismo —falta el empaque original, o vuelve una pieza de tres— y heredarlas en silencio es cotizar un bulto que no existe.*
+- **Se vuelve a preguntar, siempre:** el motivo, qué piezas regresan, y el valor declarado. *Porque el valor asegurado de la ida es el de la venta completa y el del retorno es el de lo que regresa; arrastrarlo asegura de más y se paga de más.*
+- **Quién paga el flete de retorno**, que no se deduce de nada de la ida.
+
+**Lo que no se puede hacer, por ser la capa intermedia**, y que la interfaz no ofrece en ningún estatus:
+
+- **Convertir la guía de ida en una de retorno.** Son dos guías. Una guía emitida no se modifica.
+- **Dar media vuelta a un paquete que ya va en la red del transportista.** Interceptar o devolver al remitente en ruta es una instrucción al carrier sobre un paquete en su poder, y exige una integración que no tenemos. Donde la interfaz podría sugerirlo —un envío en tránsito cuyo cliente ya avisó— dice lo contrario: la devolución queda registrada y espera a la entrega.
+- **Liberar o redirigir un envío detenido.** Lo decide la paquetería. Queda el rastreo público, el número de guía y el contacto del destinatario, que es dato nuestro.
+
+**Y esta función no depende de ninguna respuesta de paquetería.** El registro siempre se puede crear; el paso de emisión pinta lo que `guiaRetorno` declare, y cuando no declara nada cae en el quinto mecanismo de 1.6 —la guía del comprador—, que es un flujo que funciona. *Porque una función cuyo valor entero dependiera de una llamada que nadie ha contestado no se podría construir, y esta sí.*
+
+### 1.8 Cómo se rastrea, y qué se avisa de un envío que va de regreso
 
 Un retorno se rastrea igual que cualquier otro envío, con una diferencia de lectura: **en un retorno, "Entregado" significa que llegó a la bodega del comerciante, no al cliente.** Los textos de estado se invierten en la presentación; el dato del carrier no se toca y se conserva en segundo plano con su texto original, como ya se hace en `envio.original`.
 
@@ -163,7 +220,7 @@ Lo que el sistema tampoco hace en ningún caso: decir "regresa en dos días" o "
 
 Estado propio y necesario: **"Guía de retorno emitida, sin usar"**, con los días que lleva así. Es el caso más común y el más caro de ignorar: la guía existe, el comprador nunca depositó el paquete, el reembolso quedó en el aire. Se ordena por antigüedad, que es el único dato duro disponible.
 
-### 1.8 Cómo se cierra
+### 1.9 Cómo se cierra
 
 Cerrar exige registrar una resolución: **reembolso total, reembolso parcial, cambio, nota de crédito o rechazo tras revisión**. El cierre es siempre humano.
 
@@ -175,7 +232,7 @@ El reembolso en sí **no se ejecuta aquí**. Se registra que se hizo, con monto 
 
 Una devolución cerrada deja el pedido original marcado. Un pedido con devolución parcial no es un pedido normal y no debe contarse como tal en desempeño ni en ingresos.
 
-### 1.9 El cobro
+### 1.10 El cobro
 
 Tres costos distintos, y confundirlos es lo que hoy hace que la conciliación no cuadre:
 
@@ -194,8 +251,10 @@ tipo ∈ rto · reexpedicion · zona · sobrepeso · reentrega · seguro · otro
 
 La frase de hoy migra como un cargo de tipo `otro` con su texto en `nota`: no se pierde nada. **De los siete tipos, la primera versión solo necesita `rto` tipificado**, que es el que entra en la resta del cierre; los demás pueden migrar después sin bloquear nada.
 
-### 1.10 Casos límite
+### 1.11 Casos límite
 
+- **Un pedido con dos guías y un RTO.** La conversión busca una devolución abierta **de ese envío**, no de ese pedido. Dos guías del mismo pedido pueden regresar por separado y cada una tiene su registro.
+- **Ya hay una devolución cerrada de ese envío y llega un RTO.** Se crea una nueva. Cerrada significa resuelta, y convertir un registro cerrado reescribiría una resolución que alguien ya firmó.
 - **El comprador manda de regreso sin avisar.** Llega un paquete sin registro. Acción "Registrar devolución recibida" que arranca en *Recibida* y pide amarrarlo a un pedido. Sin amarre, no se cierra.
 - **Devolución de un pedido con dos guías.** La devolución cuelga del pedido, no de la guía. Al registrarla se eligen las piezas, no los bultos.
 - **El paquete de retorno se pierde o se daña.** Estado *Con incidencia*, igual que un envío de ida. El reclamo lo levanta el comerciante con la paquetería, o con la plataforma si la guía se compró por `via`. La distinción `paqueteria` / `via` ya existe y decide a quién se le llama.
@@ -317,6 +376,8 @@ Cuatro decisiones de forma, cada una con su porqué:
 **Las condiciones dentro de una regla se unen con Y, nunca con O.** Para expresar una alternativa se escriben dos reglas. *Porque una condición con Y y O mezclados obliga a pensar en paréntesis, y nadie que empaca cajas debe tener que pensar en paréntesis.*
 
 **Las reglas están ordenadas y gana la primera que se cumple.** Lista ordenable, con asa y con flechas, igual que el orden de preferencia de paqueterías que ya existe. *Porque es el mismo tipo de criterio humano y el equipo ya sabe leerlo así; un segundo modelo mental para el mismo problema es un modelo de más.*
+
+Al ser dos listas con el mismo mecanismo, cada una tiene que decir qué decide. Los títulos son **"En qué caja va cada pedido"** y **"Con qué paquetería sale cada pedido"**; este último sustituye a "Tu orden de preferencia", que es anterior a estas funciones. *Porque "Tu orden de" nombra la forma de la lista y no lo que resuelve, y dos listas que se distinguen por dos palabras abstractas al final obligan a leerlas enteras para saber en cuál se está.*
 
 **Cada regla lleva su motivo escrito, como las paqueterías.** *Porque sin él, dentro de seis meses alguien va a borrar la regla que existe por un producto que se rompió tres veces.*
 
@@ -521,6 +582,95 @@ Lo único que sí debe poder hacerse en lote: **forzar una paquetería para la s
 
 ---
 
+## 5. El envío suelto: una guía sin pedido detrás
+
+### 5.1 El problema
+
+Hoy toda guía nace de un pedido que entró por un canal. La operación real tiene envíos que no: una venta por WhatsApp, un reemplazo de garantía, una muestra a un cliente, algo que se cobró por transferencia. Hoy esos envíos se hacen en el portal de la paquetería, quedan fuera de la conciliación y fuera del desempeño, y el comerciante termina con dos sitios donde mirar sus guías.
+
+### 5.2 Qué es: un pedido sin canal
+
+**Un envío suelto es un pedido sin canal de venta. No es una tercera cosa y no tiene lista propia.**
+
+*Porque `envios` se deriva de `pedidos`, y toda pantalla que trabaja con guías —Cobros, Tracking, Excepciones, Recolecciones, Etiquetas— lee esa derivación. Una tercera colección obligaría a cada una a mezclar dos fuentes y devolvería la pregunta que `datos.js` ya mató: "¿la guía 877… la busco en Pedidos o en la otra lista?".*
+
+Concretamente: `canal: null` y `origenCaptura: "manual"`. El folio es de una serie nuestra y se distingue a la vista de los del canal, porque un folio que no existe en Shopify no se puede ir a buscar allá.
+
+**La serie es `E-0043`, sin almohadilla.** El prefijo `TC` estaba tomado: `simularGeneracion()` lo usa para los números de guía, y dos series con el mismo prefijo se confunden justo en el buscador global, que agrupa por tipo. Y la almohadilla se quita a propósito: **`#` es la marca del folio del canal** y arrastra a buscarlo en la tienda, donde no está.
+
+**Un envío suelto no tiene estado de pago.** Una venta cobrada fuera del canal no la conoce el sistema, y poner "Pagado" sería inventar un dato que nadie reportó. Para lo pendiente cuenta como listo para despachar desde que se crea, porque crearlo **es** la decisión de despacharlo: no hay nada que esperar. El predicado de "pagados sin guía" admite las dos condiciones —pago confirmado por el canal, o sin canal— y la etiqueta del pendiente deja de hablar de pago para hablar de lo que hay que hacer.
+
+**El filtro de canales gana la opción "Sin canal"**, no "Manual". *Porque el desplegable contesta por dónde entró la venta, y una forma de capturar no es un sitio por donde entra dinero.* Como todos los desplegables del producto, se llena con lo que hay: sin envíos sueltos, la opción no aparece.
+
+**Un envío suelto no es una venta.** El total es opcional y, cuando no se captura, la columna dice "—" y ese pedido no entra en ninguna cifra de ingresos. *Porque capturar un número y tratarlo como venta confirmada por un canal mezcla lo que alguien tecleó con lo que un sistema reportó, y esa diferencia es justo la que sostiene la conciliación.*
+
+### 5.3 Qué se captura
+
+- **Destinatario y dirección**, con los mismos campos, las mismas etiquetas y la misma validación que la dirección de un pedido. Una dirección es una dirección.
+- **Origen**, de la lista de orígenes. El predeterminado viene ya elegido.
+- **Paquete**: plantilla, o medidas y peso a mano. La plantilla predeterminada viene ya elegida.
+- **Seguro y valor declarado**, igual que en cualquier guía.
+- **Referencia**, texto libre y corto: *"Garantía #4412"*, *"Venta por WhatsApp"*. **Es obligatoria.** *Porque el folio del canal es lo que hoy explica por qué existe una guía, y sin nada que lo sustituya, dentro de un mes nadie sabe por qué se pagó ese envío ni a quién cobrárselo.*
+- **Total**, opcional, y marcado como capturado a mano dondequiera que se muestre.
+
+Los artículos son opcionales. Cuando se capturan con SKU y cantidad, el envío suelto participa de todo lo que dependa de líneas; cuando no, no.
+
+**Esta lista dice qué necesita el envío para existir, no qué cabe en un formulario.** Capturar y despachar son dos cosas, y el origen, la caja, el peso y el seguro ya tienen sitio: el bloque Envío del panel del pedido, con su recotización mientras se escribe. **Se capturan ahí y no en un formulario propio.** *Porque duplicarlos sería un segundo sitio donde validar y cotizar lo mismo, que es el defecto que ya evita la regla de que una dirección es una dirección.*
+
+Lo que sí es innegociable: **el panel no se cierra entre las dos cosas.** Al crear el envío, el mismo panel pasa a ser el panel de ese pedido con el bloque Envío abierto. *Porque capturar una dirección y tener que irse a otra pantalla a generar la guía es exactamente el defecto que corrigió la sección 4, y volver a introducirlo por la puerta de atrás en la pantalla nueva sería reincidir.*
+
+De ahí sale una consecuencia que conviene dibujar: **un envío suelto puede existir sin guía**, igual que un pedido pagado sin guía, y aparece en la misma cola.
+
+### 5.4 Qué se valida, qué no, y dónde está la frontera
+
+**Lo que sí comprobamos, porque es forma y es nuestro:** campos obligatorios, que el CP tenga cinco dígitos, el formato del teléfono, que la colonia no vaya vacía. Y la propuesta de colonia por CP que ya existe en `coloniasPorCP`, **declarada como catálogo nuestro**.
+
+**Lo que no podemos comprobar, porque somos el intermediario:** que el código postal exista, que la colonia corresponda a ese CP, y que la paquetería dé cobertura en ese destino. No tenemos padrón propio de direcciones y no sabemos si alguna paquetería expone esa consulta por API.
+
+De ahí sale la regla, que es la parte que la interfaz tiene que decir bien:
+
+**Un CP que no está en nuestro catálogo avisa, no bloquea.** *"Este código postal no está en el catálogo de colonias. No quiere decir que no exista: quiere decir que no se puede proponer colonia."* *Porque nuestro catálogo no es el padrón de nadie, y tratar su hueco como una negativa impediría enviar a destinos que existen.*
+
+**La comprobación de verdad ocurre al comprar la guía, y se dice antes.** La paquetería acepta o rechaza, y su rechazo es el dato bueno: es la misma falla que ya existe en el prototipo —*"La paquetería rechazó el código postal: no corresponde a la colonia"*— y cae en el camino de fallo que ya está definido en 4.5, con su motivo y con su distinción entre lo reintentable y lo que no. Una falta de cobertura no se reintenta: se cambia de paquetería.
+
+La validación previa es una celda más de la matriz, `validaDireccion`. **Mientras esté sin confirmar en todas, no se ofrece ninguna comprobación previa y la pantalla dice cuándo se comprueba.** *Porque prometer una validación que no existe hace que el comerciante confíe en una dirección que va a rebotar, y el rebote llega cuando la caja ya está cerrada y etiquetada.*
+
+### 5.5 Qué reglas le aplican
+
+**La paquetería preferida: sí, completa.** `decidirPaqueteria()` propone igual, con su porqué, y salirse pide motivo. *Porque el orden de preferencia es un criterio del comerciante sobre sus paqueterías, y no tiene nada que ver con por dónde entró la venta.*
+
+**La regla de embalaje: sí, pero propone en vez de decidir.** Las condiciones se evalúan con lo que el envío tenga, y una condición sin dato no se da por cumplida, como siempre: sin líneas capturadas no hay cantidad de piezas ni SKU, sin total no hay costo, y ninguna regla condicionada por canal puede cumplirse nunca. En la práctica la mayoría caería en la regla por defecto. **Por eso aquí la plantilla se elige a mano y la regla solo llega preseleccionada.** *Porque las reglas existen para decidir cuando no hay nadie delante, y quien captura un envío suelto está delante de la caja: obligarlo a pelearse con una regla que ve es al revés.*
+
+**La recolección: sí, sin ningún cambio.** La regla es por origen × paquetería, un envío suelto tiene los dos, y el predicado `sin-recoleccion` lo toma tal cual porque solo mira si hay guía y si falta recolección. *Porque el camión recoge bultos, no pedidos.*
+
+**La generación automática: no.** Un envío suelto se crea a mano por definición; no hay evento de pago de ningún canal que lo dispare.
+
+### 5.6 Cobros y Desempeño
+
+**Cobros funciona sin cambios y no hay que tocar la conciliación**, porque lista envíos y su llave es la guía. Lo único que cambia es qué se lee en la columna del pedido: el folio nuestro y, debajo, "Sin canal" en lugar del canal. La exportación gana la referencia. *Porque conciliar sirve para disputar un cargo, y un cargo que no se puede atribuir a nada es un cargo que no se puede disputar.*
+
+**Desempeño sí los cuenta.** Un envío suelto entregado tarde lo entregó tarde la paquetería. *Porque la cifra sirve para negociar tarifas, y dejar fuera una parte del volumen la deja más chica que la operación real, justo en la conversación donde el volumen es el argumento.*
+
+**Las cifras de venta no los cuentan**, por lo dicho en 5.2. Y esto hay que dibujarlo: en cuanto haya envíos sueltos, "Pedidos" y "Ventas" dejan de ser el mismo número, y la pantalla que enseñe los dos tiene que decir por qué difieren. *Porque dos cifras que siempre coincidieron y un día dejan de hacerlo se leen como un error del sistema, no como un caso nuevo.*
+
+### 5.7 La devolución de un envío suelto
+
+**Cuelga igual que cualquier otra, sin ningún concepto nuevo.** Un envío suelto es un pedido, una devolución es un segundo envío del mismo pedido, y la definición de 1.3 se aplica palabra por palabra. Ese es el dividendo de haberlo modelado como pedido sin canal y no como una tercera cosa: con una lista aparte, las devoluciones habrían necesitado un segundo modelo.
+
+Dos diferencias, las dos por la misma razón:
+
+- **El mecanismo "devolución del canal de venta" no existe** aquí. No hay canal que administre nada.
+- **La solicitud nunca entra por webhook.** La origina el comerciante o la origina el rastreo con un RTO.
+
+Todo lo demás —estados, mecanismos, la puerta desde la guía con estatus de 1.7, el cierre, los tres costos— es idéntico.
+
+### 5.8 Casos límite
+
+- **El mismo cliente, dos veces.** No hay directorio de destinatarios y capturar la dirección completa cada vez es el trabajo que hace que la función no se use. Se ofrece buscar entre las direcciones ya usadas, que es dato nuestro y ya existe como mecanismo en el formulario de dirección de Pedidos. No se construye una libreta de contactos.
+- **Un envío suelto con varios bultos.** Fuera de alcance, igual que el pedido que necesita dos cajas. Se capturan dos envíos sueltos con la misma referencia, y la referencia es lo que los junta al conciliar.
+- **Se captura un envío suelto de algo que sí tenía pedido.** Queda una guía duplicada que nadie va a detectar, porque no hay folio de canal con que cruzarla. La referencia obligatoria es la única defensa, y es una defensa humana. Se dice en la pantalla de captura, no se pretende resolver.
+- **Borrar un envío suelto sin guía.** Se puede, porque no es más que una captura a medias. Con guía emitida no se borra: se cancela la guía si la matriz lo permite, y si no, se dice qué pasa.
+
 ## Alcance de la primera versión
 
 El orden de construcción es 4, 3, 2, 1: la guía manual sostiene todo lo demás, la caja correcta es el dinero, y automatizar o devolver encima de una guía que sale mal no arregla nada.
@@ -536,6 +686,10 @@ El orden de construcción es 4, 3, 2, 1: la guía manual sostiene todo lo demás
 | Adaptador de emisión de guía de retorno por paquetería | Necesita respuesta de al menos una. El selector se construye ahora y pinta lo que la matriz diga, incluido nada. |
 | Modos acumulación y ruta fija | El modo agenda ya quita el trabajo repetitivo. Los otros dos suman sin sostener la función. |
 | Tarifa por zona entre origen y destino | La tarifa real es la cotización en vivo del carrier. Una tabla por zona propia sería inventar cifras. |
+| Validación previa de dirección contra un padrón | No tenemos padrón y no sabemos si alguna paquetería lo expone. La comprobación buena es el rechazo del carrier al comprar. |
+| Interceptar o dar media vuelta a un envío en tránsito | Es una instrucción al transportista sobre un paquete en su poder. No somos la paquetería. |
+| Libreta de contactos para envíos sueltos | La búsqueda entre direcciones ya usadas resuelve el caso repetido sin una pantalla nueva. |
+| Envío suelto con varios bultos | Mismo límite que el pedido que necesita dos cajas: el modelo de una guía por envío todavía no se rompe. |
 | Calendario de días inhábiles | Depende de nada externo, pero no bloquea la función. Entra en cuanto haya sitio. |
 | Tipificar los cargos distintos de `rto` | Solo `rto` entra en la resta del cierre. Los demás migran después sin bloquear. |
 
@@ -582,6 +736,13 @@ Siguen abiertas y no se van a contestar antes de construir. Cada una dice ahora 
 20. ¿Hay medidas o peso máximos por servicio que invaliden una plantilla con cierta paquetería? → Las reglas se evalúan por separado y el fallo aparece al generar, con el motivo del carrier.
 21. ¿El catálogo del comerciante tiene peso y medidas por SKU? → Sin él, la condición por peso no existe y la condición por SKU funciona tecleando el SKU en lugar de elegir el producto.
 22. ¿El canal reporta SKU en cada línea del pedido? → De esto dependen la condición por producto, los vetos y la devolución parcial. Es la dependencia más barata de confirmar y la que más funciones desbloquea: conviene verificarla primero.
+
+**Envíos sueltos y retorno desde la guía**
+
+29. ¿Alguna paquetería expone validación de dirección o de cobertura por CP antes de comprar la guía? → Sin registro, no se ofrece comprobación previa y la pantalla dice que se comprueba al comprar.
+30. ¿Alguna paquetería expone interceptar un envío en tránsito o devolverlo al remitente a petición del comerciante? → No se ofrece en ningún estatus. La devolución sobre un envío en tránsito queda registrada y espera a la entrega.
+31. ¿La emisión de una guía de retorno exige que la de ida se haya emitido con la misma cuenta, o se puede emitir sobre cualquier envío? → Se propone la paquetería de la ida y se permite cambiarla; si alguna lo exige, la restricción entra como celda de la matriz.
+32. ¿Cambia el costo de una guía de retorno respecto a una de ida con el mismo peso y la misma ruta? → Se cotiza con la tabla de ida, marcado como estimación.
 
 **Cotización**
 

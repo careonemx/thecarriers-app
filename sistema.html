@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=cdaf6d84">
+<link rel="stylesheet" href="assets/app.css?v=eb632bac">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=cdaf6d84" defer></script>
+<script src="assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -593,6 +593,87 @@
         silencio ahí es una regla que no gana y nadie sabe por qué.
       </p>
 
+      <h3>El buscador de fichas</h3>
+      <p class="intro" style="margin-bottom:14px">
+        Devuelve <b>registros para elegir dentro de un formulario</b>, que es lo que no había: el
+        buscador de la barra superior encuentra y lleva a otra pantalla, y un <code>select</code>
+        necesita una lista cerrada. Aquí la lista sale de los datos que el sistema ya tiene y crece
+        sola. El nombre es neutro a propósito —hoy busca productos, mañana destinatarios—, y por eso
+        el tipo de fila va aparte.
+      </p>
+      <div class="muestra">
+        <div class="campo" style="max-width:420px">
+          <span>Producto</span>
+          <div class="buscador-ficha">
+            <input type="search" placeholder="Busca por nombre o SKU" aria-label="Buscar un producto">
+            <span class="campo__ayuda">Se busca entre los productos que han aparecido en tus pedidos.</span>
+          </div>
+        </div>
+
+        <div style="max-width:420px;margin-top:14px;padding:6px;border:1px solid var(--hairline-fuerte);border-radius:var(--r-lg);background:var(--hundido)">
+          <button class="producto" type="button">
+            <b>Juego de 6 copas</b>
+            <span class="producto__sku">MON-CRI-6</span>
+            <span class="producto__uso">4 pedidos · el último el 18 de septiembre</span>
+          </button>
+          <button class="producto" type="button">
+            <b>Cobertor queen size</b>
+            <span class="producto__sku">MON-COB-QS</span>
+            <span class="producto__uso">1 pedido · el último el 12 de agosto</span>
+          </button>
+        </div>
+
+        <div class="campo" style="max-width:420px;margin-top:14px">
+          <span>Elegido</span>
+          <div class="producto producto--elegido">
+            <b>Juego de 6 copas</b>
+            <span class="producto__sku">MON-CRI-6</span>
+            <span class="producto__uso">4 pedidos · el último el 18 de septiembre</span>
+            <button class="boton boton--sutil boton--chico" type="button">Cambiar producto</button>
+          </div>
+        </div>
+
+        <div class="campo" style="max-width:420px;margin-top:14px">
+          <span>Escrito a mano y todavía sin aparecer</span>
+          <div class="producto producto--elegido producto--sin-ver">
+            <b>MON-VEN-61</b>
+            <span class="producto__uso">Sin pedidos todavía</span>
+            <button class="boton boton--sutil boton--chico" type="button">Cambiar producto</button>
+          </div>
+        </div>
+
+        <div class="buscador-ficha__vacio" style="max-width:420px;margin-top:14px;border:1px solid var(--hairline-fuerte);border-radius:var(--r-lg);background:var(--hundido)">
+          <b>Ningún pedido trae todavía un producto que se llame así</b>
+          <div class="grupo-botones">
+            <button class="boton boton--fantasma boton--chico" type="button">Usar "MON-VEN-61" como SKU</button>
+          </div>
+        </div>
+
+        <div style="max-width:420px;margin-top:14px;padding:6px;border:1px solid var(--hairline-fuerte);border-radius:var(--r-lg);background:var(--hundido)">
+          <button class="destinatario" type="button">
+            <b>Laura Méndez</b>
+            <span class="destinatario__lugar">Monterrey, Nuevo León</span>
+            <span class="destinatario__uso">3 envíos · el último el 4 de septiembre</span>
+          </button>
+        </div>
+
+        <span class="cls">.buscador-ficha .buscador-ficha__panel .buscador-ficha__vacio · .producto .producto__sku .producto__uso .producto--elegido .producto--sin-ver · .destinatario .destinatario__lugar .destinatario__uso</span>
+      </div>
+      <p class="intro" style="margin-top:10px">
+        <b>Dos fuentes, dos tipos de fila.</b> Productos en las reglas de embalaje y destinatarios
+        al capturar un envío: el mismo control, la misma búsqueda sin acentos y el mismo panel.
+        La ciudad hace en un destinatario el trabajo que hace el SKU en un producto —es lo que
+        distingue dos Arturo García—, y por eso la clase del control es neutra y la de la fila no.
+      </p>
+      <p class="intro" style="margin-top:10px">
+        Tres datos por fila y ninguno más: el nombre identifica, la clave confirma y <b>el uso dice
+        si el registro sigue vivo</b>. Sin catálogo, el uso es lo único que distingue el producto
+        que vendes hoy del que vendiste una vez hace un año. El panel va fijo y colocado por JS
+        —dentro del diálogo que lo abre, porque un diálogo abierto se pinta en la capa superior y
+        un panel colgado del <code>body</code> quedaría debajo—, se sale a los bordes en angosto, y
+        Escape lo cierra sin cerrar el diálogo.
+      </p>
+
       <h3>El cobro</h3>
       <div class="muestra">
         <div class="cobro cobro--aviso">
@@ -867,6 +948,15 @@
         <div class="regla"><b>Una capacidad que no se traduce en nada enseña más de lo que da</b><span>Si la matriz dice que algo se puede, la pantalla donde se hace tiene que ofrecerlo; y si no está construido, la celda no puede prometerlo. Lo mismo con un selector que se llena y no lleva a ninguna parte: peor que uno vacío.</span></div>
         <div class="regla"><b>Sin fecha no se afirma una confirmación</b><span>Un “Confirmado el Invalid Date” afirma algo que no consta y, peor, hace pasar por confirmado un valor que nadie confirmó. Sin fecha, la procedencia es “Sin registro”.</span></div>
         <div class="regla"><b>Dos hechos ciertos no dicen su conclusión</b><span>“Hay 4 guías” y “4 son de otra plataforma” son verdad por separado y juntas significan que la regla no recoge nada. Eso se dice; deducirlo es trabajo que la pantalla puede ahorrar.</span></div>
+        <div class="regla"><b>Donde no aplica, el botón no se dibuja</b><span>Un botón en gris invita a averiguar por qué; deshabilitado y sin motivo, es un callejón. Se quita, y en su lugar va una línea que explica la ausencia: un silencio donde alguien busca una acción cuesta más que las dos cosas. Deshabilitado solo cuando el paso existe y depende de un hecho que todavía no pasó, y entonces el <code>title</code> dice de cuál.</span></div>
+        <div class="regla"><b>Un botón que no hace nada no es un botón</b><span>Si la acción necesita un dato que no existe —la dirección del pedido dentro del canal—, o se construye el dato o el botón no se dibuja. Y la ayuda que solo vive en un <code>title</code> no existe para quien navega con el teclado: o se ve, o no está. Esto no se vigila a ojo: <code>node herramientas/botones.mjs</code> barre todos los <code>&lt;button&gt;</code> y falla con los que nadie escucha.</span></div>
+        <div class="regla"><b>Una columna que no aplica lleva guion, no pastilla</b><span>Una pastilla en la columna de pago se compara con los “Pagado” de las filas de al lado y se lee como un tercer estado. El guion dice que la columna no aplica a esa fila, que es lo cierto cuando no hay canal que reporte nada.</span></div>
+        <div class="regla"><b>Se nombra el disparador, no el plazo</b><span>“En cuanto el rastreo diga Entregado”, nunca “en tres días”: el plazo lo sabe la paquetería y el disparador es nuestro y es comprobable. Y el reloj de una cola no corre contra quien todavía no puede hacer su parte.</span></div>
+        <div class="regla"><b>Se busca y se elige, no se teclea de memoria</b><span>Una clave mal tecleada no falla: simplemente no se cumple nunca, que es el peor tipo de error porque no hace ruido. Donde hay una lista posible se busca en ella, por nombre y por clave a la vez y sin acentos en los dos lados.</span></div>
+        <div class="regla"><b>“No existe” no es una salida</b><span>Un comerciante vende cosas que todavía no ha vendido. Escribir la clave a mano sigue siendo posible y deja de ser el camino por defecto: es una decisión con nombre, el botón <b>repite entre comillas lo tecleado</b> para que el dedazo se vea antes de aceptarlo, y solo aparece si lo escrito tiene forma de clave —con “copas” y cero resultados, ofrecerlo convertiría una búsqueda fallida en una regla rota.</span></div>
+        <div class="regla"><b>La marca se cura sola</b><span>Lo elegido a mano queda marcado hasta que aparezca en los datos. Lo mal escrito sigue marcado y lo que solo era nuevo deja de estarlo, sin que nadie tenga que volver a tocar la regla.</span></div>
+        <div class="regla"><b>Cuando el mecanismo es idéntico, distingue la pregunta</b><span>Dos listas ordenadas con el mismo patrón —gana la primera que se cumple, motivo por fila, arrastre y flechas— solo se pueden distinguir por lo que deciden. Y la pregunta va en el <code>h2</code> de la tarjeta, no en el <code>.zona__titulo</code>: ése es un separador de 11px, y poner la pregunta en el rótulo pequeño y el mecanismo en el grande es tener la información al revés.</span></div>
+        <div class="regla"><b>Pestañas para vistas, no para pasos</b><span>Una secuencia se lee en orden. Partir en pestañas cuatro pasos de un proceso los convierte en un menú de opciones paralelas, que es justo lo que no son, y esconde tres cuartas partes de la respuesta detrás de un clic.</span></div>
         <div class="regla"><b>Una devolución cuelga de su pedido</b><span>No es un pedido nuevo: es un segundo envío del mismo, y el folio del pedido es la única llave que el comerciante, el comprador y la paquetería comparten. Por eso la primera columna de la tabla es el pedido y no la devolución, y por eso una recibida sin pedido amarrado no se puede cerrar.</span></div>
         <div class="regla"><b>Quién emite y quién paga</b><span>Son las dos preguntas que separan los cinco mecanismos, y las que deciden si un costo entra en la conciliación. Una guía que el comprador compró entra en cero con su nota: meterla en el mismo cajón que las que emitimos mete un costo que no existe.</span></div>
         <div class="regla"><b>El selector se construye con cero opciones</b><span>Lee la matriz y pinta lo que haya, incluido nada. Construirlo después obligaría a rehacer el bloque entero el día que una paquetería conteste, y ahora cuesta lo mismo con cero que con tres. Vacío no es una pantalla muerta: es donde vive el mecanismo que va a ser el más frecuente al principio.</span></div>

@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Inicio · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="inicio">
 <main class="contenido contenido--ancho">
@@ -33,17 +33,21 @@
       </div>
     </div>
     <dl class="periodo" id="periodo"></dl>
+    <!-- Dos cifras que siempre coincidieron y un día dejan de hacerlo se leen
+         como un error del sistema, así que se dice donde se ven las dos. Solo
+         aparece cuando hay envíos sueltos. -->
+    <p class="apagado" id="nota-sueltos" style="font-size:13px;margin-top:10px" hidden></p>
   </section>
 
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
 import { pedidos, PENDIENTES, recoleccionesHoy, antiguedadDe,
-         resumenPeriodo, comparativaPeriodo,
+         resumenPeriodo, comparativaPeriodo, sueltosEntre, menosDias, HOY,
          conexionesCaidas, reconectar, romperConexion,
          planApurado, planQuedan, planActual, suscripcion,
-         dineroMXN } from "../assets/datos.js?v=cdaf6d84";
+         dineroMXN } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 
@@ -79,7 +83,11 @@ if (exigirSesion()) {
         accion: "Corregir direcciones" },
     ],
     hacer: [
-      { clave: "pagados-sin-guia", et: () => "Pagados sin guía",
+      /* "Listos para despachar" y no "pagados sin guía": el predicado ya
+         excluía lo que no está listo —los que fallaron y los que esperan
+         corrección—, y un envío suelto no tiene estado de pago y cae en esta
+         misma cola. La clave no cambia: hay enlaces vivos con la vieja. */
+      { clave: "pagados-sin-guia", et: () => "Listos para despachar",
         accion: "Generar guía", antiguedad: true },
       { clave: "sin-recoleccion", et: () => "Guías sin recolección",
         accion: "Programar recolección" },
@@ -203,8 +211,22 @@ if (exigirSesion()) {
     return `<span class="periodo__var ${clase}">${signo} ${Math.abs(valor)}${sufijo} vs periodo anterior</span>`;
   }
 
+  const notaSueltos = document.getElementById("nota-sueltos");
+
   function pintarPeriodo(n) {
     const r = resumenPeriodo(n);
+    /* No cuentan como venta porque nadie reportó el importe; sí cuentan como
+       envío porque alguien los llevó. La otra mitad de la frase está en
+       Desempeño, y con una sola de las dos la otra pantalla parece equivocada. */
+    const sueltos = sueltosEntre(menosDias(HOY, n), HOY);
+    notaSueltos.hidden = sueltos.length === 0;
+    if (sueltos.length) {
+      notaSueltos.innerHTML = `De los ${r.pedidos} envíos del periodo, <b>${sueltos.length}
+        ${sueltos.length === 1 ? "es un envío suelto y no cuenta" : "son envíos sueltos y no cuentan"}
+        como venta</b>: no ${sueltos.length === 1 ? "entró" : "entraron"} por un canal que reporte
+        el importe. <a href="pedidos.html?canal=sin-canal">${
+        sueltos.length === 1 ? "Verlo" : "Verlos"}</a>`;
+    }
     const v = comparativaPeriodo(n);
     periodo.innerHTML = [
       ["Pedidos recibidos", r.pedidos, v && variacion(v.pedidos)],

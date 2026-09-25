@@ -74,6 +74,10 @@
   --destacado-fuerte: rgba(15, 157, 110, 0.16);
   --destacado-borde: rgba(15, 157, 110, 0.32);
   --destacado-borde-fuerte: rgba(15, 157, 110, 0.5);
+  /* Más claro que `--destacado` a propósito: es el lavado de una franja que
+     afirma un resultado, y al peso de una pastilla se leería como un estado
+     que exige algo. */
+  --destacado-tenue: rgba(15, 157, 110, 0.07);
 
   /* Estados. */
   --mal: #b42318;
@@ -539,6 +543,17 @@ tbody tr[data-href] { cursor: pointer; }
 td .apagado { color: var(--muted); }
 td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
 
+/* El reparto automático mide cada columna por su contenido más largo, y con
+   una columna más en la tabla de Pedidos el destino se quedaba en 139px: la
+   calle salía en cuatro renglones de una palabra y la fila pasaba de 83 a
+   122px. En la pantalla donde se trabaja todo el día eso son cuatro filas
+   menos por pantallazo. El destino pide lo que mide una calle con su número;
+   el ancho lo cede el cliente, cuyo correo ya se recorta con puntos
+   suspensivos. Van aquí y no en un `style=` de la fila: en línea, la consulta
+   de medios no los puede corregir. */
+.celda-cliente { max-width: 150px; }
+.celda-destino { min-width: 180px; max-width: 260px; }
+
 /* -----------------------------------------------------------------
  * Pastillas de estado
  * --------------------------------------------------------------- */
@@ -657,7 +672,7 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
    como una mancha en un sitio donde no hay nada. */
 .auth__brillo--verde {
   inset: 24% -10% auto -10%; height: 520px;
-  background: radial-gradient(38% 52% at 50% 0%, rgba(15,157,110,.18), transparent 70%);
+  background: radial-gradient(38% 52% at 50% 0%, var(--destacado-fuerte), transparent 70%);
 }
 .auth__contenido { position: relative; }
 .auth__contenido h2 { font-size: 30px; line-height: 1.15; max-width: 16ch; }
@@ -1033,8 +1048,8 @@ a.tarjeta-cifra--alerta:hover { border-color: var(--mal-borde); }
    aparece donde ocurrió la acción y se va sin que nadie la cierre. */
 .guardado {
   margin-bottom: 14px; padding: 10px 14px;
-  border: 1px solid rgba(15, 157, 110, .4); border-radius: var(--r);
-  background: rgba(15, 157, 110, .1); color: var(--enlace); font-size: 13px;
+  border: 1px solid var(--destacado-borde); border-radius: var(--r);
+  background: var(--destacado); color: var(--enlace); font-size: 13px;
 }
 
 /* La cifra que importa de una ficha: se lee antes que su rótulo. */
@@ -1337,7 +1352,7 @@ tr.fila--principal td:first-child::before {
   font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
   background: var(--hundido); color: var(--muted);
 }
-.aviso-fila__tipo--novedad { background: rgba(15, 157, 110, .16); color: var(--enlace); }
+.aviso-fila__tipo--novedad { background: var(--destacado-fuerte); color: var(--enlace); }
 .aviso-fila__tipo--mantenimiento { background: var(--aviso-fondo); color: var(--aviso); }
 .aviso-fila b { display: block; font-size: 13px; line-height: 1.4; }
 .aviso-fila p { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -1450,7 +1465,7 @@ tr.fila--principal td:first-child::before {
 .barra-seleccion {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding: 11px 18px; border-bottom: 1px solid var(--hairline);
-  background: rgba(15, 157, 110, 0.1);
+  background: var(--destacado);
 }
 .barra-seleccion__cuenta { font-weight: 600; }
 .barra-seleccion__sep { flex: 1; }
@@ -1464,7 +1479,10 @@ tr.fila--principal td:first-child::before {
   transition: border-color .2s var(--curva);
 }
 .tarjeta-pedido:hover { border-color: var(--hairline-fuerte); }
-.tarjeta-pedido__alto { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Al ras de arriba, no centrado: desde que debajo del folio va el canal, lo que
+   se centra contra dos renglones es la pastilla, y se queda a medio camino
+   entre el folio, que es con lo que se lee, y el canal, que no. */
+.tarjeta-pedido__alto { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
 .tarjeta-pedido__folio { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
 .tarjeta-pedido__cliente { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .tarjeta-pedido__cliente div { min-width: 0; }
@@ -1663,12 +1681,12 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 .franja p { margin-top: 3px; font-size: 13px; line-height: 1.5; }
 
 .franja--resuelto {
-  border-color: rgba(15, 157, 110, 0.35);
+  border-color: var(--destacado-borde);
   background:
-    radial-gradient(70% 160% at 0% 0%, rgba(15, 157, 110, 0.16), transparent 70%),
-    rgba(15, 157, 110, 0.07);
+    radial-gradient(70% 160% at 0% 0%, var(--destacado-fuerte), transparent 70%),
+    var(--destacado-tenue);
 }
-.franja--resuelto .franja__icono { background: rgba(15, 157, 110, 0.2); color: var(--enlace); }
+.franja--resuelto .franja__icono { background: var(--destacado-fuerte); color: var(--enlace); }
 .franja--resuelto p { color: var(--muted); }
 
 .franja--pendiente {
@@ -1695,7 +1713,7 @@ dialog.panel[open] { display: flex; flex-direction: column; }
 }
 .tarifa:hover { border-color: var(--hairline-fuerte); background: var(--hover); }
 .tarifa:has(input:checked) {
-  border-color: rgba(15, 157, 110, 0.5); background: rgba(15, 157, 110, 0.09);
+  border-color: var(--destacado-borde-fuerte); background: var(--destacado);
 }
 .tarifa:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tarifa input { margin: 0; }
@@ -1828,13 +1846,6 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
 /* ---------- Búsqueda dentro de un formulario ---------- */
 .campo-buscar { display: flex; align-items: center; gap: 9px; }
 .campo-buscar .buscador { flex: 1; max-width: none; }
-.boton-ayuda {
-  flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
-  border: 1px solid var(--hairline); border-radius: var(--r);
-  background: transparent; color: var(--muted); font: inherit; cursor: help;
-  transition: all .15s var(--curva);
-}
-.boton-ayuda:hover { border-color: var(--hairline-fuerte); color: var(--ink); }
 
 @media (max-width: 640px) {
   .campos--2, .campos--3, .campos--corto-largo { grid-template-columns: minmax(0, 1fr); }
@@ -1977,6 +1988,88 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
 @media (max-width: 767px) {
   .orden--reglas, .orden__cabecera--reglas { --orden-cols: 30px 1fr auto; }
   .orden--reglas .orden__caja, .orden--reglas .orden__porque { grid-column: 2 / -1; }
+}
+
+/* =================================================================
+ * El buscador de fichas.
+ *
+ * Devuelve REGISTROS PARA ELEGIR dentro de un formulario, que es algo que
+ * ningún control del sistema hacía: el buscador de la barra superior encuentra
+ * y lleva a otra pantalla, y un <select> necesita una lista cerrada. Aquí la
+ * lista sale de los pedidos y crece sola.
+ *
+ * El nombre es neutro a propósito. Hoy busca productos; el mismo componente va
+ * a buscar destinatarios, y una clase nombrada por uno de sus dos usos deja de
+ * ser la misma clase. Por eso el tipo de fila —`.producto`— va aparte.
+ *
+ * El panel va en `position: fixed` y colocado por JS. Vive dentro del <dialog>
+ * a propósito: un <dialog> abierto se pinta en la capa superior, y un panel
+ * colgado del <body> quedaría DEBAJO del diálogo que lo abrió. Fijo y dentro
+ * escapa además del scroll de `.panel__cuerpo`, que si no lo recortaría.
+ * ================================================================= */
+.buscador-ficha { position: relative; display: grid; gap: 6px; }
+
+.buscador-ficha__panel {
+  position: fixed; z-index: 80;
+  max-height: min(52vh, 360px); overflow-y: auto;
+  padding: 6px; border: 1px solid var(--hairline-fuerte); border-radius: var(--r-lg);
+  background: var(--hundido); box-shadow: var(--sombra);
+}
+.buscador-ficha__vacio { padding: 12px 10px; }
+.buscador-ficha__vacio b { display: block; font-size: 13px; font-weight: 500; }
+.buscador-ficha__vacio .grupo-botones { margin-top: 10px; }
+
+/* ---------- La fila de producto ----------
+   El nombre identifica, el SKU confirma y el uso dice si el producto sigue
+   vivo. Sin catálogo, el uso es lo único que distingue el que vendes hoy del
+   que vendiste una vez hace un año, y es la diferencia que decide si una regla
+   va a ganar alguna vez. */
+.producto, .destinatario {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 10px; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+  transition: background .12s var(--curva);
+}
+.producto:hover, .producto:focus-visible,
+.destinatario:hover, .destinatario:focus-visible { background: var(--hover); }
+.producto:hover > b, .producto:focus-visible > b,
+.destinatario:hover > b, .destinatario:focus-visible > b { color: var(--enlace); }
+.producto > b, .destinatario > b { display: block; font-size: 13px; font-weight: 500; }
+.producto__sku {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px; color: var(--muted);
+}
+.producto__uso, .destinatario__uso { color: var(--muted); font-size: 12px; }
+.producto__sku + .producto__uso::before { content: " · "; }
+
+/* ---------- La fila de destinatario ----------
+   El mismo buscador con otra fuente. Aquí la ciudad hace el trabajo que hace
+   el SKU en un producto: es lo que deja distinguir dos Arturo García. */
+.destinatario__lugar { color: var(--muted); font-size: 12px; }
+.destinatario__lugar + .destinatario__uso::before { content: " · "; }
+
+/* Elegido: el campo enseña el producto, no su clave. */
+.producto--elegido {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 9px 11px; border: 1px solid var(--field); border-radius: var(--r);
+  background: var(--hundido); cursor: default;
+}
+.producto--elegido:hover { background: var(--hundido); }
+.producto--elegido > b { display: inline; }
+.producto--elegido .boton { margin-left: auto; }
+
+/* Escrito a mano y todavía sin aparecer en ningún pedido. La marca se cura
+   sola el día que entre en uno: lo mal escrito sigue marcado y lo que solo era
+   nuevo deja de estarlo sin que nadie vuelva a tocar la regla. */
+.producto--sin-ver { border-style: dashed; border-color: var(--aviso-borde); }
+.producto--sin-ver .producto__uso { color: var(--aviso); }
+
+@media (prefers-reduced-motion: reduce) { .producto, .destinatario { transition: none; } }
+
+/* En angosto el panel no se ancla al campo: se sale a los bordes de la
+   pantalla, igual que ya hace el panel de hallazgos. */
+@media (max-width: 767px) {
+  .buscador-ficha__panel { left: 12px !important; right: 12px; width: auto !important; }
 }
 
 /* =================================================================

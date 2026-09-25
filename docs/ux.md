@@ -1,4 +1,4 @@
-# Especificación de diseño — devoluciones, recolecciones automáticas, reglas de embalaje y guías manuales
+# Especificación de diseño — devoluciones, recolecciones automáticas, reglas de embalaje, guías manuales y envíos sueltos
 
 Este documento traduce `docs/definicion-producto.md` a pantallas. No lo contradice: lo que me sigue pareciendo mal está al final, en **Para el PM**.
 
@@ -20,11 +20,13 @@ Tres cosas mandan sobre todo lo que sigue, y ninguna es mía:
 | La paquetería sin cuenta | Marca en el orden de preferencia de `configuracion.html` | Se puede ordenar pero no puede salir elegida: es una regla que no puede ganar |
 | Devoluciones | Pestaña en `pedidos.html` + bloque en el panel del pedido | Una devolución es un segundo envío del mismo pedido, y se autoriza mirando el pedido |
 | Aviso de retorno declarado | Columna en `excepciones.html` (Tracking) | El detenido ya vive ahí, con su guía y su teléfono |
-| Recolecciones automáticas (la regla) | Zona nueva en `configuracion.html` | Configuración es "qué hace el sistema por su cuenta" |
+| Recolecciones automáticas (la regla) | Zona **Recolección** en `configuracion.html` | Configuración es "qué hace el sistema por su cuenta" |
 | Recolecciones automáticas (lo que falla) | `recolecciones.html` e Inicio | Un camión que no llegó se reclama, no se configura |
-| Reglas de embalaje | Zona nueva en `configuracion.html` | Es lo que el sistema decide solo cuando entra un pedido |
+| Reglas de embalaje | Zona **Embalaje** en `configuracion.html` | Es lo que el sistema decide solo cuando entra un pedido |
 | Revisión manual | Pedidos, filtrada | Antes de construir una cola hay que mirar si el trabajo ya tiene casa |
 | Guías manuales | El bloque Envío del panel de `pedidos.html` | Ya está ahí; lo que falta es que todo lo que mueve el precio se pueda cambiar sin salir |
+| Retorno desde una guía con estatus | El mismo bloque Envío, y `envio.html` | El comerciante se entera mirando el rastreo de esa guía, no una cola |
+| El envío suelto | Pedidos, con su panel de captura | Es un pedido sin canal, no una lista aparte |
 
 ---
 
@@ -140,7 +142,7 @@ Las dos últimas se ven igual y **no se nombran igual**: la primera cierra el te
 
 ## 0.4 La paquetería sin cuenta, en el orden de preferencia
 
-`configuracion.html`, zona "Qué paquetería se elige". Una paquetería sin cuenta conectada **se puede ordenar y nunca puede salir elegida**. Es una regla que no puede ganar, de la misma familia que la regla de embalaje muerta, y se nombra igual de claro.
+`configuracion.html`, zona **Paquetería**, en la tarjeta "Con qué paquetería sale cada pedido". Una paquetería sin cuenta conectada **se puede ordenar y nunca puede salir elegida**. Es una regla que no puede ganar, de la misma familia que la regla de embalaje muerta, y se nombra igual de claro.
 
 En su `.orden__fila`, junto al nombre:
 
@@ -198,6 +200,8 @@ Tres razones, en orden de peso:
 
 La segunda es la más importante y no es la que uno esperaría: con cinco mecanismos, el registro que más se atasca no es el que tiene guía, es el que fue autorizado y nunca tuvo ninguna. Los días en *Autorizada* son la señal de que el comprador no ha hecho su parte, y son el único dato duro que hay.
 
+**Con una excepción que hay que respetar:** las devoluciones registradas sobre una guía todavía en tránsito nacen en *Autorizada* sin que el comprador pueda hacer nada, así que **no entran en esa métrica hasta que la ida se entregue** (1.3 bis). Contarlas sería acusar a quien no es.
+
 **Los filtros** reutilizan la `.filtros` de Pedidos:
 
 - Buscador local: `placeholder="Filtrar por pedido, cliente o guía de retorno"`.
@@ -212,16 +216,18 @@ La segunda es la más importante y no es la que uno esperaría: con cinco mecani
 
 | # | Columna | Contenido |
 |---|---|---|
-| 1 | **Pedido** | `#1007` en `.mono`, enlace real que abre el panel. Debajo, en `.apagado`, el folio de la devolución: `DV-0031` |
+| 1 | **Pedido** | `#1007` en `.mono`, enlace real que abre el panel. Debajo, en `.apagado`, el folio de la devolución: `DV-0031`. Cuando ese pedido tiene más de un envío, también la guía de ida de la que sale, porque dos guías del mismo pedido pueden regresar por separado y sin ella dos filas se verían idénticas |
 | 2 | **Cliente** | Nombre; debajo, la ciudad en `.apagado` |
-| 3 | **Motivo** | De la lista fija |
+| 3 | **Motivo** | El comercial, de la lista fija |
 | 4 | **Piezas** | `.tabular` "2 de 5"; o "El pedido completo" en `.nota-celda` cuando el pedido no trae líneas |
 | 5 | **Mecanismo** | "Guía prepagada" · "Recolección en domicilio" · "Guía del comprador" · "Retorno al remitente" · "Del canal" |
-| 6 | **Estado** | `.pastilla` con su tono; debajo, en `.apagado`, el único dato duro: "21 días sin usar", "14 días autorizada", "Recibida el 18 sep" |
+| 6 | **Estado** | `.pastilla` con su tono; debajo, en `.apagado`, el único dato duro: "21 días sin usar", "14 días autorizada", "Espera la entrega de la ida", "Recibida el 18 sep" |
 | 7 | **Guía de retorno** | `.mono`, o `.pastilla--neutra` "Sin guía". Debajo, la plataforma si se compró por `via`, o "Del comprador" si la capturó él |
 | 8 | *(acción)* | El siguiente paso, en `.boton--fantasma.boton--chico` |
 
 El identificador de la primera columna es el **pedido**, no la devolución, porque es la única llave que comparten el comerciante, el comprador y la paquetería, y porque pulsarlo lleva a donde la devolución se resuelve.
+
+**La columna Motivo enseña el comercial y nunca la causa del transportista**, aunque un registro convertido tenga los dos (1.3 ter). El comercial sale de una lista fija: se puede ordenar, filtrar y contar. La causa del transportista es texto libre de la paquetería, y una columna que a veces trae una cosa y a veces la otra no se puede ordenar ni filtrar, y sería la tercera que cuenta casi lo mismo. La causa vive en el panel, que es donde se lee entera. Por lo mismo, **no hay filtro por causa del transportista**: un campo libre no se agrupa.
 
 **El costo no va en la tabla.** Va en el pie como total del periodo y en el panel al cerrar, porque el costo de una devolución solo sirve comparado con el valor de la mercancía que regresa, y una comparación no cabe en una celda.
 
@@ -268,6 +274,172 @@ Aplica la regla *resultado o decisión*:
 > Se reembolsaron $1,240.00 el 18 de septiembre. Regresaron 2 de 5 piezas.
 >
 > `<details class="desplegable"><summary>Ver el costo de esta devolución</summary>` con los tres costos.
+
+## 1.3 bis — Lo que ofrece el bloque según el estatus de la ida
+
+Arrancar la devolución desde la guía hereda contexto, y por eso hace fácil prometer de más. **El estatus de la ida decide qué se ofrece, y en cuatro de los seis estatus no se emite nada.**
+
+**La acción se llama "Registrar devolución" en los tres sitios donde aparece**, nunca "Generar guía de retorno": el botón tiene que nombrar lo que hace en todos los casos, y hoy en la mayoría no termina en una guía.
+
+**Dónde está el botón.** En el panel, dentro del bloque **Envío**, en `.boton--sutil.boton--chico` junto a "Ver historial" y "Ver etiqueta": es una acción sobre ese registro y vive en su tarjeta. En `envio.html`, en `.encabezado__acciones`, en `.boton--fantasma` junto a "Descargar guía".
+
+**Y desde `envio.html` el botón no abre un formulario ahí: abre el panel del pedido** con el bloque de devolución desplegado (`pedidos.html?pedido=1007&devolucion=nueva`). Porque la decisión necesita ver los artículos y el total, que en la pantalla del envío no están, y porque dos formularios para el mismo registro divergen: el segundo copia la mitad de la validación del primero.
+
+### Los seis estatus
+
+| Estatus de la ida | El botón | Qué pasa |
+|---|---|---|
+| **Generada, sin recolectar** | No existe | El paquete sigue en la bodega. Lo que aplica es cancelar la ida |
+| **Recolección pendiente** | No existe | Igual: el paquete no ha salido |
+| **En tránsito** | **Registrar devolución** | Se crea el registro en *Autorizada*, en espera de la entrega. No se emite |
+| **Entregado** | **Registrar devolución** | El flujo completo, con emisión si la matriz la permite |
+| **Detenido o con incidencia** | **Registrar devolución** | Se crea el registro. No hay retorno: el paquete lo tiene la paquetería |
+| **Ya va de regreso (RTO)** | **Ver la devolución** | Ya existe un registro. El botón lleva a él |
+
+Dos decisiones dentro de esa tabla:
+
+**Donde no aplica, el botón no se dibuja deshabilitado: no se dibuja.** Un botón en gris invita a averiguar por qué; una línea lo dice y se acabó. Pero **la ausencia sí se explica**, porque un silencio donde alguien busca una acción es el defecto que ya cuesta caro en el resto del panel:
+
+> `.apagado` El paquete sigue en tu bodega: todavía no hay nada que devolver. Si la venta se canceló, lo que se cancela es la guía de ida.
+
+Y debajo, la cancelación de la ida tal como sale de `CAPACIDADES.cancelaGuia`: el botón, la `.instruccion--no` o la `.instruccion--sin-registro`, sin inventar un camino distinto del de 4.3.
+
+**Con un RTO en curso el botón cambia de verbo, no de estado.** "Registrar devolución" deshabilitado sería un botón que no hace nada donde sí hay algo que hacer: ver la que ya existe. Y la línea dice por qué:
+
+> `.apagado` Este paquete ya va de regreso. Un segundo retorno sobre el mismo paquete se cobra dos veces.
+
+**Detenido:** el registro se crea y el bloque no promete nada que no podamos:
+
+> `.franja--pendiente` **Devolución registrada. El paquete lo tiene la paquetería**
+> Estafeta lo reporta detenido desde el 19 de septiembre. Texto original: `Delivery exception — incorrect address`. Qué pasa con él lo decide Estafeta.
+> **Ver el rastreo de Estafeta** (`.boton--fantasma.boton--chico`) · **Llamar al destinatario** (`.boton--fantasma.boton--chico`)
+
+Es poco y es verdad: el número de guía, el rastreo público y el contacto del destinatario, que es dato nuestro. Lo que la interfaz **no** ofrece en ningún estatus es dar media vuelta a un paquete en ruta ni liberar uno detenido: son instrucciones al transportista sobre un paquete en su poder.
+
+**Y este registro es el que más veces va a cambiar solo**, porque el camino normal de un detenido es acabar en retorno. Cuando eso pase, el rastreo no crea otro: convierte este. Está en 1.3 ter.
+
+### En tránsito: la espera
+
+Es el estatus más frecuente y el más fácil de hacer mal. El comerciante se entera hoy y el paquete llega en tres días. **Un registro que no se puede emitir durante tres días y no dice qué está esperando se lee como algo atascado**, así que la espera se dibuja con tres cosas y las tres importan.
+
+> `.franja--editada` **Registrada. Espera a que el paquete llegue**
+> `JD01480000123` va en tránsito desde el 19 de septiembre. Una guía de retorno emitida hoy no la podría usar nadie: el comprador todavía no tiene el paquete.
+> **En cuanto el rastreo diga "Entregado", esta devolución pasa a "Lista para emitir" y entra en la cola.**
+> `.boton--sutil.boton--chico` **Ver el rastreo de la ida**
+
+**1. Se nombra el disparador, no el plazo.** "En cuanto el rastreo diga Entregado", nunca "en tres días". El plazo lo sabe la paquetería; el disparador es nuestro y es comprobable. Es la misma línea que separa el aviso de retorno declarado del aviso de último intento.
+
+**2. La espera no congela el registro.** Motivo, piezas, valor declarado y quién paga el flete **se siguen pudiendo editar** mientras el paquete viaja, y eso es lo que impide que la pantalla se lea como bloqueada. Lo único diferido es la emisión.
+
+**3. El botón de emitir existe, deshabilitado, y dice por qué**, con el mismo patrón que el pedido sin pagar:
+
+> `.boton--primario.boton--chico[disabled]` **Generar guía de retorno** · `title="Se emite cuando la paquetería reporte la entrega."*
+
+Esconderlo haría pensar que el flujo termina ahí. En gris con su motivo, dice que hay un paso más y de qué depende.
+
+**Y el reloj no corre contra nadie todavía.** En la tabla de la pestaña, estas devoluciones llevan `.pastilla--info` **"Autorizada"** y, debajo, **"Espera la entrega de la ida"** en lugar de los días. **No entran en la métrica "Autorizadas sin movimiento"** hasta que la ida se entregue, porque esa métrica dice "el comprador no ha hecho su parte" y aquí el comprador todavía no puede hacerla. Contar esos días sería acusar a quien no es. El contador arranca el día de la entrega, que es el último hecho real que hay.
+
+**Cuando el rastreo la mueve sola**, el registro aparece en la cola, ordenado como todo lo que exige decisión, y la tarjeta de Inicio lo cuenta. Al abrirlo, el bloque ya está en el estado de 1.4, con el selector. Nadie tiene que acordarse de volver.
+
+### Qué se hereda, qué se propone y qué se pregunta
+
+**Los tres niveles se ven distintos, y la diferencia no es de color: es de forma.** Un campo heredado y uno propuesto no se pueden ver igual, así que el heredado ni siquiera es un campo.
+
+**Lo que sale de la guía de ida** — `.campos__titulo`. No es un formulario: es un resultado, así que se afirma y se pliega.
+
+> `.franja--resuelto` **El retorno va de Arturo García a Almacén Puebla**
+> Los dos extremos salen de la guía de ida, invertidos.
+> `<details class="desplegable"><summary>Ver las dos direcciones</summary>` con las dos, completas.
+
+Es lo único que el sistema puede resolver solo sin suponer nada, y por eso es lo único que no pregunta.
+
+**Lo que se propone** — `.campos__titulo`. Campos con valor **y con su procedencia escrita**, que es lo que los distingue de un campo vacío y de un dato heredado:
+
+| Campo | Valor propuesto | `.campo__ayuda` |
+|---|---|---|
+| **Paquetería** | La de la ida, si expone retorno | De la guía de ida. Si no emite retorno, no aparece en la lista: manda lo que tu cuenta tenga registrado, no la costumbre. |
+| **Peso y medidas** | Los de la ida | De la guía de ida. Lo que regresa casi nunca pesa lo mismo: falta el empaque, o vuelve una pieza de tres. |
+
+**Lo que hay que decidir** — `.campos__titulo`. Campos **vacíos**, obligatorios, con su `.campo__error` cuando faltan:
+
+| Campo | Por qué se vuelve a preguntar |
+|---|---|
+| **Motivo** | De la lista fija. No se deduce de nada de la ida |
+| **Qué piezas regresan** | Una devolución parcial es lo normal |
+| **Valor declarado** | `.campo__ayuda` El de la ida era $3,400 por la venta completa. Este es el de lo que regresa. |
+| **Quién paga el flete de retorno** | Tu cuenta · Se descuenta del reembolso · El comprador |
+
+El valor declarado es el que más caro sale de heredar en silencio, y por eso su ayuda nombra la trampa en vez de describir el campo: arrastrar el de la venta completa asegura de más y se paga de más.
+
+**Los tres títulos hacen el trabajo que haría un color**, y sobreviven a una pantalla en blanco y negro, a un lector de pantalla y a quien no distingue dos verdes.
+
+## 1.3 ter — Cuando el rastreo convierte la devolución
+
+El rastreo **crea o convierte, nunca duplica**: antes de dar de alta un RTO busca una devolución abierta **de ese envío**. Si la hay, la convierte y conserva todo lo que capturó una persona. Para la interfaz eso significa tres cosas que dibujar: que el cambio se vea, que los dos porqués quepan sin pisarse, y que la ausencia de uno de ellos no se lea como un hueco.
+
+### La franja de conversión
+
+El registro cambió sin que nadie lo pidiera, y un cambio automático que no se ve es un cambio que nadie puede comprobar. Va en `.franja--editada` —algo cambió, no hay nada que decidir— en la cabeza del bloque, **con las dos fechas**:
+
+> `.franja--editada` **La paquetería inició el retorno el 19 de septiembre**
+> Estafeta lo reporta de regreso: destinatario ausente. Se conservó la devolución registrada el 17 de septiembre, con su motivo y sus piezas.
+> `.boton--sutil.boton--chico` **Ver el rastreo del retorno**
+
+**Las dos fechas van en la misma frase y en ese orden.** Primero la de la paquetería, que es lo que acaba de pasar y la razón de que la franja exista; después la del registro, que es lo que se conservó. Al revés se leería como si el sistema contara su propia historia antes que el hecho.
+
+**Y dice qué se conservó, no solo que se conservó.** "Con su motivo y sus piezas" es lo que evita que alguien vuelva a capturar lo que ya estaba: un aviso que solo dice "se convirtió" obliga a abrir los campos uno por uno para comprobarlo.
+
+**Cuando la devolución anterior estaba cerrada, no se convierte: se crea una nueva**, porque convertir un registro cerrado reescribiría una resolución que alguien ya firmó. Y esa nueva explica por qué es nueva antes de que nadie pregunte por qué hay dos:
+
+> `.franja--editada` **La paquetería inició el retorno el 3 de octubre**
+> Estafeta lo reporta de regreso: destinatario ausente. La devolución `DV-0031` de este envío ya estaba cerrada el 28 de septiembre, así que este es un registro nuevo.
+
+### Los dos porqués, juntos y distinguibles
+
+Van en un bloque propio del panel, **y el bloque solo existe cuando hay los dos**:
+
+> `.campos__titulo` **Por qué regresa**
+> `.apagado` Dos hechos distintos sobre el mismo paquete: el primero decide el reembolso, el segundo decide a quién se le reclama.
+>
+> `.dato` **Lo que pidió el cliente** — Arrepentimiento
+> `.dato` **Lo que reportó Estafeta** — Destinatario ausente
+> `.apagado.mono` Texto original: `Delivery exception — recipient not available, returning to shipper`
+
+**Las etiquetas nombran a quien lo dijo, no al campo.** "Motivo" y "Causa del transportista" son dos rótulos de base de datos que hay que traducir al leerlos; "lo que pidió el cliente" y "lo que reportó Estafeta" dicen de dónde sale cada uno, que es exactamente la diferencia que hace que sean dos campos.
+
+**El texto original va debajo, en segundo plano y dicho con su nombre**, igual que en los envíos detenidos: es lo que se cita al llamar a la paquetería, y al mismo peso que el motivo en castellano solo estorba.
+
+**Y la línea de arriba se queda ahí para siempre**, no es una explicación de estreno: es la que impide que alguien "limpie" el registro dejando uno de los dos, que es el error que este modelo existe para evitar.
+
+### Cuando no hay causa del transportista, no hay fila
+
+En una devolución que no viene de un retorno —la mayoría— `causaTransportista` está vacío, y **vacío ahí no significa que falte un dato: significa que no aplica**. Ninguna paquetería ha reportado nada porque no tenía por qué.
+
+Así que **la fila no se dibuja, y el bloque tampoco**. Con un solo porqué no hay pareja que explicar, así que desaparecen el `.campos__titulo` y su línea, y el motivo vuelve a ser lo que siempre fue: un `.dato` más del detalle.
+
+> `.dato` **Motivo** — Producto dañado
+
+**Ni "—", ni "Sin dato", ni una fila en gris.** Un campo vacío se lee como un dato que falta y empuja a ir a buscarlo; y "Sin registro" es la frase de la matriz de capacidades, que significa otra cosa y no se puede prestar. **La ausencia de una fila es lo único que no se puede confundir con un hueco.**
+
+### La guía de retorno que ya estaba emitida
+
+Si antes de la conversión se había emitido una guía de retorno, **no se pisa**: sigue emitida, sigue sin usar y sigue siendo dinero. Desaparecerla del registro no la desaparece de la factura.
+
+> `.aviso--alerta` **La guía de retorno `JD01480000456` sigue emitida y sin usar**
+> El paquete ya regresa por cuenta de Estafeta, así que esta guía no se va a usar. Si tu contrato cobra las guías emitidas, esta se te cobra.
+> `.boton--sutil.boton--chico` **Cancelar la guía de retorno**
+
+El botón sale de `CAPACIDADES.cancelaGuia` como todos: donde la paquetería no cancela o no hay registro de si lo hace, en su lugar va la `.instruccion` de 4.3. Y su costo, si se cobró, entra en la resta del cierre con su propio renglón (1.9): es el cargo que más fácil se pierde, porque nadie lo pidió dos veces y nadie lo espera.
+
+### Lo que la conversión no toca, y se ve
+
+**`origenDevolucion` se conserva**, porque el RTO cambió cómo regresa el paquete, no quién pidió que regresara. Y eso tiene que verse, o después de la conversión el mecanismo dirá "Retorno al remitente" y nadie podrá saber que hubo intención comercial antes:
+
+> `.dato` **La registró** — El comerciante, el 17 de septiembre
+
+En un RTO nacido de cero esa misma fila dice **"La paquetería, el 19 de septiembre"**, y el motivo comercial arranca en "Entrega fallida", que ya está en la lista fija y se puede corregir.
+
+**La búsqueda es por envío, no por pedido.** Un pedido con dos guías puede regresar por separado, y cada guía tiene su devolución. En la tabla eso son dos filas con el mismo pedido, y por eso la primera columna nombra la guía de ida cuando el pedido tiene más de un envío (1.2). Sin ese dato, dos filas del mismo pedido se ven idénticas y la única forma de distinguirlas es abrirlas.
 
 ## 1.4 Emitir la guía de retorno, o no poder
 
@@ -364,7 +536,9 @@ En la columna **Estatus**, debajo del motivo, `.pastilla--mal` **"Va de regreso"
 
 Un `.ficha-filtro` nuevo: **"Van de regreso"**.
 
-Lo que gana el comerciante no es tiempo para evitarlo —ya no se puede evitar— sino saberlo antes de que la caja aparezca en la bodega. Por eso la fila lleva además `.boton--fantasma.boton--chico` **Registrar devolución**, que abre el registro con `mecanismo: "RTO"` ya puesto.
+Lo que gana el comerciante no es tiempo para evitarlo —ya no se puede evitar— sino saberlo antes de que la caja aparezca en la bodega.
+
+**Y la acción de esa fila es "Ver la devolución", no "Registrar devolución".** Si la pastilla dice "Va de regreso" es porque la paquetería declaró el retorno, y eso es justo lo que dispara al rastreo a crear el registro o a convertir el que hubiera (1.3 ter). Cuando se llega a esa fila el registro ya existe, y ofrecer crearlo sería ofrecer el duplicado que el modelo acaba de cerrar.
 
 **Lo que no existe:** el aviso de "va a regresar si este intento falla". Depende de `CAPACIDADES.intentosNumerados`, hoy sin registro en todas, y no se sustituye contando intentos por nuestra cuenta. Un contador nuestro presentado como dato de la paquetería es exactamente lo que el principio prohíbe, y el error es caro en las dos direcciones.
 
@@ -385,6 +559,7 @@ Lo que gana el comerciante no es tiempo para evitarlo —ya no se puede evitar�
 > | Flete de ida, ya pagado | $189.00 |
 > | Flete de retorno | $164.00 |
 > | Cargo por retorno al remitente | *(ver abajo)* |
+> | Guía de retorno emitida y sin usar | *(solo si la hubo)* |
 > | **Costo del retorno** (`.dato--fuerte`) | **$353.00** |
 > | Mercancía que regresa | $1,240.00 |
 >
@@ -395,6 +570,8 @@ Lo que gana el comerciante no es tiempo para evitarlo —ya no se puede evitar�
 > Cargo por retorno al remitente — `.apagado` Sin cargo en factura todavía. `.boton--sutil.boton--chico` **Capturar cargo**
 
 Al capturarlo se escribe en `cargos: [{ tipo: "rto", monto, factura, nota }]` del envío original, que es lo que hace que deje de ser un cargo huérfano y empiece a sumar.
+
+**El renglón de la guía emitida y sin usar solo aparece cuando la hubo**, que es el caso de una devolución convertida a RTO con guía ya emitida (1.3 ter). Es el cargo que más fácil se pierde: nadie lo pidió dos veces y nadie lo espera, y sin renglón propio la resta del cierre saldría más barata que la factura.
 
 **El reembolso no se ejecuta aquí**, y el diálogo lo dice: *"El reembolso se registra, no se cobra: el dinero se mueve en tu canal de venta."*
 
@@ -427,7 +604,7 @@ Con filtros puestos:
 
 **Botones, todos verbo y objeto, el objeto en singular**
 
-`Registrar devolución` · `Autorizar devolución` · `Rechazar devolución` · `Generar guía de retorno con DHL · $164.00` · `Registrar guía del comprador` · `Marcar recibida` · `Registrar recepción` · `Cerrar devolución` · `Registrar devolución recibida` · `Copiar dirección de origen` · `Capturar cargo` · `Confirmar con Paquetexpress`
+`Registrar devolución` · `Ver la devolución` · `Autorizar devolución` · `Rechazar devolución` · `Generar guía de retorno con DHL · $164.00` · `Registrar guía del comprador` · `Marcar recibida` · `Registrar recepción` · `Cerrar devolución` · `Registrar devolución recibida` · `Cancelar la guía de retorno` · `Copiar dirección de origen` · `Capturar cargo` · `Confirmar con Paquetexpress`
 
 **Confirmaciones**
 
@@ -439,7 +616,9 @@ Con filtros puestos:
 
 El rechazo pide motivo obligatorio antes de habilitar el botón, con `.campo__error`: *"Falta el motivo del rechazo."*
 
-**Lista fija de motivos:** Producto equivocado · Producto dañado · No era lo esperado · Entrega fallida · Arrepentimiento · Garantía.
+**Lista fija de motivos comerciales:** Producto equivocado · Producto dañado · No era lo esperado · Entrega fallida · Arrepentimiento · Garantía.
+
+**La causa del transportista no tiene lista y no se teclea.** La escribe la paquetería y se guarda con sus palabras. Se muestra traducida cuando el rastreo la trae traducida y, debajo, el texto original con su nombre. Nadie la elige, nadie la corrige y nadie la borra: no es nuestra.
 
 ## 1.11 Componentes
 
@@ -468,14 +647,14 @@ Tarea principal: **autorizar una devolución y dejarla en marcha el día en que 
 
 ## 2.1 Dónde vive
 
-**La regla vive en Configuración**, en una zona nueva llamada **"Cuando hay guías sin recoger"**, la última de la pantalla.
+**La regla vive en Configuración**, en una zona nueva llamada **RECOLECCIÓN**, la última de la pantalla. Cómo se llaman las cuatro zonas y por qué está en 3.1 bis: los rótulos dicen el paso de la cadena y los títulos de tarjeta dicen qué decide cada uno.
 
 El subtítulo de Configuración ya lo dice literalmente: *"Qué hace el sistema por su cuenta, sin que nadie entre a Pedidos."* Pedir el camión solo es la última cosa que el sistema hace solo, después de revisar la dirección, elegir la caja y elegir la paquetería. **Las zonas quedan en el orden de la cadena**, que es como se lee:
 
-1. Cuando entra un pedido pagado
-2. Con qué caja sale cada pedido *(función 3)*
-3. Qué paquetería se elige
-4. Cuando hay guías sin recoger *(esta función)*
+1. **Entrada del pedido**
+2. **Embalaje** *(función 3)*
+3. **Paquetería**
+4. **Recolección** *(esta función)*
 
 **Lo que falla no vive en Configuración**, vive en `recolecciones.html` y en Inicio. Porque un camión que no llegó se reclama, no se configura, y ahí ya están el historial, el folio y la tabla de cumplimiento con la que se reclama.
 
@@ -485,10 +664,10 @@ El subtítulo de Configuración ya lo dice literalmente: *"Qué hace el sistema 
 
 ## 2.2 La pantalla — zona en Configuración
 
-> `.zona__titulo` **Cuando hay guías sin recoger**
+> `.zona__titulo` **RECOLECCIÓN**
 >
 > `.tarjeta__cabeza`
-> **h2** Recolección automática por origen y paquetería
+> **h2** Cuándo se pide cada recolección
 > `.apagado` Una solicitud sale por cada origen y cada paquetería. No existe una solicitud que junte un paquete de DHL con uno de FedEx.
 
 **La tabla.** `.tabla-caja`, columnas en este orden:
@@ -691,7 +870,7 @@ Una nota sobre `.franja-conexion`: su nombre habla del objeto y no del papel, qu
 
 Tarea principal: **dejar de pedir a mano la recolección de DHL en Almacén Puebla.**
 
-1. Configuración, hasta abajo, zona "Cuando hay guías sin recoger".
+1. Configuración, hasta abajo, zona **Recolección**, tarjeta "Cuándo se pide cada recolección".
 2. La tabla lista cinco parejas. "Almacén Puebla · DHL" dice "Sin regla" y "22 citas · 1 sin cumplir".
 3. **Editar regla** abre el panel. La cabeza recuerda el horario del origen.
 4. **Agenda** viene elegido; los otros dos modos se ven apagados con su razón.
@@ -707,11 +886,11 @@ Tarea principal: **dejar de pedir a mano la recolección de DHL en Almacén Pueb
 
 ## 3.1 Dónde vive
 
-**Configuración, en una zona nueva llamada "Con qué caja sale cada pedido"**, la segunda de la pantalla: justo después de "Cuando entra un pedido pagado" y antes de "Qué paquetería se elige", porque la caja se decide antes que el precio y el orden de las zonas es el orden de la cadena.
+**Configuración, en la segunda zona de la pantalla**, justo después de la entrada del pedido y antes de la de paquetería, porque la caja se decide antes que el precio y el orden de las zonas es el orden de la cadena.
 
 Por qué Configuración y no Plantillas: Plantillas contesta *"qué cajas uso y por cuánto me cobran"*; la regla contesta *"qué caja se usa en qué pedido"*, que es una decisión que el sistema toma solo. Agrupar por pregunta, no por sistema. Y es donde ese ajuste ya vive hoy, en forma de un desplegable.
 
-**El desplegable "Con la plantilla" se retira** de la zona "Cuando entra un pedido pagado" y se sustituye por una línea:
+**El desplegable "Con la plantilla" se retira** de la primera zona y se sustituye por una línea:
 
 > La caja sale de tus **reglas de embalaje**, más abajo en esta pantalla. `<a>`
 
@@ -719,7 +898,53 @@ Porque dos sitios donde elegir la caja son dos sitios que un día no van a coinc
 
 **No hay entrada nueva en el menú.**
 
+## 3.1 bis — Cómo se llaman las cuatro zonas de Configuración
+
+Esta pantalla acabó con **dos listas arrastrables llamadas casi igual** —"Tu orden de preferencia" y "Tu orden de reglas"— y se leen como la misma cosa. No lo son: una decide con qué paquetería sale el pedido y la otra en qué caja va.
+
+**El problema no es el adjetivo: es que ninguna de las dos decía qué decide.** Se parecen tanto porque **son el mismo patrón —lista ordenada, gana la primera que se cumple, motivo por fila, arrastre y flechas— aplicado a dos preguntas distintas**. Cuando el mecanismo es idéntico, lo único que puede distinguirlas es la pregunta, y entonces la pregunta tiene que estar en el título.
+
+**Y tiene que estar en el título de la tarjeta, no en el de la zona.** `.zona__titulo` es 11px, en mayúsculas, con `--muted` y mucho espaciado: es un separador, no un encabezado. Lo que se lee al llegar es el `h2` de 15px de la tarjeta. Poner la pregunta en el rótulo pequeño y el mecanismo en el grande era tener la información al revés.
+
+**Las zonas pasan a ser cuatro sustantivos**, uno por paso de la cadena, sin una sola palabra compartida entre ellos:
+
+| Antes | Ahora |
+|---|---|
+| CUANDO ENTRA UN PEDIDO PAGADO | **ENTRADA DEL PEDIDO** |
+| CON QUÉ CAJA SALE CADA PEDIDO | **EMBALAJE** |
+| QUÉ PAQUETERÍA SE ELIGE | **PAQUETERÍA** |
+| CUANDO HAY GUÍAS SIN RECOGER | **RECOLECCIÓN** |
+
+Cuatro nombres en la misma gramática, en el orden en que ocurren, que es como se lee la pantalla. Es además la forma en que ya se usa `.zona__titulo` en el resto del producto —"Tu operación", "Se pueden conectar"—: una etiqueta de sección, no una frase.
+
+**Los títulos de tarjeta pasan a decir qué decide cada uno:**
+
+| Zona | Tarjeta | Título |
+|---|---|---|
+| Entrada del pedido | *(la única)* | **Qué corre solo cuando el pedido se paga** |
+| Embalaje | Vetos | **Nunca en esta caja** |
+| Embalaje | La lista ordenada | **En qué caja va cada pedido** |
+| Embalaje | El tope | **Cuándo pasa a revisión manual** |
+| Paquetería | La lista ordenada | **Con qué paquetería sale cada pedido** |
+| Paquetería | La regla de seguridad | **Cuándo se sustituye la paquetería preferida** |
+| Recolección | La tabla de parejas | **Cuándo se pide cada recolección** |
+
+Las dos que chocaban quedan **"En qué caja va cada pedido"** y **"Con qué paquetería sale cada pedido"**. Comparten "cada pedido" al final, que es el sujeto y de verdad es el mismo; lo que las distingue —la caja y la paquetería— va al principio, que es donde cae la vista. Antes compartían el principio, "Tu orden de", y se distinguían al final por dos palabras abstractas.
+
+Y ninguno de los siete títulos repite el rótulo de su zona: el rótulo dice cuándo pasa, el título dice qué se decide.
+
+**No toca partir Configuración en pestañas todavía, y conviene decir por qué**, porque la tentación crece con cada zona:
+
+- El PM fijó el corte en la quinta zona. Hay cuatro.
+- `sistema.html` reserva las pestañas para **vistas del mismo objeto**. Estas cuatro zonas no son cuatro vistas de una cosa: son cuatro pasos de un proceso, y un proceso se lee en orden. Partirlo en pestañas convierte una secuencia en un menú de opciones paralelas, que es justo lo que no es.
+- La pantalla existe para contestar *"qué hace el sistema por su cuenta"*. Con pestañas, tres cuartas partes de esa respuesta quedan escondidas detrás de un clic, y la pregunta se contesta mal.
+- Y lo que el dueño reportó lo arregla el renombrado. Partir la pantalla es un cambio mayor que no toca el defecto.
+
+Lo que sí deja resuelto este renombrado es **el día que toque**: las pestañas del PM son **Entrada · Envío · Recolección**, y las cuatro zonas ya se llaman así. El corte futuro es agrupar Embalaje y Paquetería bajo Envío —las dos deciden cómo sale el paquete— y mover dos rótulos. No hay nada que reescribir.
+
 ## 3.2 La pantalla
+
+> `.zona__titulo` **EMBALAJE**
 
 Tres tarjetas dentro de la zona, en el orden en que se evalúa.
 
@@ -729,12 +954,20 @@ Tres tarjetas dentro de la zona, en el orden en que se evalúa.
 > **h2** Nunca en esta caja
 > `.apagado` Se revisa antes que el orden de abajo y descarta plantillas, incluida la de la regla por defecto.
 
-Filas cortas, no una tabla: son pocas y cada una es una frase.
+Filas cortas, no una tabla: son pocas y cada una es una frase. **Y la fila nombra el producto, no su clave**: la clave va debajo, en pequeño, para confirmar.
 
-> `.dato` — **Si el pedido contiene** `MON-CRI-6` **→ nunca** Sobre
+> `.dato` — **Si el pedido contiene** **Juego de 6 copas** **→ nunca** Sobre
+> `.apagado.mono` `MON-CRI-6`
 > `.boton--sutil.boton--chico` **Quitar veto**
 
-Pie: `.boton--sutil.boton--chico` **Agregar veto**.
+Pie: `.boton--sutil.boton--chico` **Agregar veto**, que abre un `.dialogo` con **el mismo buscador de productos de 3.3** y el `select` de caja:
+
+> **Agregar veto**
+> `.campo` **Producto** — el buscador
+> `.campo` **Nunca usar** — `select` de plantillas
+> Pie: **Cancelar** · **Agregar veto**
+
+El buscador es el mismo control y el mismo dato en los dos sitios. Dos maneras de elegir el mismo producto en la misma pantalla serían dos maneras de escribirlo mal.
 
 **Quitar un veto pide confirmación**, aunque sea una fila corta. Es lo único que protege un producto frágil y lo quitaría un clic de más, así que borrar dice qué se lleva:
 
@@ -748,10 +981,10 @@ El veto es una lista aparte y no una fila más del orden **porque no asigna caja
 
 **El veto gana sobre la regla por defecto**, y la cabeza de la tarjeta lo dice sin rodeos, porque es lo que sorprende: un hecho físico gana sobre una comodidad administrativa. Qué pasa entonces está en 3.4.
 
-### Tarjeta 2 — Tu orden de reglas
+### Tarjeta 2 — En qué caja va cada pedido
 
 > `.tarjeta__cabeza`
-> **h2** Tu orden de reglas
+> **h2** En qué caja va cada pedido
 > `.apagado` Se recorre de arriba abajo: gana la primera que se cumple, así que lo específico va arriba y lo general abajo. `.solo-raton` Arrastra una regla para cambiar su puesto, o muévela con las flechas. `.solo-tacto` Cambia su puesto con las flechas.
 
 El mismo mecanismo que el orden de paqueterías, porque es el mismo tipo de criterio humano y un segundo modelo mental para el mismo problema es un modelo de más.
@@ -851,7 +1084,7 @@ Porque una condición con Y y O mezclados obliga a pensar en paréntesis, y nadi
 |---|---|---|
 | **Cantidad de productos** | de `[ ]` a `[ ]` piezas | Cuenta piezas, no líneas del pedido. |
 | **Costo del pedido** | de `$[ ]` a `$[ ]` | |
-| **Contiene un producto** | `.campo` SKU en `.mono` · y además de `[ ]` a `[ ]` piezas de cualquier otro artículo | El SKU tal como lo manda tu canal en la línea del pedido. Sirve para decir "el producto grande solo" o "el producto grande acompañado". |
+| **Contiene un producto** | **El buscador de productos** · y además de `[ ]` a `[ ]` piezas de cualquier otro artículo | Sirve para decir "el producto grande solo" o "el producto grande acompañado". |
 | **Canal de venta** | casillas con los canales conectados | Mercado Libre y Amazon tienen requisitos de empaque propios. |
 | **Destino** | casillas: Local · Foráneo · Zona extendida | |
 
@@ -860,13 +1093,54 @@ Y la sexta, visible y apagada, porque lo que falta también se ve:
 > `.marca-campo[disabled]` **Peso del pedido**
 > `.campo__ayuda` Hace falta un catálogo con el peso por SKU. Tus canales reportan el SKU, pero no el peso. No entra en esta versión.
 
-**El SKU se teclea, no se elige de una lista**, porque no hay catálogo. Funciona y se lee peor, y por eso el campo hace lo único que puede para que se lea mejor: mostrar el nombre del producto tal como vino en la última línea de pedido que lo trajo, debajo del campo, en `.apagado`.
+### El buscador de productos
 
-Y como un SKU mal tecleado no falla —simplemente no se cumple nunca— se valida contra lo que sí tenemos: los SKU que aparecieron en los pedidos de los últimos 30 días.
+Teclear `MON-CRI-6` de memoria es pedirle a alguien que recuerde una clave, y un SKU mal tecleado **no falla: simplemente no se cumple nunca**. Es el peor tipo de error, porque no hace ruido. Así que se busca y se elige.
 
-> `.campo__error` Ningún pedido de los últimos 30 días trae el SKU `MON-VEN-61`. Revisa que esté bien escrito.
+**De dónde salen los productos: de las líneas de los pedidos, que es el único sitio donde existen.** No hay catálogo, y el buscador no finge que lo hay. Busca sobre `productosVistos()`, derivado de los artículos de todos los pedidos que el sistema tiene: `{ sku, nombre, pedidos, ultimaFecha }`. **No se limita a treinta días**: una lista de la que hay que elegir tiene que ser lo más completa posible, y un producto de temporada que desapareció el mes pasado sigue siendo un producto. La ventana solo decide el dato de uso que cada resultado enseña, que es lo que deja juzgar si sigue vivo.
 
-No bloquea el guardado —el producto puede ser nuevo— pero se dice. Un silencio aquí es una regla que nunca gana y nadie sabe por qué.
+**El campo y su panel:**
+
+> `.campo` **Producto**
+> `.buscador-ficha` — `input type="search"`, `placeholder="Busca por nombre o SKU"`
+> `.campo__ayuda` Se busca entre los productos que han aparecido en tus pedidos.
+
+Al escribir, `.buscador-ficha__panel` flotante con hasta ocho resultados. Cada `.producto` lleva tres cosas y ninguna más:
+
+> **Juego de 6 copas**
+> `.producto__sku` `MON-CRI-6` · `.producto__uso` 4 pedidos · el último el 18 de septiembre
+
+El nombre identifica, el SKU confirma y el uso dice si el producto sigue vivo. Sin catálogo, **el uso es lo único que distingue el producto que vendes hoy del que vendiste una vez hace un año**, y es la diferencia que decide si una regla va a ganar alguna vez.
+
+Se busca **por nombre y por SKU a la vez**, porque quien tiene la caja delante teclea el SKU y quien no, teclea el nombre. Y **sin acentos en los dos lados**, como el resto del producto: nadie escribe "Cerámica" en un buscador.
+
+**Elegido, el campo enseña el producto, no su clave:**
+
+> `.producto--elegido` **Juego de 6 copas** `.mono.apagado` `MON-CRI-6` — `.boton--sutil.boton--chico` **Cambiar producto**
+
+**Un producto por condición.** Si hacen falta dos, se escriben dos reglas: es la misma razón por la que las condiciones se unen con Y y nunca con O.
+
+### Cuando el producto no aparece
+
+Es el caso que decide si este buscador sirve. Un comerciante **vende cosas que todavía no ha vendido**: un producto nuevo, uno de temporada que empieza, uno que llega la semana que viene. La salida no puede ser "no existe".
+
+> `.buscador-ficha__vacio`
+> **Ningún pedido trae todavía un producto que se llame así**
+> `.boton--fantasma.boton--chico` **Usar "MON-VEN-61" como SKU**
+
+**Sí se puede seguir escribiendo un SKU a mano, y deja de ser el camino por defecto para ser una decisión con nombre.** Quien lo elige está diciendo "este producto existe aunque no lo hayan pedido todavía", que es una afirmación legítima y distinta de un dedazo. El botón repite entre comillas lo que se escribió, para que un `MON-VEN-61` tecleado en vez de `MON-VEN-16` se vea antes de aceptarlo, no un mes después.
+
+El botón solo aparece cuando lo escrito **tiene forma de SKU** —sin espacios, con al menos un guion o un número—. Con "copas" escrito y ningún resultado, ofrecer "Usar «copas» como SKU" sería convertir una búsqueda fallida en una regla rota.
+
+Un producto elegido así se marca en el campo y **sigue marcado en la lista de reglas**, hasta que aparezca en un pedido:
+
+> `.producto--elegido.producto--sin-ver` `.mono` `MON-VEN-61` — `.apagado` Sin pedidos todavía
+
+Y en la fila de la regla, el `.aviso--alerta` que ya existe: *"El SKU `MON-VEN-61` no aparece en ningún pedido de los últimos 30 días. Esta regla se salta y el pedido pasa a la siguiente."* La marca desaparece sola el día que el producto entre en un pedido. **Nadie tiene que volver a tocar la regla: lo que estaba mal escrito sigue marcado y lo que solo era nuevo se cura solo.**
+
+### Dónde más sirve el mismo buscador
+
+El veto usa el mismo dato y lleva el mismo control (3.2, tarjeta 1). Y hay dos sitios donde el mismo componente encajaría sin cambiarlo: **filtrar Pedidos por producto** —hoy solo se busca por pedido, cliente o destino— y el día que exista catálogo, **la misma caja con una fuente más completa**, porque lo que cambia entonces es de dónde salen las filas, no cómo se eligen. Ninguno de los dos entra ahora; se anotan para que el componente se construya sabiendo que va a viajar.
 
 `.campo` **Caja** — `select` de plantillas, cada opción con sus medidas: `Caja chica — 25 × 20 × 15 cm`.
 
@@ -995,14 +1269,15 @@ Esconderlas haría creer que no existen; enseñarlas apagadas dice qué falta y 
 - **`.orden--reglas`**, modificador de `.orden`. Misma mecánica de arrastre, puesto y flechas; distinta rejilla de celdas, porque una regla lleva condiciones y caja donde una paquetería lleva papel. Y **`.orden__fila--defecto`**, para la fila que no se mueve ni se borra.
 - **`.condicion`**, con `.condicion--sin-dato`. La lectura compacta de una condición dentro de una fila: `Cantidad 1 a 3 piezas`, `Contiene MON-VEN-16`. **Por qué hace falta:** `.pastilla` es un estado y `.dato` es un par etiqueta-valor; una condición es un enunciado con rango y no se lee bien como ninguno de los dos. `--sin-dato` la apaga y la marca cuando su SKU no aparece en ningún pedido reciente.
 - **`.cobro`**, con `.cobro__cifra` y `.cobro__porque`. El par consecuencia-y-porqué: primero lo que te cobran, después por qué. **Por qué hace falta:** ya está escrito tres veces con estilos en línea en `plantillas.html`, y con esta función aparece en tres pantallas más. Un patrón repetido a mano deja de ser el mismo patrón, igual que un color.
+- **`.buscador-ficha`**, con `.buscador-ficha__panel` y `.buscador-ficha__vacio`, y **`.producto`** con `.producto__sku`, `.producto__uso`, `.producto--elegido` y `.producto--sin-ver`. El nombre es neutro a propósito: en 5.2 el mismo componente busca destinatarios, y una clase nombrada por uno de sus dos usos deja de ser la misma clase. **Por qué hace falta:** ningún control del sistema devuelve registros para elegir dentro de un formulario. El buscador de la barra superior encuentra y lleva a otra pantalla; un `select` necesita una lista cerrada, y aquí la lista sale de los pedidos y crece sola. El panel hereda la disciplina que ya está escrita para el calendario y para el buscador global —vive en el `body` con posición fija, no hereda el ancho de su disparador, se sale a pantalla completa en angosto, cierra con Escape y se queda cerrado, y devuelve el foco al campo—, así que lo nuevo es la fila, no el comportamiento.
 
 ## 3.7 El recorrido completo
 
 Tarea principal: **proteger un producto frágil y dejar de pagar volumen en los pedidos de una pieza.**
 
 1. La zona de embalaje enseña una sola regla, la de por defecto, con su `.cobro`: *"Con esta regla han salido las 39 guías de los últimos 30 días: el 100 %. En 11 se cobró por volumen. Diferencia acumulada: $1,640."*
-2. **Agregar veto primero**, porque descarta y no asigna, y lo que descarta no depende del orden: SKU `MON-CRI-6`, nunca `Sobre`. El campo confirma el producto debajo: *"Juego de 6 copas, visto en 4 pedidos."*
-3. **Agregar regla.** Nombre: "Cristalería acompañada". Marca **Contiene un producto**: `MON-CRI-6` más 1 a 5 piezas. Al marcarla, la franja dice: *"Sobre los pedidos de hoy, esta condición alcanza a 1 de 40."* con su enlace.
+2. **Agregar veto primero**, porque descarta y no asigna, y lo que descarta no depende del orden. En el buscador escribe "copas", elige **Juego de 6 copas**, y en "Nunca usar" elige **Sobre**. En ningún momento tuvo que acordarse de `MON-CRI-6`.
+3. **Agregar regla.** Nombre: "Cristalería acompañada". Marca **Contiene un producto** y escribe "copas" en el buscador: sale **Juego de 6 copas · `MON-CRI-6` · 4 pedidos · el último el 18 de septiembre**. Lo elige, y añade "más 1 a 5 piezas". Al marcarla, la franja dice: *"Sobre los pedidos de hoy, esta condición alcanza a 1 de 40."* con su enlace.
 4. Caja: **Caja mediana**. Motivo: "En una caja chica se rompieron tres veces." **Guardar regla.** Como es específica, entra arriba: queda en el puesto 1 y nada la cubre.
 5. **Agregar regla.** Nombre: "Pedidos de una pieza", cantidad de 1 a 1, caja **Sobre**. Es la general, así que se coloca **debajo** de las de producto. Si se guardara encima, el aviso lo diría en el acto.
 6. Al día siguiente entran dos pedidos con copas. `#1019` lleva copas y una licuadora: gana «Cristalería acompañada» y sale en Caja mediana, que es exactamente lo que su motivo pedía.
@@ -1271,6 +1546,209 @@ Tarea principal: **corregir la colonia y generar la guía sin salir del panel.**
 
 ---
 
+# 5. El envío suelto
+
+## 5.1 Dónde vive
+
+**En Pedidos. No hay pantalla nueva, no hay lista aparte y no hay entrada de menú.** Un envío suelto es un pedido sin canal, y toda pantalla que trabaja con guías lee la derivación de `pedidos`: una tercera colección devolvería la pregunta que el modelo ya mató, "¿la guía 877 la busco en Pedidos o en la otra lista?".
+
+La acción de crearlo va en `.encabezado__acciones` de Pedidos, en `.boton--primario`, porque es la que crea aquello para lo que la pantalla existe: **Crear envío**. Se llama así y no "Crear pedido" porque quien lo usa no está registrando una venta, está haciendo una guía; y no "envío suelto" porque el adjetivo es nuestro, no suyo.
+
+Convive con las otras dos principales igual que ya lo hacen entre sí: la primaria cambia con la pestaña activa —"Crear envío" en Todos y Sin guía, "Registrar devolución" en Devoluciones— y "Sincronizar estatus" se queda en `.boton--sutil`. **Y cuando la lista está vacía, la acción la lleva el estado vacío** y la de arriba se oculta:
+
+> **Todavía no hay ningún pedido**
+> Los pedidos entran por tus canales de venta. También se puede crear un envío a mano, para lo que vendiste fuera de ellos.
+> `.boton--primario` **Crear envío** · `.boton--sutil` **Conectar un canal**
+
+## 5.2 El panel de captura
+
+`.panel`, el mismo contenedor que Plantillas y que la regla de recolección: lista → panel. Título **"Nuevo envío"**.
+
+**Captura solo lo que lo convierte en un pedido.** Origen, caja, peso, seguro y paquetería son decisiones de la guía y ya tienen su sitio —el bloque Envío, con su cotización en vivo, su `.cobro`, su motivo obligatorio al salirse de la regla y su manejo de fallos—. Duplicarlas aquí sería escribir por segunda vez la pantalla que la función 4 existe para haber escrito una sola vez.
+
+**Y no por eso se parte la tarea en dos viajes:** al crear, el mismo panel no se cierra, se convierte en el panel de ese pedido con el bloque Envío abierto y la paquetería ya propuesta. Capturar y despachar son dos cosas; hacerlas sin cerrar el panel es lo que impide que "Crear envío" termine en una lista en vez de en una guía.
+
+**Los bloques, en este orden:**
+
+**1. Referencia** — primero y obligatoria, porque es lo único que sustituye al folio del canal y ponerla al final la haría parecer opcional.
+
+> `.campo` **Referencia**
+> `.campo__ayuda` Por qué existe este envío: "Garantía #4412", "Venta por WhatsApp". Es lo que se lee dentro de un mes al conciliar.
+> `.campo__error` Falta la referencia.
+
+Y debajo, la advertencia que el producto puede dar y no puede resolver, en `.apagado`:
+
+> Si esta venta ya entró por un canal, se van a emitir dos guías y nada las va a cruzar: no hay folio de canal con que compararlas.
+
+**Y una comprobación barata que no estaba pedida y cuesta poco**: al escribir el destinatario, si hay un pedido con el mismo nombre y el mismo código postal en los últimos siete días, se dice. No bloquea:
+
+> `.aviso--alerta` **El pedido `#1016` es del mismo destinatario y del mismo código postal, del 18 de septiembre.** `<a>` **Verlo** `</a>`
+
+Una defensa humana con un recordatorio automático sigue siendo humana, pero falla menos.
+
+**2. Destinatario y dirección** — **los mismos campos, las mismas etiquetas y la misma validación que la dirección de un pedido.** Una dirección es una dirección, y dos formularios para lo mismo terminan validando distinto y escribiendo la calle de dos maneras.
+
+Encima de los campos, para el caso del cliente que vuelve:
+
+> `.boton--sutil.boton--chico` **Usar una dirección ya enviada**
+
+Abre el mismo buscador de fichas de 3.3 con otra fuente: los destinatarios de envíos anteriores, que son dato nuestro. Cada fila lleva nombre, ciudad y **"último envío el 4 de septiembre"**, que es lo que deja distinguir dos Arturo García. No es una libreta de contactos y no se construye una: es buscar en lo que ya se escribió.
+
+**3. Total (opcional)** — el "(opcional)" va en la etiqueta, nunca en un marcador que desaparece al escribir.
+
+> `.campo` **Total (opcional)**
+> `.campo__ayuda` Si lo capturas, queda marcado como capturado a mano y no cuenta como venta.
+
+**4. Artículos (opcional)** — plegado, porque la mayoría no los va a capturar:
+
+> `<details class="desplegable"><summary>Agregar artículos</summary>`
+> El buscador de productos de 3.3, cantidad y precio por línea.
+> `.campo__ayuda` Con artículos, este envío entra en las reglas por producto y admite devoluciones parciales. Sin ellos, no.
+
+Dice lo que se gana, no lo que se pierde: es la única forma de que alguien decida capturarlos.
+
+**5. Lo que no se comprueba** — va al final, justo encima del pie, porque se lee antes de comprar y después de haber escrito la dirección.
+
+> `.aviso--info` **La dirección se comprueba al comprar la guía.**
+> Aquí se revisa la forma: que el código postal tenga cinco dígitos, que la colonia no vaya vacía y que el teléfono esté completo. Que el destino exista y que tu paquetería llegue hasta ahí lo contesta la paquetería al comprar la guía, y si lo rechaza se dice con sus palabras.
+
+**Pie:** **Cancelar** · **Crear envío**.
+
+## 5.3 El código postal que no está en el catálogo
+
+Es la frase que decide si esta pantalla se lee como honesta o como un producto que no sabe lo que hace, así que va literal y va **en la ayuda del campo, no en su error**:
+
+> `.campo__ayuda` **El código postal 29321 no está en el catálogo de colonias.** No quiere decir que no exista: quiere decir que no hay colonia que proponer. Escríbela.
+
+**Ayuda y no error, y la diferencia no es cosmética.** `.campo--error` afirma que el campo está mal. Aquí el campo no está mal: es nuestro catálogo el que no llega. Pintarlo en rojo trataría el hueco de nuestros datos como una negativa sobre el destino, e impediría enviar a sitios que existen.
+
+Por lo mismo, **no bloquea el guardado ni el botón de generar**. Lo único que cambia es que no hay colonia propuesta y hay que escribirla.
+
+Y donde sí se propone, `coloniasPorCP` se declara por lo que es:
+
+> `.campo__ayuda` Colonias del catálogo de The Carriers para el 72501. Si la tuya no está, escríbela.
+
+**La comprobación previa de dirección es una celda de la matriz, `validaDireccion`.** Mientras esté sin registro en todas —que es hoy—, **no se ofrece ningún botón de comprobar**, porque una comprobación que no existe hace confiar en una dirección que va a rebotar, y el rebote llega con la caja cerrada y etiquetada. El día que una paquetería la exponga, aparece **Comprobar dirección** en ese bloque y solo para esa paquetería, leyendo la matriz igual que todo lo demás.
+
+## 5.4 Cómo se ve un suelto en la tabla
+
+| Columna | Qué lleva |
+|---|---|
+| **Pedido** | `E-0043` en `.mono` y sin `#`. Debajo, en `.apagado`, la referencia: "Garantía #4412" |
+| **Canal** | `.pastilla--neutra` **Sin canal** |
+| **Cliente** y **Destino** | Igual que cualquiera |
+| **Total** | La cifra con `.apagado` "a mano" al lado; **"—"** cuando no se capturó |
+| **Pago** | `.apagado` **"—"**, y debajo `.apagado` "Sin canal que lo reporte" |
+| **Envío** | Igual que cualquiera |
+
+**La referencia va en la tabla, no escondida en el panel.** Es lo que sustituye al folio del canal, y un folio nuestro sin nada al lado no explica por qué existe esa guía.
+
+**El folio no lleva `#` y lleva su propia letra**, porque un folio que no existe en Shopify no se puede ir a buscar allá y el `#` es lo que invita a intentarlo.
+
+**Un envío suelto no tiene estado de pago, y por eso esa celda no lleva pastilla.** Una venta cobrada fuera del canal no la conoce el sistema, y poner "Pagado" sería inventar un dato que nadie reportó. Pero una pastilla en esa columna se compara con las "Pagado" y "Pendiente" de las filas de al lado y se lee como un tercer estado de pago; **el guion dice que la columna no aplica a esa fila**, que es lo cierto.
+
+**Y no se bloquea por pago.** El bloqueo existe para no despachar cuando un canal dice que no se ha cobrado; aquí no hay canal que lo diga y quien lo capturó es quien vendió. **Crear el envío es la decisión de despacharlo**, así que cuenta como listo desde que existe: el botón de generar guía está activo desde el primer momento.
+
+### Un suelto sin guía cae en la misma cola, y la cola cambia de nombre
+
+Un envío suelto puede existir sin guía —se captura hoy y se despacha mañana— y entra en el mismo pendiente que un pedido pagado sin guía. El predicado admite ahora las dos condiciones: **pago confirmado por el canal, o sin canal**.
+
+**Y entonces la etiqueta no puede seguir hablando de pago**, porque la mitad de sus filas no tiene pago que reportar:
+
+| | Antes | Ahora |
+|---|---|---|
+| `PENDIENTES["pagados-sin-guia"]` | Pagados sin guía | **Listos para despachar** |
+| `.metrica__nota` de "Sin guía" en Pedidos | Pendientes de despachar | **Listos para despachar** |
+| Tarjeta de Inicio | Pagados sin guía | **Listos para despachar** |
+
+**La clave del predicado se queda como está**: cambiarla obligaría a tocar los enlaces que ya llevan `?pendiente=pagados-sin-guia` y no gana nada. Lo que se lee es la etiqueta.
+
+Dos cosas que gana el cambio además de ser cierto. **El nombre describe mejor el predicado de lo que lo describía antes**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso. Y **los tres sitios dicen ahora lo mismo**, que es lo que pide la regla de un nombre por pantalla; hasta hoy el pendiente decía "Pagados sin guía" y la métrica de la misma pantalla decía "Pendientes de despachar", dos nombres para una cosa.
+
+**El filtro de canal gana "Sin canal"**, no "Manual": el desplegable contesta por dónde entró la venta, y una forma de capturar no es un sitio por donde entra dinero. Como todos los desplegables del producto, se llena con lo que hay: sin sueltos, la opción no aparece.
+
+## 5.5 El embalaje propone, no decide
+
+Es el estado nuevo, y se distingue del de la función 4 **por el verbo**. En un pedido de canal la caja ya se decidió sin nadie delante; aquí hay alguien delante de la caja.
+
+| Dónde | `.campo__ayuda` de Caja |
+|---|---|
+| Pedido de canal | *"La eligió la regla «Pedidos de una pieza»."* |
+| Envío suelto | *"La propone la regla «Pedidos de una pieza». Aquí la eliges tú."* |
+
+Y cuando ninguna regla pudo evaluarse, que va a ser lo normal —sin artículos no hay piezas ni SKU, sin total no hay costo, y ninguna regla por canal puede cumplirse nunca—:
+
+> `.campo__ayuda` Sin artículos capturados, las reglas de embalaje no tienen con qué decidir. Se propone la plantilla predeterminada.
+
+Dice qué falta para que decidieran, que es más útil que decir que no decidieron. Obligar a alguien a pelearse con una regla que tiene delante es al revés.
+
+**La paquetería preferida sí aplica completa**, con su porqué y con motivo obligatorio al salirse: el orden de preferencia es un criterio sobre las paqueterías y no tiene nada que ver con por dónde entró la venta. **La recolección también**, sin un solo cambio: la regla es por origen × paquetería, un suelto tiene los dos, y el camión recoge bultos, no pedidos. **La generación automática no**: no hay evento de pago que la dispare.
+
+## 5.6 Pedidos y Ventas dejan de ser el mismo número
+
+En cuanto haya un solo suelto, las dos cifras se separan. **Dos números que siempre coincidieron y un día dejan de hacerlo se leen como un error del sistema**, así que se dice donde se ven los dos y solo cuando hay sueltos:
+
+En Inicio, bajo el bloque del periodo:
+
+> `.apagado` De los 43 envíos del periodo, **3 son envíos sueltos y no cuentan como venta**: no entraron por un canal que reporte el importe. `<a>` **Verlos** `</a>`
+
+En Pedidos, la `.metrica__nota` de "Total de pedidos":
+
+> 43 en el periodo · 3 sin canal
+
+Y en Desempeño, bajo la tabla, la otra mitad de la misma frase, porque ahí sí cuentan:
+
+> `.apagado` Incluye los envíos sueltos: los entregó la misma paquetería.
+
+Las dos líneas juntas son la respuesta completa: **no cuentan como venta porque nadie reportó el importe; sí cuentan como envío porque alguien los llevó.** Con una sola de las dos, la otra pantalla parece equivocada.
+
+En Cobros no cambia la conciliación —lista envíos y su llave es la guía—: la columna del pedido enseña el folio nuestro y, debajo, "Sin canal", y **la exportación gana la referencia**, porque un cargo que no se puede atribuir a nada es un cargo que no se puede disputar.
+
+## 5.7 Devoluciones y borrado
+
+**La devolución de un suelto cuelga igual que cualquier otra**, y el panel es el mismo. Dos diferencias, las dos por la misma razón: el mecanismo "Del canal" no aparece en el `select` —no hay canal que administre nada— y la solicitud nunca entra por webhook, así que el filtro de mecanismo tampoco ofrece esa opción cuando solo hay sueltos. Un desplegable se llena con lo que hay.
+
+**Borrar un suelto sin guía se puede**, porque no es más que una captura a medias. En el pie del panel, `.boton--sutil.boton--chico` **Eliminar envío**, y borrar dice qué se lleva:
+
+> **¿Eliminar el envío `E-0043`?**
+> Se pierde la referencia "Garantía #4412" y la dirección capturada. No hay guía emitida, así que no hay nada más que cancelar.
+> **Conservarlo** · **Sí, eliminar**
+
+**Con guía emitida no se borra.** Se cancela la guía si la matriz lo permite, y si no, la `.instruccion` de 4.3. Un registro que desaparece dejando una guía viva es una guía que nadie va a poder explicar.
+
+## 5.8 Estados
+
+**Vacío:** no hay lista propia, así que el único vacío es el de Pedidos, y ya lleva la acción (5.1).
+
+**Error al crear:** `.aviso--mal` No se pudo crear el envío. Vuelve a intentarlo.
+
+**Guardando:** el botón con `aria-busy="true"` y `.girador`, texto **"Creando envío…"**.
+
+**Varios bultos:** fuera de alcance, igual que el pedido que necesita dos cajas, y se dice donde alguien lo intentaría —en la ayuda de Caja del bloque Envío—: *"Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia."* La referencia es lo que los junta al conciliar.
+
+## 5.9 Componentes
+
+**Se reutiliza:** `.panel` con sus `.bloque` · `.campo`, `.campos`, `.campos--2`, `.campos--corto-largo`, `.campo__ayuda`, `.campo__error` · `.desplegable` · `.aviso--info` / `--alerta` / `--mal` · `.pastilla--neutra` · `.tabla-caja` · `.metrica` · `.vacio` · `.dialogo` · `.girador` · y **el bloque Envío entero de la función 4**, sin una sola variante nueva salvo la redacción de la ayuda de Caja.
+
+**Se crea:** nada. Pero **el buscador de 3.3 se generaliza**, porque ahora tiene dos fuentes: productos y destinatarios. `.buscar-producto` pasa a **`.buscador-ficha`**, con `.buscador-ficha__panel` y `.buscador-ficha__vacio`, y las filas se quedan como tipos: `.producto` con su `__sku` y su `__uso`, y **`.destinatario`** con su `__lugar` y su `__uso`. **Una clase nombrada por uno de sus dos usos deja de ser la misma clase**, y el cambio cuesta un renombrado hoy y una divergencia dentro de tres meses.
+
+## 5.10 El recorrido completo
+
+Tarea principal: **mandar un reemplazo de garantía que no entró por ningún canal.**
+
+1. Pedidos. **Crear envío** abre el panel "Nuevo envío".
+2. Referencia: "Garantía #4412". Es lo primero que pide y es obligatoria.
+3. Empieza a escribir el destinatario y **Usar una dirección ya enviada** encuentra a Laura Méndez, con su ciudad y "último envío el 4 de septiembre". La elige y la dirección se llena.
+4. El CP es 29321 y no está en el catálogo. La ayuda lo dice sin pintar nada en rojo, y escribe la colonia a mano. Nada se bloquea.
+5. Deja el total vacío: es una garantía, no una venta.
+6. Antes del pie lee cuándo se comprueba la dirección de verdad. **Crear envío.**
+7. **El panel no se cierra**: ahora es el panel de `E-0043`, con el bloque Envío abierto. La caja viene propuesta por la regla y la ayuda dice que la elige él. Cambia a Caja chica.
+8. Marca el seguro, ve el `.cobro` recalcularse y las cuatro tarifas con la premisa completa: *"de Almacén Puebla a Tuxtla Gutiérrez · 2 kg facturables"*.
+9. `Generar guía con Estafeta Terrestre · $107.00`. Falla: *"Estafeta no tiene cobertura en 29321."* No se reintenta; las tarifas se repintan sin Estafeta. **Ahí es donde se comprueba la dirección**, exactamente como decía el aviso de la captura.
+10. Genera con la siguiente. En la tabla, `E-0043` sale con `.pastilla--neutra` "Sin canal", su referencia debajo y su guía. Y la métrica de arriba ya dice "43 en el periodo · 3 sin canal".
+
+---
+
 # Prioridad
 
 El orden de construcción es **4, 3, 2, 1**, con una pieza antes de las cuatro. Si solo se alcanza la mitad, la mitad que deja un producto coherente es 4 y 3: generar la guía correcta. La que se cae sola es 2 y 1: automatizar y devolver encima de una guía que sigue saliendo con la caja equivocada.
@@ -1303,7 +1781,9 @@ Es el dinero, y creció respecto de lo que parecía: **cinco condiciones en la p
 
 **El aviso de regla muerta no es un adorno del mínimo.** Es, junto al orden, lo que hace que esta lista valga más que una tabla: sin él, el comerciante ve siete filas sin saber cuál gana y una que no gana nunca sin que nada se lo diga. El dato ya se calcula para el panel de edición; sacarlo a la fila es moverlo, no calcularlo.
 
-**Lo que puede esperar:** el bloque `.cobro` con el ahorro calculado y la validación del SKU contra los pedidos recientes.
+**Y el buscador de productos, que entra en el mínimo y no después.** Sin él, las dos condiciones que dependen del SKU —"contiene un producto" y los vetos— se capturan de memoria, y un SKU mal tecleado produce una regla que no falla nunca: simplemente no gana. Es el único error de esta pantalla que no hace ruido.
+
+**Lo que puede esperar:** el bloque `.cobro` con el ahorro calculado, y el buscador en los dos sitios donde viajaría después —filtrar Pedidos por producto y la fuente de catálogo—.
 
 **Lo que salió del alcance:** la condición por peso del pedido. Es el único dato que no existe en ninguna parte del sistema.
 
@@ -1317,11 +1797,23 @@ Alto rendimiento por hora ahorrada, pero solo paga con volumen.
 
 **Lo que salió del alcance:** los modos acumulación y ruta fija —el agenda ya quita el trabajo repetitivo— y el calendario de días inhábiles, que no bloquea nada aunque no dependa de nadie.
 
-### 4.º — Devoluciones (función 1)
+### 4.º — El envío suelto (función 5), junto con la guía manual
+
+**No es una quinta tanda: entra pegado a la función 4 y por eso no lleva puesto propio en la lista.** Un envío suelto termina en el bloque Envío que ya se construyó, y lo único que añade es un panel de captura de seis campos y una columna en la tabla. Construirlo aparte sería construir dos veces el mismo despacho.
+
+**Mínimo:** el panel "Nuevo envío" con referencia obligatoria, dirección con la misma validación de siempre y total opcional; `canal: null` con su folio propio; la columna Canal diciendo "Sin canal"; el filtro; el aviso de cuándo se comprueba la dirección de verdad; y la línea que explica por qué Pedidos y Ventas dejan de coincidir.
+
+**Lo que puede esperar:** los artículos opcionales, el buscador de direcciones ya enviadas y la comprobación de duplicados por destinatario y código postal.
+
+**Lo que salió del alcance:** varios bultos en un envío, la libreta de contactos y la comprobación previa de dirección contra un padrón, que no existe.
+
+### 5.º — Devoluciones (función 1)
 
 La superficie más grande. Pero con la matriz construida deja de estar bloqueada: **el selector de retorno se construye completo ahora y funciona con cero opciones**, porque lee la matriz y pinta lo que haya.
 
-**Mínimo:** el registro colgado del pedido con los cinco mecanismos; la pestaña con su tabla; el RTO creado desde el rastreo y el aviso de retorno declarado; **la captura de la guía del comprador**, que va a ser el camino más usado; el salto de Autorizada a Recibida; "Recibida" registrando qué llegó; la resolución "Sin retorno"; y el cierre con los tres costos y el cargo `rto` capturado de la factura.
+**Mínimo:** el registro colgado del pedido con los cinco mecanismos; la pestaña con su tabla; el RTO creado desde el rastreo y el aviso de retorno declarado; **la puerta desde la guía con estatus**, con sus seis estados y con la espera de "en tránsito" dibujada; **la captura de la guía del comprador**, que va a ser el camino más usado; el salto de Autorizada a Recibida; "Recibida" registrando qué llegó; la resolución "Sin retorno"; **el motivo comercial y la causa del transportista como dos campos**, con la conversión del rastreo que no duplica; y la resta del cierre con el cargo `rto` capturado de la factura.
+
+**La puerta desde la guía entra en el mínimo y no después**, porque es donde el comerciante se entera: mirando el rastreo. Sin ella, la única forma de registrar una devolución es buscar el pedido en una lista de cinco mil, que es el viaje de más que esta función existe para quitar.
 
 **Lo que puede esperar:** la métrica de autorizadas sin movimiento y el desglose de piezas, que depende de que el canal mande líneas.
 
@@ -1349,7 +1841,11 @@ Los artículos no viven en `pedidos`, viven en `DETALLES`, y a la mayoría se le
 | `MON-COB-QS` | Cobertor queen size | $1,150 | Abulta y no pesa: el caso del peso volumétrico |
 | `MON-TV-55` | Pantalla de 55 pulgadas | $12,400 | El tope por peso, en el único pedido que trae peso del canal |
 
-Y **un SKU que una regla referencia pero que no aparece en ningún pedido**: `MON-VEN-61`, que además es un dedazo verosímil de `MON-VEN-16`. Es lo que enseña el aviso de condición que no se puede evaluar y el `.campo__error` del editor.
+Y **un SKU que una regla referencia pero que no aparece en ningún pedido**: `MON-VEN-61`, que además es un dedazo verosímil de `MON-VEN-16`. Es lo que enseña el estado `.producto--sin-ver` en el campo y el `.aviso--alerta` en la fila de la regla.
+
+**`export const destinatariosVistos()`** deriva de las direcciones de los pedidos con guía: `{ nombre, ciudad, cp, ultimaFecha, direccion }`, la más reciente primero. Es la otra fuente del mismo buscador, y **hace falta al menos un nombre repetido con dos ciudades distintas** —dos "Arturo García"— o la columna del lugar no se ve hacer nada.
+
+**`export const productosVistos = (dias = 30)`** deriva de las líneas de los pedidos y es lo que alimenta el buscador: `{ sku, nombre, pedidos, ultimaFecha }`, ordenado por uso descendente. **Los pedidos de ejemplo tienen que dar cifras de uso distintas entre sí**, o el tercer dato de cada resultado no se ve hacer nada: con la lista de arriba, `MON-TAZ-360` sale en cuatro pedidos, `MON-PLY-NEG-M` en tres y `MON-TV-55` en uno. Y **al menos un producto con su último pedido viejo** —`MON-COB-QS`, hace más de treinta días— para que "el último el 12 de agosto" se distinga de "el último el 18 de septiembre" y se vea para qué sirve esa columna.
 
 ## Pedidos que disparan cada condición, y pedidos que no
 
@@ -1508,6 +2004,53 @@ Y **una celda marcada por el comerciante que va a fallar a propósito**: `Redpac
 
 Esta tabla deja el día del lanzamiento retratado: **ninguna paquetería emite retorno**, así que el selector sale vacío y el quinto mecanismo es el camino. Que sea incómodo de ver es la razón por la que tiene que estar en los datos de ejemplo.
 
+## Los envíos sueltos
+
+**Tres**, porque con uno no se ve que son un caso y no una excepción, y porque la línea de "3 no cuentan como venta" necesita tres.
+
+| Folio | Referencia | Total | Para qué sirve |
+|---|---|---|---|
+| `E-0041` | Garantía #4412 | *(vacío)* | El caso limpio: sin total, la columna dice "—" y no entra en ingresos |
+| `E-0042` | Venta por WhatsApp | $1,890 **a mano** | El total capturado: se ve la marca "a mano" y sigue sin contar como venta |
+| `E-0043` | Muestra a cliente | *(vacío)* | Con **artículos capturados** —2 × `MON-TAZ-360`— para que se vea que un suelto con líneas sí entra en las reglas por producto y admite devolución parcial |
+
+`E-0041` y `E-0042` con guía emitida, para que **Cobros y Desempeño los cuenten** y las dos líneas de 5.6 tengan cifras reales que enseñar. **`E-0043` sin guía todavía**, para que se vea caer en "Listos para despachar" junto a los pedidos pagados, con su celda de Pago en guion y su botón de generar activo desde el primer momento. Uno de ellos, `E-0041`, **a un código postal que no está en `coloniasPorCP`** —29321— porque es el único modo de ver la ayuda del catálogo sin inventarla.
+
+Y **`E-0042` con el mismo destinatario y el mismo CP que `#1016`**, con siete días de diferencia, para que la comprobación de duplicado tenga dónde dispararse. Sin ese par, ese aviso no se puede probar.
+
+## La devolución que el rastreo convierte
+
+Es el caso que junta los dos porqués, y **no se puede enseñar con un registro: hacen falta tres**, porque lo que hay que ver es la diferencia entre ellos.
+
+| # | Cómo está | Para qué sirve |
+|---|---|---|
+| **A** | Registrada a mano el 17 sobre `#1028` (detenido), **convertida a RTO el 19** | La franja con las dos fechas, el bloque "Por qué regresa" con sus dos filas, y "La registró: El comerciante" con el mecanismo diciendo "Retorno al remitente" |
+| **B** | RTO nacido de cero sobre `#1029` | El mismo bloque con una sola fila útil: motivo "Entrega fallida" puesto por el sistema, y "La registró: La paquetería" |
+| **C** | Cualquiera de las doce normales | **El bloque no existe.** Es la comprobación de que la ausencia se dibuja como ausencia y no como hueco |
+
+Y **una cuarta, `D`: convertida con guía de retorno ya emitida**, para el `.aviso--alerta` de la guía huérfana y para que su renglón aparezca en la resta del cierre. Sin ella, el cargo que más fácil se pierde tampoco se puede enseñar perdiéndose.
+
+`causaTransportista` en las convertidas tiene que traer **las dos formas**: la traducida —"Destinatario ausente"— y el texto original del carrier —`Delivery exception — recipient not available, returning to shipper`—. Con solo una, la fila de segundo plano no tiene qué enseñar.
+
+Y **un pedido con dos envíos y dos devoluciones**, `#1030`, una por cada guía de ida: es lo único que demuestra que la búsqueda es por envío y que la primera columna sabe nombrar la guía cuando hace falta.
+
+## Las devoluciones desde una guía con estatus
+
+Las doce de arriba cubren los estados de la devolución. Faltan las que cubren **los seis estatus de la ida**, que es otra cosa: no es en qué estado está la devolución, es qué permitía la guía cuando se registró.
+
+Hacen falta seis envíos, uno por estatus, y **los seis tienen que existir en `pedidos` para poder abrir su panel**:
+
+| Estatus de la ida | Pedido | Qué se ve |
+|---|---|---|
+| Generada, sin recolectar | `#1024` | Sin botón. La línea del paquete en bodega y la cancelación de la ida |
+| Recolección pendiente | `#1025` | Lo mismo |
+| **En tránsito** | `#1026` | **El caso principal:** registro en espera, con el botón de emitir en gris y su motivo |
+| Entregado | `#1027` | El flujo completo con el selector de 1.4 |
+| Detenido | `#1028` | Registro sin retorno, con rastreo público y contacto |
+| RTO en curso | `#1029` | Botón "Ver la devolución", que lleva a la que ya creó el rastreo |
+
+`#1026` es el que hay que poder enseñar dos veces: **con la ida en tránsito y con la ida ya entregada**, para que se vea la devolución moverse sola de "Espera la entrega de la ida" a "Lista para emitir". Con los datos fijos del prototipo eso son dos pedidos, `#1026` y `#1026b`, o un interruptor de demostración: sin uno de los dos, el único momento que justifica todo el diseño de la espera no se puede mostrar.
+
 ## Las nueve paqueterías en Paqueterías
 
 Hoy `cuentasEnvio` solo tiene T1 Envíos, así que `paqueterias.html` no dibuja tarjeta de ninguna paquetería. Hacen falta **dos listas**, no una:
@@ -1521,22 +2064,28 @@ El teléfono es obligatorio en las nueve, con cuenta o sin ella: es lo que cita 
 
 # Para el PM
 
-De los seis arbitrajes, cuatro corrigen cosas que estaban mal en este documento y los cuatro están bien. Dos merecen que lo diga sin adornos: **el orden de las reglas era mío y estaba al revés**, y se detectó ejecutándolo, no leyéndolo; el principio que faltaba —lo específico arriba, lo general abajo— ya está en la cabeza de la tarjeta, que es donde lo lee quien arrastra. Y **el SKU en la línea del pedido** fue la corrección que más desbloqueó: la matriz de nueve filas es la que más se nota.
+Los cuatro puntos quedaron resueltos y tres eran confirmaciones. El cuarto salió mejor de lo que yo lo había planteado: yo pedí una conversión en vez de un alta, y de ahí saliste con **dos campos en vez de uno**, que es el arreglo de verdad. "El cliente se arrepintió" y "destinatario ausente" contestan dos preguntas distintas, y en un solo campo el que se escribe después borra al que hacía falta.
 
-Quedan seis cosas. Ninguna bloquea. En cuatro tomé una decisión que necesita tu visto bueno.
+Los seis de antes siguen abiertos, y ninguno bloquea:
 
 **1. La restricción de `via` hay que avisarla antes de que duela, y eso lo decidí yo.** §2.2 dice que quien caiga en el caso lo resuelve separando por origen o eligiendo un camino, pero no dice cuándo se entera. Diseñé tres avisos: uno mientras se edita la regla, uno en la fila de Configuración y la tarjeta de Recolecciones con la acción manual. **Confírmame que quieres los tres**; con menos, la restricción se descubre con un camión vacío.
 
-**2. Un veto no se puede saltar desde el panel del pedido, y eso también lo decidí yo.** §3.4 dice que el pedido pasa a revisión manual con el veto nombrado, pero no dice si en el panel se puede elegir la caja vetada de todas formas. Decidí que no: las cajas vetadas salen deshabilitadas con su motivo en el `title`, y para usarlas hay que ir a quitar el veto. QA lo probó y funciona. **Si prefieres permitirlo con un motivo escrito, dilo, porque cambia el bloque.** Y en la misma línea: **quitar un veto ahora pide confirmación**, porque es lo único que protege un producto frágil y lo quitaba un clic de más.
+**2. Un veto no se puede saltar desde el panel del pedido, y eso también lo decidí yo.** Las cajas vetadas salen deshabilitadas con su motivo en el `title`, y para usarlas hay que ir a quitar el veto. QA lo probó y funciona. **Si prefieres permitirlo con un motivo escrito, dilo, porque cambia el bloque.** Y en la misma línea: **quitar un veto pide confirmación**, porque es lo único que protege un producto frágil y lo quitaba un clic de más.
 
-**3. El reloj de la revisión manual.** Un pedido que la generación automática rechaza a las dos de la mañana espera hasta que alguien abra Pedidos. Si su antigüedad se cuenta desde que entró el pedido, uno de hace tres días aparece como urgente en su primer minuto en la cola. **Lo conté desde que la regla falló**, que es el mismo criterio que ya está escrito para los detenidos. Es una decisión de dato, no de pantalla, y conviene que quede en el documento.
+**3. El reloj de la revisión manual.** Un pedido que la generación automática rechaza a las dos de la mañana espera hasta que alguien abra Pedidos. **Lo conté desde que la regla falló**, no desde que entró el pedido, que es el mismo criterio que ya está escrito para los detenidos. Es una decisión de dato, no de pantalla, y conviene que quede en el documento.
 
-**4. El cargo del RTO se captura de la factura, y no había dónde.** §1.9 y la pregunta 9 dicen que no se estima, se captura. Pero ninguna pantalla lo pide: Cobros concilia, no captura. **Lo puse en el diálogo de cierre de la devolución**, que es donde hace falta para la resta. Si la captura de cargos tiene que vivir en Cobros —porque llegan muchos y no solo los de devolución— eso es una pantalla que este documento no diseña y hay que decirlo antes de estimar.
+**4. El cargo del RTO se captura de la factura, y no había dónde.** Cobros concilia, no captura. **Lo puse en el diálogo de cierre de la devolución**, que es donde hace falta para la resta. Si la captura de cargos tiene que vivir en Cobros —porque llegan muchos y no solo los de devolución— eso es una pantalla que este documento no diseña.
 
-**5. El tope por peso tiene una casilla y casi ningún caso, y eso no se arregla con datos de ejemplo.** §3.7 dice que solo se puede evaluar sobre los pedidos que traen peso del canal. En los datos de ejemplo hay exactamente **uno** —`#1014`, con `pesoCanal` y sin `medidasCanal`—, y no es una elección de comodidad: un pedido con `medidasCanal` sale de la cadena en el paso 1 y un pedido con veto sale en el paso 2, así que el tope solo puede demostrarse en la franja estrecha que queda. En la operación real esa franja depende de cuántos canales manden peso. **Vale la pena decidir si el tope justifica su casilla ahora o si entra con el catálogo**, junto a la condición por peso: hoy es un campo configurable que casi nunca se dispara, y eso enseña más seguridad de la que da.
+**5. El tope por peso tiene una casilla y casi ningún caso.** §3.7 dice que solo se puede evaluar sobre los pedidos que traen peso del canal, y con el orden de evaluación fijo un pedido con medidas del canal sale en el paso 1 y uno con veto en el paso 2: al tope solo le queda una franja estrecha. **Vale la pena decidir si justifica su casilla ahora o si entra con el catálogo**, junto a la condición por peso.
 
-**6. §3.6 conserva una rama que en esta versión está muerta.** La precedencia del peso dice "el del catálogo sumado, si existe; si no, el de la plantilla". Sin catálogo, la primera rama nunca corre, y quien programe va a escribir una rama que no se puede probar. **Propongo que el documento diga que en la primera versión el peso sale de la plantilla o del canal, y que la rama del catálogo entra con la condición por peso**, que es cuando por fin se puede comprobar.
+**6. §3.6 conserva una rama que en esta versión está muerta.** "El peso del catálogo sumado, si existe" no corre nunca sin catálogo, y quien programe va a escribir una rama que no se puede probar. **Propongo que el documento diga que en la primera versión el peso sale de la plantilla o del canal.**
 
-Y dos cosas que QA devolvió y que no son mías ni del desarrollador, sino del alcance: **las reglas no persisten y el aviso dice "Guardado."** (G3), y **una regla sin condiciones se guarda** (G4). La segunda ya está resuelta en este documento con su `.campo__error`. La primera no es de diseño: o las reglas aguantan la sesión como ya aguantan las guías y la matriz, o la palabra "Guardado." no se puede quedar, porque la interfaz estaría afirmando algo que no es cierto. Es la única de las tres del veredicto que necesita una decisión y no solo una tarde.
+Y dos cosas nuevas, las dos chicas y las dos de este último ajuste:
 
-Y la observación de estructura de siempre, que confirma la tuya: con las dos zonas nuevas Configuración llega a cuatro y se sigue leyendo de corrido. La quinta es la que obliga a partirla en **Entrada · Envío · Recolección**, y no antes.
+**7. La guía de retorno huérfana necesita renglón propio en la resta del cierre, y lo añadí.** §1.4 dice que al convertir no se pisa la guía ya emitida y que se ofrece cancelarla; §1.9 lista tres costos y ninguno es ése. Una guía emitida, sin usar y cobrada es dinero real, y sin renglón la resta del cierre sale más barata que la factura. **Lo puse como cuarta fila, visible solo cuando la hubo.** Es el cargo que más fácil se pierde: nadie lo pidió dos veces y nadie lo espera.
+
+**8. La etiqueta del pendiente cambia en tres sitios, no en uno.** "Pagados sin guía" vive además en la `.metrica__nota` de Pedidos —que hoy dice "Pendientes de despachar", un segundo nombre para lo mismo— y en la tarjeta de Inicio. Los tres pasan a **"Listos para despachar"**. La clave del predicado se queda como está para no romper los enlaces que ya llevan `?pendiente=pagados-sin-guia`. Y vale la pena notar que el nombre nuevo **describe el predicado mejor de lo que lo describía el viejo**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso.
+
+**Y una que ya no lo es:** el título "Con qué paquetería sale cada pedido" queda confirmado, así que el renombrado de Configuración está cerrado entero.
+
+Sobre partirla en pestañas: **no todavía**, por la razón que tú mismo dejaste escrita —el corte es en la quinta zona y hay cuatro— más una que conviene anotar: `sistema.html` reserva las pestañas para vistas del mismo objeto, y estas cuatro zonas son cuatro pasos de un proceso. Un proceso se lee en orden. Lo que sí deja hecho el renombrado es el corte futuro: las zonas ya se llaman **Entrada · Embalaje · Paquetería · Recolección**, y agrupar las dos de en medio bajo Envío el día que toque es mover dos rótulos, no reescribir nada.

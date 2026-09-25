@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Direcciones de Origen · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="origenes">
 <main class="contenido contenido--ancho">
@@ -49,9 +49,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
 import { origenes, origenPredeterminado, recolecciones, recoleccionesHoy,
-         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=cdaf6d84";
+         coloniasPorCP, telefonoMX, ladas, fechaCorta, HOY } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 
@@ -390,7 +390,10 @@ if (exigirSesion()) {
         </div>
 
         <label class="campo" data-campo="referencia">
-          <span>Referencia</span>
+          <!-- "para el repartidor" no es adorno: en el panel de captura este
+               campo convive con la referencia del envío, que es otra cosa, y
+               dos rótulos iguales con significados distintos se confunden. -->
+          <span>Referencia para el repartidor</span>
           <textarea id="org-referencia" name="referencia" rows="2" maxlength="100"
             placeholder="Portón blanco de reja, frente a la gasolinera.">${esc(c.referencia ?? "")}</textarea>
           <span class="campo__pie">

@@ -1,0 +1,13 @@
+# Botones sin manejador que ya estaban cuando se escribió el barrido.
+#
+# Esta lista existe para vaciarse, no para crecer: cada línea es una promesa
+# que la pantalla hace y todavía no cumple. Sale en pantalla cada vez que se
+# corre `node herramientas/botones.mjs`, no hace fallar el barrido, y en cuanto
+# uno se arregla el barrido avisa de que sobra aquí.
+#
+# Formato:  ruta · texto del botón · por qué sigue pendiente
+#
+app/bienvenida.html · Continuar · El alta no tiene todavía los pasos que este botón encadenaría.
+app/bienvenida.html · Empezar · Igual que el anterior: termina el alta, que no existe.
+app/cobros.html · Exportar conciliación · La exportación entra con la columna de pedido y el cargo de retorno, que es deuda declarada del producto.
+app/envio.html · Marcar como atendido · Atender una incidencia es un estado que hoy no vive en ningún sitio: no hay dónde guardarlo ni quién lo lea.

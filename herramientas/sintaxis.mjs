@@ -8,7 +8,10 @@
  * estático en pantalla, que es justo el fallo que más tarda en notarse.
  *
  * Extrae cada bloque en línea, lo escribe aparte y se lo pasa a `node
- * --check`. Se ejecuta antes de cada commit, junto con version.py:
+ * --check`, y termina llamando a `botones.mjs`: una sola orden contesta las
+ * dos preguntas que se pueden contestar sin abrir el navegador —si el
+ * JavaScript corre y si lo que se dibuja responde—. Se ejecuta antes de cada
+ * commit, junto con version.py:
  *
  *     node herramientas/sintaxis.mjs
  */
@@ -57,4 +60,17 @@ for (const m of readdirSync("assets").filter((f) => f.endsWith(".js"))) {
 }
 
 console.log(`${revisados} bloques revisados · ${fallos} con error de sintaxis`);
-process.exit(fallos ? 1 : 0);
+
+/* El barrido de botones va después y no antes: con un error de sintaxis, la
+   mitad de los manejadores de ese archivo no existen todavía y sus botones
+   saldrían señalados por una causa que ya está dicha arriba. */
+let botonesMal = 0;
+if (!fallos) {
+  try {
+    execFileSync(process.execPath, [join("herramientas", "botones.mjs")], { stdio: "inherit" });
+  } catch {
+    botonesMal = 1;
+  }
+}
+
+process.exit(fallos || botonesMal ? 1 : 0);

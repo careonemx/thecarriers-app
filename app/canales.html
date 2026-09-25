@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Canales de venta · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="canales">
 <main class="contenido contenido--ancho">
@@ -34,8 +34,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
-import { canalesVenta, CANALES_DISPONIBLES, conexionesCaidas } from "../assets/datos.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
+import { canalesVenta, CANALES_DISPONIBLES, conexionesCaidas,
+         AHORA } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 
@@ -82,7 +83,9 @@ if (exigirSesion()) {
       </details>
 
       <div class="ficha__pie">
-        <button class="boton boton--sutil boton--chico" type="button">Revisar conexión</button>
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-revisar="${esc(c.id)}">Revisar conexión</button>
+        <span class="apagado" style="font-size:12px" data-revision></span>
         <span class="ficha__pie-sep"></span>
         <button class="boton boton--peligro boton--chico" type="button"
           data-quitar="${esc(c.nombre)}">Desconectar</button>
@@ -108,8 +111,25 @@ if (exigirSesion()) {
   document.body.addEventListener("click", (e) => {
     const nuevo = e.target.closest("[data-conectar]");
     const fuera = e.target.closest("[data-quitar]");
-    if (nuevo) avisar(`Aquí se abriría el permiso de ${nuevo.dataset.conectar}.`);
-    else if (fuera) avisar(`Aquí se confirmaría desconectar ${fuera.dataset.quitar}.`);
+    if (nuevo) return avisar(`Aquí se abriría el permiso de ${nuevo.dataset.conectar}.`);
+    if (fuera) return avisar(`Aquí se confirmaría desconectar ${fuera.dataset.quitar}.`);
+
+    /* Revisar contesta lo único que esta pantalla sabe: si ese canal está
+       sincronizando. No se inventa una prueba contra la tienda, y la hora va
+       dicha, porque un "correcta" sin hora no se puede volver a mirar. */
+    const revisar = e.target.closest("[data-revisar]");
+    if (revisar) {
+      const salida = revisar.parentElement.querySelector("[data-revision]");
+      revisar.setAttribute("aria-busy", "true");
+      salida.textContent = "Revisando…";
+      setTimeout(() => {
+        revisar.removeAttribute("aria-busy");
+        const rota = conexionesCaidas().some((x) => x.id === revisar.dataset.revisar);
+        salida.textContent = rota
+          ? `Sin sincronizar desde antes de las ${AHORA}. Se vuelve a intentar desde Inicio.`
+          : `Sincronizando. Comprobado a las ${AHORA}.`;
+      }, 420);
+    }
   });
 }
 </script>

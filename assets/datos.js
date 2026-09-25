@@ -1000,7 +1000,11 @@ const pedidosBase = [
       { nombre: "Licuadora 800 W", sku: "MON-LIC-800", cantidad: 1, precio: 1890 },
     ] },
 
-  { folio: "#1020", fecha: "2026-09-15", total: 2300, canal: "Shopify",
+  /* De agosto a propósito: es el único producto cuyo último pedido queda fuera
+     de los treinta días, y sin uno así la columna de uso del buscador —"el
+     último el 12 de agosto" contra "el último el 18 de septiembre"— no se ve
+     hacer nada. */
+  { folio: "#1020", fecha: "2026-08-12", total: 2300, canal: "Shopify",
     cliente: { nombre: "Hotel Miramar", correo: "compras@miramar.mx", iniciales: "HM" },
     destino: "Colima 240", ciudad: "Ciudad de México, CDMX 06700", pago: "Pagado", envio: null,
     origen: "cdmx",
@@ -1163,6 +1167,90 @@ export const seGuarda = () => {
   } catch { return false; }
 };
 
+/* =================================================================
+ * El envío suelto: un pedido sin canal.
+ *
+ * No hay tercera colección. `envios` se deriva de `pedidos` y todas las
+ * pantallas leen esa derivación; una lista aparte devolvería la pregunta que
+ * el modelo ya mató: si la guía 877 se busca en Pedidos o en la otra lista.
+ * ================================================================= */
+const CLAVE_SUELTOS = "tc:sueltos";
+
+export const esSuelto = (p) => !!p && p.canal === null;
+
+/** La referencia es lo único que sustituye al folio del canal. */
+export const referenciaDe = (p) => (esSuelto(p) ? p.referencia ?? null : null);
+
+/* La serie es nuestra y NO lleva almohadilla: el `#` es la marca del folio del
+   canal y arrastra a buscarlo en Shopify, donde no está. `TC` tampoco, que ya
+   lo usan las guías simuladas. */
+const folioSueltoSiguiente = () => {
+  const n = pedidos.filter(esSuelto)
+    .reduce((may, p) => Math.max(may, Number(p.folio.slice(2)) || 0), 42);
+  return `E-${String(n + 1).padStart(4, "0")}`;
+};
+
+const inicialesDe = (nombre) => String(nombre ?? "").trim().split(/\s+/).slice(0, 2)
+  .map((x) => (x[0] ?? "").toUpperCase()).join("") || "—";
+
+/**
+ * Arma el pedido sin canal y devuelve si de verdad se guardó.
+ *
+ * `total` en null y no en cero: cero sería una venta de cero pesos, y lo que
+ * hay es una venta que ningún canal reportó. `pago` igual, por lo mismo:
+ * "Pendiente" afirma que alguien lo está esperando.
+ */
+export function crearEnvioSuelto({ referencia, campos, total = null, articulos = [] }) {
+  const folio = folioSueltoSiguiente();
+  const nombre = [campos.nombre, campos.apellido].filter(Boolean).join(" ").trim();
+  const pedido = {
+    folio, fecha: HOY, canal: null, origenCaptura: "manual",
+    referencia: String(referencia ?? "").trim(),
+    total: total === null || total === "" ? null : Number(total),
+    cliente: { nombre, correo: campos.correo || "", iniciales: inicialesDe(nombre) },
+    destino: [campos.calle, campos.numExt].filter(Boolean).join(" "),
+    ciudad: [[campos.ciudad, campos.estado].filter(Boolean).join(", "), campos.cp]
+      .filter(Boolean).join(" "),
+    campos: { ...campos },
+    pago: null,
+    envio: null,
+    articulos: articulos.length ? articulos : undefined,
+  };
+  pedidos.unshift(pedido);
+  const mapa = leerMapa(CLAVE_SUELTOS);
+  mapa[folio] = pedido;
+  return { pedido, guardado: escribirMapa(CLAVE_SUELTOS, mapa) };
+}
+
+/** Borrar solo alcanza a los que se capturaron en esta sesión. */
+export function eliminarEnvioSuelto(folio) {
+  const i = pedidos.findIndex((x) => x.folio === folio);
+  if (i >= 0) pedidos.splice(i, 1);
+  const mapa = leerMapa(CLAVE_SUELTOS);
+  delete mapa[folio];
+  return escribirMapa(CLAVE_SUELTOS, mapa);
+}
+
+/* Se restauran ANTES que las guías de la sesión: un suelto capturado y
+   despachado tiene las dos cosas guardadas, y sin el pedido la guía no tendría
+   a quién pegarse. */
+for (const suelto of Object.values(leerMapa(CLAVE_SUELTOS))) {
+  if (!pedidos.some((x) => x.folio === suelto.folio)) pedidos.unshift(suelto);
+}
+
+/**
+ * A dónde lleva "Abrir en el canal".
+ *
+ * Solo existe donde sabemos construir la dirección —hoy Shopify, con el
+ * dominio de la tienda conectada—. Donde no, devuelve null y el botón no se
+ * dibuja: es la misma regla de la matriz de capacidades, y un botón que
+ * promete una pantalla que nadie puede abrir es peor que ningún botón.
+ */
+export const enlaceCanal = (p) => {
+  if (!p?.canal || p.canal !== tienda.canal || !tienda.conectada) return null;
+  return `https://${tienda.dominio}/admin/orders?query=${encodeURIComponent(p.folio)}`;
+};
+
 /** Deja constancia de una guía recién creada. */
 export function guardarGuia(folio, envio) {
   const mapa = leerMapa(CLAVE_GUIAS);
@@ -1211,8 +1299,13 @@ export const vecesImpresa = (guia) => leerMapa(CLAVE_IMPRESAS)[guia] || 0;
  * hacer clic saldrían cuatro, y entonces no se puede confiar en ninguna.
  *
  * Los dos primeros son trabajo por hacer; los demás, problemas.
- * "Pagados sin guía" excluye los que fallaron y los que esperan corrección
- * porque ésos no se arreglan generando: cada uno tiene su propio camino.
+ * "Listos para despachar" excluye los que fallaron y los que esperan
+ * corrección porque ésos no se arreglan generando: cada uno tiene su propio
+ * camino. El nombre describe el predicado mejor de lo que lo hacía "pagados
+ * sin guía": ya excluía lo que no está listo, y además un envío suelto no
+ * tiene estado de pago y cae en esta misma cola.
+ *
+ * La CLAVE se queda como está: hay enlaces vivos con `?pendiente=pagados-sin-guia`.
  *
  * "Pedidos en revisión manual" se agrega abajo, junto a las reglas de
  * embalaje, porque su predicado depende de ellas y aquí todavía no existen.
@@ -1223,8 +1316,11 @@ const necesitaRecoleccion = (p) =>
 
 export const PENDIENTES = {
   "pagados-sin-guia": {
-    grupo: "hacer", etiqueta: "Pagados sin guía",
-    pasa: (p) => p.pago === "Pagado" && !p.envio && !p.error && !p.requiereCorreccion,
+    grupo: "hacer", etiqueta: "Listos para despachar",
+    /* Dos condiciones, no una: pago confirmado por el canal, o sin canal.
+       Crear un envío suelto ES la decisión de despacharlo. */
+    pasa: (p) => (p.pago === "Pagado" || esSuelto(p)) &&
+                 !p.envio && !p.error && !p.requiereCorreccion,
   },
   "sin-recoleccion": {
     grupo: "hacer", etiqueta: "Guías sin recolección",
@@ -1905,7 +2001,15 @@ export const envios = pedidos
 export const sinGuia = pedidos.filter((p) => !p.envio);
 export const conGuia = pedidos.filter((p) => p.envio);
 export const conError = pedidos.filter((p) => p.error);
-export const ingresos = pedidos.reduce((s, p) => s + p.total, 0);
+/* Los sueltos no suman: su total, cuando lo hay, lo tecleó una persona y no
+   lo reportó ningún canal, y esa diferencia es la que sostiene la
+   conciliación. */
+export const ingresos = pedidos.reduce((s, p) => s + (esSuelto(p) ? 0 : p.total ?? 0), 0);
+
+/** Cuántos envíos del periodo no cuentan como venta. Cero significa que las
+    dos cifras siguen coincidiendo y no hay nada que explicar. */
+export const sueltosEntre = (desde, hasta) =>
+  pedidos.filter((p) => esSuelto(p) && p.fecha >= desde && p.fecha <= hasta);
 
 export const detenidos = envios.filter((e) => e.estado === "Detenido" || e.estado === "Con incidencia");
 export const porRecolectar = envios.filter((e) => e.estado === "Recolección pendiente" || e.estado === "Generada");
@@ -2035,14 +2139,24 @@ function detalleGenerico(p) {
   const direccion = direccionGenerica(p);
   return {
     telefono: null,
-    subtotal: p.total, impuestos: +(p.total * 0.16 / 1.16).toFixed(2), impuestosIncluidos: true,
-    formaPago: p.pago === "Pagado" ? "Tarjeta de crédito" : "Pendiente",
-    pagoOriginal: p.pago === "Pagado" ? "paid" : "pending",
+    subtotal: p.total,
+    impuestos: p.total == null ? null : +(p.total * 0.16 / 1.16).toFixed(2),
+    impuestosIncluidos: true,
+    /* Sin canal no hay quién reporte la forma de pago ni el estado original:
+       rellenarlos con "Pendiente" sería inventar un dato que nadie mandó. */
+    formaPago: p.pago === "Pagado" ? "Tarjeta de crédito"
+      : p.pago == null ? "Sin canal que lo reporte" : "Pendiente",
+    pagoOriginal: p.pago === "Pagado" ? "paid" : p.pago == null ? null : "pending",
     pedidosPrevios: 0, gastadoPrevio: 0,
     /* La línea sintética es el relleno de los pedidos viejos del ejemplo, no
        un valor por omisión deseable: sobre ella no se puede evaluar ninguna
        condición por producto. Cuando el pedido trae sus líneas, mandan ellas. */
-    articulos: p.articulos ?? [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }],
+    /* En un suelto sin artículos la lista se queda vacía y se dice: la línea
+       sintética es relleno de los pedidos viejos del ejemplo, y aquí el hueco
+       es una decisión de quien capturó, no un dato que falte. */
+    articulos: p.articulos ?? (esSuelto(p)
+      ? []
+      : [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total ?? 0 }]),
     direccion,
     /* Si el pedido dice que su dirección no está lista, el panel tiene que
        enseñar qué se propone cambiar. Sin esto, la lista mandaba a un panel
@@ -2077,6 +2191,120 @@ export const nombreDeSKU = (sku) => {
   const linea = vistos[0]?.articulos.find((a) => a.sku === sku);
   return linea ? { nombre: linea.nombre, pedidos: vistos.length } : null;
 };
+
+/**
+ * Los productos que han aparecido en las líneas de los pedidos.
+ *
+ * Es el único sitio donde los productos existen —no hay catálogo— y por eso el
+ * buscador no finge que lo hay. NO se limita a la ventana: una lista de la que
+ * hay que elegir tiene que ser lo más completa posible, y un producto de
+ * temporada que desapareció el mes pasado sigue siendo un producto. `dias`
+ * solo decide el dato de uso reciente, que es lo que deja juzgar si sigue vivo.
+ *
+ * Ordenado por uso descendente: lo que más se vende es lo que más se busca.
+ */
+export function productosVistos(dias = 30) {
+  const desde = menosDias(HOY, dias);
+  const porSKU = new Map();
+  for (const p of pedidos) {
+    for (const a of p.articulos ?? []) {
+      if (!a.sku) continue;
+      const x = porSKU.get(a.sku) ?? { sku: a.sku, nombre: a.nombre, pedidos: 0,
+                                       recientes: 0, ultimaFecha: null };
+      x.pedidos += 1;
+      if (p.fecha >= desde) x.recientes += 1;
+      /* El nombre y la fecha son los de la línea más reciente que lo trajo: un
+         producto se renombra y lo que vale es como se llama hoy. */
+      if (!x.ultimaFecha || p.fecha > x.ultimaFecha) {
+        x.ultimaFecha = p.fecha;
+        x.nombre = a.nombre;
+      }
+      porSKU.set(a.sku, x);
+    }
+  }
+  return [...porSKU.values()].sort((a, b) =>
+    b.pedidos - a.pedidos || a.nombre.localeCompare(b.nombre, "es"));
+}
+
+/** Busca por nombre y por SKU a la vez, y sin acentos en los dos lados: quien
+    tiene la caja delante teclea el SKU y quien no, teclea el nombre. */
+export function buscarProductos(texto, limite = 8) {
+  const q = String(texto ?? "").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (!q) return [];
+  const limpio = (s) => String(s ?? "").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return productosVistos()
+    .filter((x) => limpio(x.nombre).includes(q) || limpio(x.sku).includes(q))
+    .slice(0, limite);
+}
+
+/**
+ * Si lo tecleado tiene forma de SKU: sin espacios y con al menos un guion o un
+ * número. Con "copas" y ningún resultado, ofrecer "Usar «copas» como SKU"
+ * convertiría una búsqueda fallida en una regla que no gana nunca.
+ */
+export const pareceSKU = (texto) => {
+  const s = String(texto ?? "").trim();
+  return s.length >= 3 && !/\s/.test(s) && /[-_\d]/.test(s);
+};
+
+/* ---------- La otra fuente del mismo buscador ----------
+   Los destinatarios salen de lo que ya se escribió en envíos anteriores. No es
+   una libreta de contactos y no se construye una: la libreta habría que
+   mantenerla, y esto se mantiene solo. */
+
+const sinAcentos = (s) => String(s ?? "").toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const camposDe = (p) => p.campos ?? direccionGenerica(p).campos;
+
+export function destinatariosVistos() {
+  const por = new Map();
+  for (const p of pedidos) {
+    const c = camposDe(p);
+    const nombre = [c.nombre, c.apellido].filter(Boolean).join(" ").trim() || p.cliente.nombre;
+    /* Nombre + código postal es la llave: dos Arturo García en dos ciudades
+       son dos destinatarios, y el mismo en la misma casa es uno. */
+    const llave = `${sinAcentos(nombre)}|${c.cp ?? ""}`;
+    const x = por.get(llave) ?? {
+      nombre, lugar: [c.ciudad, c.estado].filter(Boolean).join(", ") || p.ciudad,
+      campos: c, envios: 0, ultimaFecha: null,
+    };
+    x.envios += 1;
+    if (!x.ultimaFecha || p.fecha > x.ultimaFecha) {
+      x.ultimaFecha = p.fecha;
+      x.campos = c;
+    }
+    por.set(llave, x);
+  }
+  return [...por.values()].sort((a, b) =>
+    (b.ultimaFecha ?? "").localeCompare(a.ultimaFecha ?? ""));
+}
+
+/** Se busca por nombre y por ciudad a la vez, y sin acentos en los dos lados. */
+export function buscarDestinatarios(texto, limite = 8) {
+  const q = sinAcentos(texto).trim();
+  if (!q) return [];
+  return destinatariosVistos()
+    .filter((x) => sinAcentos(x.nombre).includes(q) || sinAcentos(x.lugar).includes(q))
+    .slice(0, limite);
+}
+
+/**
+ * Un pedido reciente del mismo destinatario y el mismo código postal.
+ *
+ * No bloquea nada: es la única defensa contra capturar a mano algo que ya
+ * entró por un canal, y una defensa humana con recordatorio automático sigue
+ * siendo humana, pero falla menos.
+ */
+export function pedidoParecido({ nombre, cp, dias = 7 } = {}) {
+  if (!nombre || !cp) return null;
+  const desde = menosDias(HOY, dias);
+  const n = sinAcentos(nombre);
+  return pedidos.find((p) => !esSuelto(p) && p.fecha >= desde &&
+    sinAcentos(p.cliente.nombre) === n && camposDe(p).cp === cp) ?? null;
+}
 
 /** Los SKU que de verdad aparecieron en los pedidos del periodo. Es contra
     esto —y no contra un catálogo que no existe— que se revisa un SKU tecleado. */
@@ -2600,7 +2828,12 @@ const otrasPiezas = (articulos, sku) =>
  * eso es un hecho del pedido, no un caso especial que valga la pena esconder.
  */
 const contextoDe = (p) => {
-  const articulos = p.articulos ?? [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total }];
+  const articulos = p.articulos ?? (esSuelto(p)
+    /* Un suelto sin artículos no tiene una pieza: no tiene ninguna capturada,
+       y contarle una haría ganar a la regla "de 1 a 2 piezas" sin que nadie
+       haya dicho cuántas van. */
+    ? []
+    : [{ nombre: "Artículo del pedido", sku: null, cantidad: 1, precio: p.total ?? 0 }]);
   return {
     articulos,
     piezas: piezasDe(articulos),
@@ -2628,6 +2861,9 @@ function cumpleRegla(regla, ctx) {
     if (c.cantidad.a != null && ctx.piezas > c.cantidad.a) return { ok: false, sinEvaluar };
   }
   if (c.costo) {
+    /* Sin total capturado no hay costo, y lo que no se puede evaluar no se
+       cumple: sin esto, un suelto sin importe entraría en "de $0 a $500". */
+    if (ctx.total == null) return { ok: false, sinEvaluar: "costo" };
     if (ctx.total < c.costo.de) return { ok: false, sinEvaluar };
     if (c.costo.a != null && ctx.total > c.costo.a) return { ok: false, sinEvaluar };
   }
@@ -3162,12 +3398,31 @@ export const devoluciones = [
     resolucion: null, recepcion: null },
 
   /* 8 · Creada sola desde el rastreo. Nadie la pidió y la paquetería la cobra:
-     su cargo va al envío original o queda huérfano. */
-  { id: "DV-0024", pedido: "#10409", origenDevolucion: "paqueteria", motivo: "Entrega fallida",
+     su cargo va al envío original o queda huérfano. El motivo comercial arranca
+     en "Entrega fallida", que está en la lista fija y se puede corregir. */
+  { id: "DV-0024", pedido: "#10409", guiaIda: "PX-220914",
+    origenDevolucion: "paqueteria", motivo: "Entrega fallida",
+    causaTransportista: "Rechazado por el destinatario",
+    causaOriginal: "Rechazado por el destinatario. En proceso de retorno al remitente.",
     mecanismo: "rto", estado: "En tránsito de regreso", desde: "2026-09-19",
     piezas: null,
     envioRetorno: { guia: "PX-220914-R", paqueteria: "Paquetexpress", via: null, costo: null,
                     estado: "En tránsito" },
+    resolucion: null, recepcion: null },
+
+  /* 8 bis · La conversión: el rastreo no duplicó, convirtió. Lo que capturó una
+     persona el 17 sigue aquí —motivo, piezas y origen— y encima está lo que la
+     paquetería reportó el 19. Y la guía de retorno que ya se había emitido NO
+     se pisa: sigue emitida, sigue sin usar y sigue siendo dinero. */
+  { id: "DV-0032", pedido: "#10419", guiaIda: "782394001122",
+    origenDevolucion: "comerciante", motivo: "Arrepentimiento",
+    causaTransportista: "Destinatario ausente",
+    causaOriginal: "Delivery exception — return to shipper scheduled",
+    convertida: { fecha: "2026-09-19", registradaEl: "2026-09-17" },
+    mecanismo: "rto", estado: "En tránsito de regreso", desde: "2026-09-19",
+    piezas: { regresan: 1, total: 2 },
+    envioRetorno: { guia: "782394009911", paqueteria: "FedEx", via: null, costo: 172,
+                    estado: "Generada", sinUsar: true },
     resolucion: null, recepcion: null },
 
   /* 9 · Llegó menos de lo esperado. Es lo que sostiene la nota de crédito
@@ -3241,7 +3496,13 @@ export function guardarDevolucion(d) {
  * una con guía sin usar es lo único que se sabe, porque el vencimiento solo
  * existe si la matriz lo trae.
  */
-export const diasSinMoverse = (d) => diasDesde(d.desde);
+/* Mientras la ida va en camino, el reloj no corre contra nadie: la métrica de
+   autorizadas sin movimiento dice "el comprador no ha hecho su parte", y aquí
+   el comprador todavía no puede hacerla. El contador arranca el día de la
+   entrega, que es el último hecho real que va a haber. */
+export const esperaEntregaIda = (d) => d.estado === "Autorizada" && !!d.esperaEntrega;
+
+export const diasSinMoverse = (d) => (esperaEntregaIda(d) ? null : diasDesde(d.desde));
 
 /**
  * El tono de la pastilla. La antigüedad es nuestra y es un hecho; el
@@ -3249,7 +3510,7 @@ export const diasSinMoverse = (d) => diasDesde(d.desde);
  */
 export function tonoDevolucion(d) {
   const dias = diasSinMoverse(d);
-  if (d.estado === "Autorizada") return dias >= 7 ? "aviso" : "info";
+  if (d.estado === "Autorizada") return dias !== null && dias >= 7 ? "aviso" : "info";
   if (d.estado === "Con guía de retorno") return dias >= 14 ? "mal" : dias >= 7 ? "aviso" : "neutra";
   return tonos[d.estado] ?? "neutra";
 }
@@ -3257,6 +3518,7 @@ export function tonoDevolucion(d) {
 /** El único dato duro que acompaña al estado. */
 export function notaDevolucion(d) {
   const dias = diasSinMoverse(d);
+  if (esperaEntregaIda(d)) return "Espera la entrega de la ida";
   if (d.estado === "Autorizada") return `${dias} ${dias === 1 ? "día" : "días"} autorizada`;
   if (d.estado === "Con guía de retorno") return `${dias} ${dias === 1 ? "día" : "días"} sin usar`;
   if (d.estado === "Recibida") return `Recibida el ${fechaCorta(d.recepcion?.fecha ?? d.desde)}`;
@@ -3371,3 +3633,106 @@ export function siguientePaso(d) {
     default: return { texto: "Ver el pedido", accion: "abrir" };
   }
 }
+
+/* =================================================================
+ * El retorno que arranca desde una guía con estatus.
+ *
+ * Arrancar la devolución desde la guía hereda contexto, y por eso hace fácil
+ * prometer de más: el estatus de la ida decide qué se ofrece, y en cuatro de
+ * los seis casos no se emite nada. La acción se llama igual en los tres sitios
+ * donde aparece, porque hoy en la mayoría no termina en una guía.
+ * ================================================================= */
+
+/* La ida no ha salido de la bodega. Lo que aplica es cancelarla, no devolver. */
+const IDA_EN_BODEGA = ["Creada", "Generada", "Recolección pendiente"];
+
+/** La devolución abierta de ESE envío. Un pedido con dos guías puede regresar
+    por separado, y cada guía tiene la suya. */
+export const devolucionDeEnvio = (folio, guia) =>
+  devolucionesDe(folio).find((d) => !CERRADAS.includes(d.estado) &&
+    (d.guiaIda == null || d.guiaIda === guia)) ?? null;
+
+/**
+ * Qué ofrece el bloque Envío sobre su guía.
+ *
+ * `verbo` en null significa que el botón no se dibuja —ni siquiera en gris, que
+ * invita a averiguar por qué—, y entonces `nota` es la línea que explica la
+ * ausencia. Un silencio donde alguien busca una acción cuesta más que las dos.
+ */
+export function retornoDeLaIda(pedido) {
+  const e = pedido?.envio;
+  if (!e) return null;
+  const dev = devolucionDeEnvio(pedido.folio, e.guia);
+  const deRegreso = declaraRetorno(e.original) || dev?.mecanismo === "rto";
+
+  if (deRegreso) {
+    return { estatus: "rto", verbo: dev ? "Ver la devolución" : null, dev,
+             nota: "Este paquete ya va de regreso. Un segundo retorno sobre el mismo paquete " +
+                   "se cobra dos veces." };
+  }
+  /* La línea también aquí: sin ella, el verbo cambia y nada dice por qué el
+     botón dejó de ofrecer registrar. */
+  if (dev) {
+    return { estatus: "abierta", verbo: "Ver la devolución", dev,
+             nota: `Este envío ya tiene la devolución ${dev.id} abierta. Un segundo registro ` +
+                   "sobre el mismo paquete sería un segundo retorno, y se cobra dos veces." };
+  }
+
+  if (IDA_EN_BODEGA.includes(e.estado)) {
+    return { estatus: "en-bodega", verbo: null, dev: null,
+             nota: "El paquete sigue en tu bodega: todavía no hay nada que devolver. " +
+                   "Si la venta se canceló, lo que se cancela es la guía de ida." };
+  }
+  if (e.estado === "Detenido" || e.estado === "Con incidencia") {
+    return { estatus: "detenido", verbo: "Registrar devolución", dev: null, nota: null };
+  }
+  if (e.estado === "Entregado") {
+    return { estatus: "entregado", verbo: "Registrar devolución", dev: null, nota: null };
+  }
+  /* Lo que queda va en camino: se registra, y la emisión espera a la entrega. */
+  return { estatus: "transito", verbo: "Registrar devolución", dev: null, nota: null };
+}
+
+/** Quién dejó el registro. Después de una conversión el mecanismo dice "Retorno
+    al remitente", y sin esta fila nadie podría saber que hubo intención
+    comercial antes. */
+export const QUIEN_REGISTRO = {
+  comerciante: "El comerciante", comprador: "El comprador",
+  canal: "El canal", paqueteria: "La paquetería",
+};
+
+const siguienteIdDevolucion = () => {
+  const n = devoluciones.reduce((may, d) => Math.max(may, Number(String(d.id).slice(3)) || 0), 0);
+  return `DV-${String(n + 1).padStart(4, "0")}`;
+};
+
+/**
+ * Deja el registro que arranca desde la guía de ida.
+ *
+ * Nace en *Autorizada* porque quien lo captura es quien autoriza. Con la ida en
+ * camino queda además en espera: lo único diferido es la emisión, y el resto
+ * del registro se sigue editando mientras el paquete viaja.
+ */
+export function registrarDevolucionDeIda(pedido, datos) {
+  const d = {
+    id: siguienteIdDevolucion(), pedido: pedido.folio, guiaIda: pedido.envio?.guia ?? null,
+    origenDevolucion: "comerciante", motivo: datos.motivo,
+    mecanismo: "prepagada", estado: "Autorizada", desde: HOY,
+    esperaEntrega: !!datos.espera,
+    piezas: datos.piezas ?? null,
+    retorno: {
+      paqueteria: datos.paqueteria ?? null, peso: datos.peso ?? null,
+      valor: datos.valor ?? null, quienPaga: datos.quienPaga ?? null,
+    },
+    envioRetorno: null, resolucion: null, recepcion: null,
+  };
+  devoluciones.push(d);
+  return { devolucion: d, guardado: guardarDevolucion(d) };
+}
+
+/** Lo que la interfaz no ofrece en ningún estatus: dar media vuelta a un
+    paquete en ruta o liberar uno detenido. Son instrucciones al transportista
+    sobre un paquete que está en su poder. */
+export const ESPERA_ENTREGA =
+  "En cuanto el rastreo diga “Entregado”, esta devolución pasa a “Lista para emitir” " +
+  "y entra en la cola.";

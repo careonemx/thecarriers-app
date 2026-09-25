@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Desempeño · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="desempeno">
 <main class="contenido contenido--ancho">
@@ -48,11 +48,16 @@
         <tbody id="detalle"></tbody>
       </table>
     </div>
+    <!-- La otra mitad de la frase de Inicio: aquí sí cuentan. Un envío suelto
+         entregado tarde lo entregó tarde la misma paquetería, y dejar fuera
+         parte del volumen lo deja más chico que la operación real justo en la
+         conversación donde el volumen es el argumento. -->
+    <p class="apagado" id="nota-sueltos" style="font-size:13px;padding:0 18px 16px" hidden></p>
   </section>
 </main>
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
-import { desempeno } from "../assets/datos.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
+import { desempeno, pedidos, esSuelto } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
   const total = desempeno.reduce((s, d) => s + d.envios, 0);
@@ -68,6 +73,13 @@ if (exigirSesion()) {
     metrica("A tiempo", medio + "%", "Promedio ponderado por volumen") +
     metrica("Entregas tarde", tarde, "Fuera de la fecha comprometida") +
     metrica("Incidencias", inc, "Envíos que se detuvieron");
+
+  const sueltos = pedidos.filter((p) => esSuelto(p) && p.envio);
+  const nota = document.getElementById("nota-sueltos");
+  nota.hidden = sueltos.length === 0;
+  if (sueltos.length) {
+    nota.textContent = "Incluye los envíos sueltos: los entregó la misma paquetería.";
+  }
 
   // Barras en HTML, sin librería: el ancho es el dato.
   const barra = (etiqueta, pct, texto, clase = "") => `

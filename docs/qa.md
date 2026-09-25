@@ -1,231 +1,138 @@
-# QA — segunda pasada, con las cuatro funciones
+# QA — tercera pasada, la de antes de subir
 
-Prototipo en `http://localhost:4400`. Todo lo que sigue se probó con el navegador: clics,
-tecleo, celdas de la matriz cambiadas a mano, Tab, anchos de 768 a 1280 y almacenamiento
-bloqueado. Cuando cito una línea de código es para que el desarrollador sepa dónde mirar,
-no como prueba: la prueba está en los pasos.
+Prototipo en `http://localhost:4400`. Probado con el navegador: clics y tecleo reales,
+celdas de la matriz cambiadas a mano, un envío suelto creado de cero, los seis estatus
+del retorno uno por uno, y un barrido de todos los botones de las pantallas nuevas.
 
-Este informe sustituye al de la primera pasada.
+Una nota sobre método, porque cambió un resultado. En esta pasada empecé rellenando
+formularios con eventos sintéticos y el panel de captura parecía roto. **No lo estaba:**
+repetido con tecleo y clic reales funciona. Todo lo que sigue está comprobado con
+interacción real, y donde un fallo depende de eso lo digo.
+
+Este informe sustituye al de la segunda pasada.
 
 ---
 
-## Lo que quedó cerrado de la primera pasada
+## Lo que quedó cerrado de la segunda pasada
 
-Verificado a mano, uno por uno:
+Verificado a mano, no de palabra:
 
-- **G1 · Cancelar guía sin consultar la matriz.** Cerrado. Probado en `#10401` (Estafeta, "no"), `#1007` (FedEx, "sin registro"), `#10415` (UPS) y `#1006` (DHL): el bloque Dirección ya no duplica el botón, la franja remite a Envío —*"Lo que se puede hacer con la guía está arriba, en Envío"*— y el "Generar guía" muerto desapareció. Con `cancelaGuia` en "sí" el botón vuelve.
-- **G2 · Modo privado.** Cerrado a medias, y la mitad que falta es aceptable. Ya no hay `SecurityError` sin capturar; el acceso dice, impersonal y exacto: *"Este navegador tiene bloqueado el almacenamiento del sitio y la sesión no se puede guardar. Permite los datos de sitio para este dominio, o sal del modo privado."* Lo que no hay es sesión: se sigue rebotando a `login.html?destino=…`. Como degradación honesta está bien; ver **m5**.
-- **G3 · Las reglas no persistían.** Cerrado. Bajé «Pedido caro» un puesto, recargué y aguantó; `tc:embalaje` existe.
-- **G4 · Regla sin condiciones.** Cerrado, y mejor de lo que pedí: *"Marca al menos una condición. Una regla sin condiciones se cumple siempre y dejaría a «Por defecto» sin ganar nunca; para que todos los pedidos salgan en otra caja, cámbiale la caja a «Por defecto»."*
-- **G5 · Aviso de regla muerta.** Cerrado: *"Esta regla no ha ganado ninguna vez: «Pedidos de una pieza», en el puesto 4, ya cubre sus condiciones"* con **Subirla sobre «Pedidos de una pieza»**, que nombra a la regla y no a un puesto que envejece.
-- **G6 · La matriz solo cubría cinco paqueterías.** Cerrado. Nueve filas, tres zonas (`Tus cuentas` · `Las demás paqueterías` · `Se pueden conectar`), las cinco sin cuenta en `.ficha--apagada` con su pliegue funcionando, las dos capas visibles (*"DHL en general sí cancela guías. En tu cuenta no, y eso es lo que manda."*) y el `.aviso--info` de "sin cuenta conectada". Seguí un "Confirmar con UPS" real desde Pedidos y abre la ficha con la celda enfocada.
-- **G7 · El orden de las reglas.** Cerrado: el documento se corrigió y el principio —lo específico arriba, lo general abajo— está en la cabeza de la tarjeta. `#1018` sigue cayendo en revisión manual y `#1019` sigue saliendo con Caja mediana.
-- **M9 · Primera persona.** Cerrado. Cero apariciones de "hemos", "no hemos", "corregimos", "sabemos" o "avisamos" en Configuración, Paqueterías, Pedidos, Recolecciones y Tracking. La excepción deliberada sobrevive sola: *"Estafeta no ha confirmado la cancelación"*, en `recolecciones.html:320`, y es la única.
-- **M10 · "Lo que falta" nombraba un dato de dos.** Cerrado: *"Faltan el número exterior y la colonia"*, y el `title` del botón dice lo mismo.
-- **M11 · El origen no movía el precio.** Cerrado por el camino honesto: la cabecera ahora dice *"de Almacén Puebla a Ciudad de México"*, cada tarifa lleva `Estimado` y debajo la razón: *"Estimado por peso. La tarifa final depende de la zona entre el origen y el destino, y sale de la cotización en vivo de la paquetería."*
-- **M12 · El seguro no tenía cifra.** Cerrado, y con las tres formas: DHL *"1.5 % sobre el valor declarado, mínimo $35.00"*; Estafeta sustituye la casilla por *"Estafeta no asegura envíos desde aquí"*; UPS *"Sin registro del costo del seguro de UPS: el importe aparece en la factura"* con su **Confirmar con UPS**.
-- **M13 · El foco se perdía.** Cerrado. Tras mover una regla con ↓ el foco sigue en "Bajar Pedido caro"; tras cambiar de tarifa con ↓ el foco sigue en el radio elegido.
-- **M14 · Desbordes a 768.** Cerrado: la tarjeta de reglas ya no se sale. A 768/834/1024/1280 no hay desplazamiento horizontal de página en ninguna de las pantallas nuevas; solo las tablas se desplazan dentro de su propia caja, como siempre.
-- **M15 · El lote se apagaba sin decir por qué.** Cerrado: *"Ninguno de los 3 seleccionados aplica: el pedido no cabe en su caja y ninguna caja quedó disponible."*
-- **M16 · El motivo nombraba una caja vetada de dos.** Cerrado: *"Pantalla de 55 pulgadas no puede ir en Sobre y Caja chica, y la última que quedaba era la caja de la regla por defecto."*
-- **M17 · Dos cifras que no cuadraban.** Cerrado: el editor ahora acota la suya —*"Sobre los pedidos de hoy, esta condición alcanza a 1 de 44"*— y el documento ganó la sección que explica por qué las dos no se parecen.
-- **M18 · Faltaba "Copiar guía".** Cerrado; el botón está en la instrucción.
-- **M8 · "así que".** Los cinco de la primera pasada están muertos. Aparecieron **dos nuevos**: ver **V7**.
-- **Menores:** la séptima regla ya sale con pastilla **Desactivada**; quitar un veto pide confirmación.
+- **V1 · No había botón para emitir la guía de retorno.** Cerrado. Puse `DHL · Emitir guía de retorno` en "Sí" con modalidad y en `#1016` aparece **Generar guía de retorno con DHL · $103.00**.
+- **V2 · "Sin registro" no se podía elegir.** Cerrado, y por los dos caminos: en `DHL · Cancelar recolección` el valor se queda en "Sin registro", y el aviso es por fin la tercera frase —*"Guardado. Las recolecciones de DHL ofrecen la instrucción de llamar, con el paso para confirmarlo."*—. Además existe el botón **Quitar el registro de…** que el documento pedía.
+- **V3 · `sumaPiezas` no tenía pantalla.** Cerrado. En Recolecciones aparecen las dos líneas: *"DHL no acepta sumar piezas a una solicitud confirmada. Esta entra a la del día siguiente."* y *"Sin registro de si Estafeta acepta sumar piezas… Confirmar con Estafeta"*.
+- **V4 · El panel de una devolución recibida no dejaba cerrarla.** Cerrado: `DV-0023` ofrece **Cerrar devolución**.
+- **V5 · Se cerraba sin resolución.** Cerrado: *"Falta la resolución."*
+- **V7 · Dos "así que".** Cerrado: cero en Configuración, Recolecciones y Pedidos.
+- **V8 · "Invalid Date" y el divisor dado por confirmado.** Cerrado por partida doble: cero "Invalid Date" en las nueve fichas, y la nota volvió a la tarjeta de reglas, ahora impersonal: *"Calculado con divisor 5000, sin registro del de la paquetería."*
+- **V9, V10, V11** y los menores: no vuelvo a listarlos uno por uno; los di por buenos al comprobar los bloques donde vivían.
 
-**Regresiones: ninguna.** Recorrí Inicio, Pedidos, Tracking, Recolecciones, Cobros, Desempeño, Correcciones, Configuración, Paqueterías, Plantillas, Orígenes, Canales y Plan. Cero errores de consola, cero `NaN`, `undefined` o `[object Object]` en pantalla. De los cinco choques avisados: `recoleccionesPasadas()` devuelve las citas "sin piezas" con `recogidas: null` y ninguna suma se envenena —se pintan como "—"—; los estados nuevos de `tonos` salen todos con su pastilla; `origenDe(p)` resuelve para los 22 envíos y no hay filas fantasma; las cinco lentes originales siguen filtrando (Detenidos 3, Entregados 7, el resto paginado) y la barra de selección sigue contando por acción; y la pestaña de devoluciones, aunque no pase por `vistaDe()`, tiene buscador que encuentra por pedido, cliente, folio `DV-` y guía de retorno, sus tres filtros propios, su pie y su paginación.
+**Lo que sigue abierto de esa pasada:** solo **V6**, el cargo de retorno que no llega a Cobros. Ver **T4**.
 
-**"Sin piezas" fuera del cumplimiento: correcto, comprobado a mano.** DHL tiene 9 citas en el historial, tres de ellas "sin piezas"; el cumplimiento cuenta **6 citas** y **63 de 63 piezas**. Estafeta: 7 citas, 54 piezas, 29 recogidas, 54 %. El total, 122 de 147, da el 83 % que se enseña. La cifra con la que se reclama es la correcta, y el pie lo afirma sin fecharlo.
+## Lo que trae esta ronda y funciona
 
-**El quinto mecanismo, de punta a punta: funciona.** Autoricé `DV-0031`, salió la franja *"Ninguna de tus paqueterías emite guías de retorno"* con las dos ausencias nombradas distinto, las dos acciones pareadas y los dos campos. Sin número de guía: *"Falta el número de guía. Con la paquetería sola no se rastrea nada."* Con los dos: estado **Con guía de retorno**, mecanismo **Guía del comprador**, flete **$0.00** con *"La pagó el comprador"* y un enlace de rastreo público real. Después "Marcar recibida" registra qué llegó y no quién.
+- **Columna de canal** entre Pedido y Cliente ✓. El filtro de canal gana **Sin canal** y solo cuando hay sueltos.
+- **El "Generar guía" de la tabla ya no está muerto**: abre el panel con el bloque Envío a la vista y no genera desde la fila ✓.
+- **Títulos de Configuración** reescritos: Entrada del pedido · Embalaje · Paquetería · Recolección, con las tarjetas diciendo qué decide cada una ✓.
+- **El envío suelto, de punta a punta** ✓. Lo creé con tecleo real: referencia obligatoria con sus seis errores nombrados uno por uno, CP 29321 fuera de catálogo resuelto **en la ayuda y no en el error** con la frase literal del documento, el panel **no se cierra** y se convierte en el de `E-0044` con el bloque Envío abierto y el botón activo desde el primer momento, y la ayuda de Caja usa el verbo correcto: *"La propone la regla «Por defecto». Aquí la eliges tú."*
+- **Las cifras no se envenenan** ✓. Capturé un total de $1,500 a mano y **`ingresos` no se movió**: 73,765 antes y después. En la tabla la fila sale con `E-0044` sin almohadilla, la referencia debajo, `Sin canal`, *"$1,500.00 a mano"* y el pago en **"—"** con *"Sin canal que lo reporte"*. La métrica dice *"46 en el periodo · 2 sin canal"*.
+- **Las dos mitades de la frase están puestas** ✓. Inicio: *"De los 39 envíos del periodo, 2 son envíos sueltos y no cuentan como venta…"*. Desempeño: *"Incluye los envíos sueltos: los entregó la misma paquetería."* Con una sola, la otra pantalla parecería equivocada; están las dos.
+- **"Listos para despachar"** sustituye a "Pagados sin guía" en los tres sitios ✓.
+- **La conversión del rastreo** ✓, y es lo mejor de la ronda. `DV-0032` sobre `#10419` enseña las dos fechas (*"La paquetería inició el retorno el 19-sep"* / *"Se conservó la devolución registrada el 17-sep, con su motivo y sus piezas"*), el bloque **Por qué regresa** con los dos hechos separados —*"Lo que pidió el cliente: Arrepentimiento"* y *"Lo que reportó FedEx: Destinatario ausente"*—, el texto original del carrier, y la guía huérfana con su aviso y su instrucción leída de la matriz. **No duplica y conserva lo tecleado.** Y en una devolución normal (`#1015`) **el bloque no existe**: cero "—", cero "Sin dato".
+- **Los seis estatus deciden bien qué se ofrece** ✓, en el panel y en `envio.html`. Generada y Recolección pendiente: **sin botón**, con la línea *"El paquete sigue en tu bodega: todavía no hay nada que devolver…"* y la cancelación de la ida leída de la matriz. En tránsito y Entregado: **Registrar devolución**. Con RTO: **Ver la devolución**, con su línea *"Este paquete ya va de regreso. Un segundo retorno sobre el mismo paquete se cobra dos veces."* Y desde `envio.html` el botón no abre un formulario ahí: enlaza a `pedidos.html?pedido=10417&devolucion=nueva`.
+- **El formulario de dirección refactorizado no rompió nada** ✓. `#0997` sigue nombrando los dos datos que faltan (*"Faltan el número exterior y la colonia"*), se guarda en un solo viaje, la franja desaparece, el botón se reactiva y el bloque remite a Envío. Correcciones sigue entera.
+
+**Regresiones: ninguna.** Quince pantallas recorridas, cero errores de consola, cero `NaN`, `undefined`, `null` o `Invalid Date` en pantalla. Las cinco lentes originales siguen filtrando y la de devoluciones sigue con su buscador, sus filtros y su pie.
 
 ---
 
 # Lo que sigue vivo
 
-## Graves
+## Grave
 
-### V1. Con una paquetería que sí emite retorno, no hay manera de emitirlo
+### T1. "Registrar devolución" desde una guía con estatus nunca crea el registro
 
-**Gravedad:** grave. Es la función 1 entera detrás de una celda de la matriz.
+**Gravedad:** grave. Es la función que esta ronda vino a construir, y termina en un botón que no completa.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/paqueterias.html?paqueteria=DHL&capacidad=guiaRetorno`.
-2. Pon **Emitir guía de retorno** en **Sí** y elige una modalidad. El aviso confirma: *"Guardado. DHL aparece en el selector de guía de retorno."*
-3. Abre `http://localhost:4400/app/pedidos.html?pedido=1016` (DV-0030, autorizada).
+1. `http://localhost:4400/app/pedidos.html?pedido=10417` (Entregado, que el documento llama *"el flujo completo"*).
+2. **Registrar devolución** en el bloque Envío. Se abre el formulario, que está bien escrito.
+3. Elige un **Motivo**, escribe **Qué piezas regresan** = 1 y **Valor declarado** = 500.
+4. Pulsa **Registrar devolución**.
 
-**Qué esperaba** — Lo que dice ux.md §1.4: el selector con la modalidad declarada antes de elegir y el botón **Generar guía de retorno con DHL · $103.00**.
+**Qué esperaba** — Que se cree el registro. En Entregado, con el selector de 1.4; en tránsito, en espera con la franja de 1.3 bis.
 
-**Qué pasó** — El selector se pinta perfecto: *"DHL · Guía de retorno en PDF — Se manda al correo del comprador. Tiene que imprimirla. — $103.00"*, con la opción ya elegida, y debajo las ausencias bien nombradas. **Y no hay ningún botón para emitir.** Los únicos del bloque son "Registrar guía del comprador", "Marcar recibida" y "Cerrar sin retorno". Busqué "Generar guía de retorno" en el panel entero: no existe.
+**Qué pasó** — El formulario se vacía —`motivo=`, `piezas=`, `valor=`—, no aparece ningún error, el bloque sigue diciendo "REGISTRAR DEVOLUCIÓN" y **no se crea ninguna devolución**. Lo comprobé contra el dato, no contra la pantalla: `devoluciones` no gana ningún registro para ese pedido.
 
-Hoy no se nota, porque ninguna paquetería emite y el selector sale vacío. Se nota el día que una conteste que sí, que es justo el día para el que el documento dice que el selector *"se construye completo ahora"*. Probado también en DV-0029.
+Reproducido en **#10417** (Entregado), **#10407** y **#10399** (En tránsito), con tecleo y clics reales, cinco intentos. La validación sí funciona —vacío da *"Falta cuántas piezas regresan."* y *"Falta el valor declarado de lo que regresa."*—, así que el manejador corre: lo que falla es el guardado, y de paso borra lo capturado.
+
+El efecto de lado es el que lo hace peor de explicar en una demostración: como cada envío repinta el formulario en blanco, quien lo intente entra en un bucle —llena el motivo, falla por piezas; llena piezas, se le borra el motivo— sin que nada le diga qué está pasando.
+
+Y deja sin ver **"En tránsito: la espera"**, que el documento llama *"el estatus más frecuente y el más fácil de hacer mal"* y al que dedica tres párrafos: el registro en espera no se puede crear, así que su franja no se puede enseñar.
 
 **A quién le toca:** al desarrollador.
-
----
-
-### V2. "Sin registro" no se puede elegir, y la interfaz dice que sí
-
-**Gravedad:** grave. El control acepta un valor, informa "Guardado." y se queda con el contrario.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/paqueterias.html?paqueteria=DHL&capacidad=cancelaRecoleccion`. La celda dice **Sí**.
-2. Elige **Sin registro** en el `select`.
-
-**Qué esperaba** — Que quede en "sin registro", que la acción deje de ofrecerse en Recolecciones y que el aviso lo diga, como especifica ux.md §0.2 con sus tres frases.
-
-**Qué pasó** — El `select` vuelve solo a **Sí**, el valor efectivo sigue siendo `si`, `ofrece()` sigue devolviendo `true`, y el aviso dice **"Guardado. El botón de cancelar aparece en las recolecciones de DHL."** En Recolecciones, las filas de DHL siguen ofreciendo **Cancelar recolección** y el diálogo con "Sí, cancelar".
-
-Acotado con precisión: falla **solo en las celdas que tienen capa de producto**. En la misma celda, "No" funciona y "Sí" funciona. En una celda sin capa de producto —UPS · Cancelar guía— los tres valores funcionan. O sea: todas las celdas confirmadas de DHL, Estafeta y FedEx, y la fila del divisor en las nueve, son celdas de las que ya no se puede salir.
-
-Eso deja sin salida el caso que §0.2 diseña expresamente: *"Cuando un valor puesto por el comerciante falla contra la realidad, el fallo ofrece deshacerlo… **Quitar el registro de «Cancelar recolección»**"*. Ese botón no existe en ninguna parte del código, y el camino manual —elegir "Sin registro"— no funciona.
-
-**A quién le toca:** al desarrollador.
-
----
-
-### V3. `sumaPiezas` no tiene ninguna pantalla, y la matriz promete que sí
-
-**Gravedad:** grave, por lo que afirma, no por lo que falta.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/paqueterias.html?paqueteria=Redpack&capacidad=sumaPiezas`, pon **Sumar piezas** en **Sí**.
-2. El aviso dice: *"Guardado. Una guía generada después del corte **se puede sumar** a la recolección de Redpack del mismo día."*
-3. Ve a `recolecciones.html` y busca esa acción.
-
-**Qué esperaba** — Lo de ux.md §2.7: con valor afirmativo, `.boton--sutil.boton--chico` **Sumar 2 guías a esta recolección**; con negativo o sin registro, la línea *"DHL no acepta sumar piezas a una solicitud confirmada. Estas 2 entran a la del día siguiente."*, y en el segundo caso su **Confirmar con Redpack**.
-
-**Qué pasó** — No existe ni la acción ni la línea. En todo `app/`, `sumaPiezas` solo se lee en `paqueterias.html`, para pintar su propia celda. Las tres frases de guardado están escritas y las tres son distintas y correctas; lo que no hay es la consecuencia que anuncian.
-
-De las cinco superficies que había que auditar, cuatro obedecen —cancelar guía, cancelar recolección, emitir retorno y el seguro, las tres primeras probadas con los tres valores—. Ésta no existe.
-
-**A quién le toca:** al desarrollador si entra en esta versión; al PM si no, y entonces hay que quitar la fila de la matriz o cambiar el aviso, porque hoy promete un botón.
 
 ---
 
 ## Medios
 
-### V4. El panel de una devolución recibida no deja cerrarla, y repite el paso ya hecho
+### T2. Dos botones muertos más, y uno es la acción principal de su pantalla
 
 **Gravedad:** medio.
 
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=1019` (DV-0023, estado **Recibida**).
+Hice el barrido a mano: cliqué cada botón de las cuatro pantallas nuevas comparando el DOM antes y después. Dos no hacen nada, y los dos son `<button type="button">` sin `id`, sin `data-*` y sin manejador en ninguna parte:
 
-**Qué esperaba** — El cierre, que es donde ux.md §1.9 lo pone y lo único que queda por hacer.
+- **`app/recolecciones.html:22` — "Programar recolección".** Es el `.boton--primario` del encabezado, la acción que da nombre a la pantalla. No abre diálogo, no abre panel, no navega.
+- **`app/paqueterias.html:248` — "Revisar conexión".** Se pinta una vez por cuenta conectada, así que son cuatro botones muertos en la misma pantalla.
 
-**Qué pasó** — El bloque ofrece **"Rastrear el regreso"** y **"Marcar recibida"** — el paso que ya se dio. No hay "Cerrar devolución". La tabla de la pestaña sí lo ofrece y el diálogo funciona bien, así que el camino existe; el panel es un callejón. Lo mismo pasa al recibir una devolución desde el propio panel: el estado avanza a "Recibida" y la única acción que queda es volver a marcarla recibida.
+Los demás pasaron: los `data-*` de Pedidos, Configuración y Recolecciones tienen manejador y responden.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-### V5. Una devolución se cierra sin resolución y sin monto
+### T3. El `select` de Paquetería del formulario de devolución sale vacío y no lo dice
 
 **Gravedad:** medio.
 
 **Cómo reproducirlo**
-1. Pedidos → pestaña **Devoluciones** → fila de una "Recibida" → **Cerrar devolución**.
-2. Sin tocar **Resolución** ni **Monto**, pulsa **Cerrar devolución**.
+1. `http://localhost:4400/app/pedidos.html?pedido=10417` → **Registrar devolución**.
+2. Abre el desplegable **Paquetería**, bajo "LO QUE SE PROPONE".
 
-**Qué esperaba** — Que pidiera lo que el diálogo existe para capturar.
+**Qué esperaba** — Lo de §1.4: las que no aparecen se nombran, y las dos ausencias no se nombran igual, con su **Confirmar con…**. Es lo que el bloque de devolución del panel ya hace bien.
 
-**Qué pasó** — Se cierra. La fila pasa a **Cerrada · Cerrada el 21-sep** con la resolución vacía. El resto del producto valida bien —el nombre de la regla, las condiciones, el número de guía del comprador, la ventana contra el horario, los días—, así que aquí desentona.
+**Qué pasó** — El desplegable tiene **cero opciones**. La ayuda dice *"De la guía de ida. Si no emite retorno, no aparece en la lista: manda lo que tu cuenta tenga registrado, no la costumbre"*, que explica por qué **una** podría faltar, no por qué no hay **ninguna**. Ni una línea que nombre a las ausentes, ni camino para confirmarlas.
+
+Hoy ninguna paquetería emite retorno, así que el desplegable está vacío siempre: el primer usuario que lo abra encuentra un control que no contiene nada.
 
 **A quién le toca:** al desarrollador.
 
 ---
 
-### V6. El cargo de retorno que se captura no llega a Cobros
+### T4. El cargo de retorno sigue sin llegar a Cobros, y ahora falta también la columna del suelto
 
-**Gravedad:** medio.
+**Gravedad:** medio. Es V6 de la pasada anterior, más una parte nueva.
 
 **Cómo reproducirlo**
-1. Pestaña Devoluciones, filtro Mecanismo = **Retorno al remitente**, recibe `DV-0024` y ábrele **Cerrar devolución**.
-2. En "Cargo por retorno al remitente" pulsa **Capturar cargo**, pon monto 310 y factura.
-3. Ve a `cobros.html`.
+1. `http://localhost:4400/app/cobros.html`.
 
-**Qué esperaba** — Lo de ux.md §1.1: *"El costo del retorno se refleja en Cobros, como un cargo tipificado."* El diálogo de captura lo promete otra vez: *"Queda pegado a la guía PX-220914, que es lo que hace que deje de ser un cargo huérfano y empiece a sumar."*
+**Qué esperaba** — Dos cosas del documento. De §1.1: *"El costo del retorno se refleja en Cobros, como un cargo tipificado."* De §5.6: *"la columna del pedido enseña el folio nuestro y, debajo, «Sin canal»"*.
 
-**Qué pasó** — La resta del diálogo sí se actualiza ($245 + $310 = $555), pero en Cobros no aparece nada: los únicos motivos son Sobrepeso, Reexpedición y Zona extendida, y ni la guía ni el monto ni la palabra "retorno" figuran. El cargo se queda donde se capturó.
+**Qué pasó** — Los motivos de Cobros siguen siendo solo Sobrepeso, Reexpedición y Zona extendida: ni retorno ni RTO. Y las columnas son Guía · Paquetería · Peso · Cotizado · Facturado · Diferencia · Motivo: **no existe columna de pedido**, ni para los sueltos ni para nadie, así que la frase de §5.6 describe un sitio que no está construido. La guía del suelto `TC70043` sí aparece como fila, pero sin folio ni referencia al lado.
 
-**A quién le toca:** al desarrollador, o al PM si el enlace con Cobros no entra en esta versión — en cuyo caso el texto del diálogo no puede prometerlo.
+**A quién le toca:** al desarrollador si entra; al PM si no, porque entonces hay dos frases del documento y un texto del diálogo de captura —*"Queda pegado a la guía… y empieza a sumar"*— que prometen algo que no ocurre.
 
 ---
 
-### V7. Dos "así que" nuevos en pantalla, uno de ellos en la frase estrella
+### T5. Dos campos "Referencia" en el mismo panel, con significados distintos
 
-**Gravedad:** medio.
-
-Los cinco de la primera pasada están corregidos. Estos dos son texto nuevo:
-
-- **`app/configuracion.html:55`**, cabeza de "Tu orden de reglas": *"Se recorre de arriba abajo: gana la primera que se cumple, **así que** lo específico va arriba y lo general abajo."* Es precisamente el principio que el documento presume de haber colocado ahí.
-- **`app/recolecciones.html:380`**, diálogo de cancelar recolección: *"Las guías vuelven a contar como sin recolección, **así que** la siguiente ejecución de la regla las incluye sola."*
-
-**A quién le toca:** al desarrollador.
-
----
-
-### V8. "Invalid Date" en las nueve fichas, y el divisor pasa a "confirmado" sin estarlo
-
-**Gravedad:** medio. Son dos cosas con una sola causa.
+**Gravedad:** medio, y es del criterio del dueño más que del funcionamiento.
 
 **Cómo reproducirlo**
-1. `http://localhost:4400/app/paqueterias.html`, abre el pliegue **Qué expone esta paquetería** de cualquier ficha.
-2. Baja hasta **Divisor del peso volumétrico**.
+1. Pedidos → **Crear envío**.
 
-**Qué esperaba** — *"Sin registro."*, que es lo que dice la tabla de datos de ux.md para esa fila.
+**Qué pasó** — El panel tiene dos campos rotulados **Referencia**: el primero es `refEnvio`, obligatorio, el que sustituye al folio del canal (*"Garantía #4412"*); el segundo es `referencia`, dentro de Dirección, la indicación para el repartidor (*"Ayuda al repartidor a encontrar el domicilio"*). Cada uno tiene su ayuda y las ayudas son claras, pero la etiqueta es la misma palabra dos veces en la misma pantalla, y la segunda aparece justo cuando el usuario ya se olvidó de la primera.
 
-**Qué pasó** — Dice **"Confirmado con DHL el Invalid Date."** Y lo mismo en las nueve: Estafeta, FedEx, T1 Envíos, Paquetexpress, Redpack, UPS, 99minutos y AMPM. La causa es que `divisorVolumetrico` trae capa de producto sin fecha (`{ producto: { valor: 5000 } }`), así que `procedenciaDe()` entra por la rama de "confirmado" y formatea `undefined`.
-
-El efecto de fondo importa más que el texto roto: al contar como confirmado, **desapareció de la tarjeta de reglas la nota que ux.md §3.2 pide** —*"Calculado con divisor 5000. No está confirmado con la paquetería."*—. Busqué "divisor" en toda la pantalla de Configuración: ya no sale. El documento razona que presentar el divisor como dato del transportista sin haberlo confirmado *"es inventar la cifra que más importa"*, y ahora se presenta exactamente así.
-
-**A quién le toca:** al desarrollador.
-
----
-
-### V9. Al autorizar una devolución no se ve qué piezas regresan
-
-**Gravedad:** medio.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=1011`, bloque **Devolución**, estado Solicitada.
-
-**Qué esperaba** — ux.md §1.3: *"Las piezas, en una `.tabla-caja` chica: artículo, SKU, cantidad que regresa, precio."* Y cuando el pedido no trae líneas, la frase que lo dice en vez de inventarlo.
-
-**Qué pasó** — Ni la tabla ni la frase. El bloque tiene la franja, el resumen y los dos botones, y ninguna tabla. `#1011` sí tiene líneas con SKU. En una devolución de 1 de 1 casi no estorba; en `DV-0029`, que es **1 de 3**, o en `DV-0030`, que es **2 de 3**, el que autoriza no ve cuál de los tres artículos regresa. Es la decisión para la que el bloque existe.
-
-**A quién le toca:** al desarrollador.
-
----
-
-### V10. La lista de ausencias trata a T1 Envíos como paquetería, y apila siete botones
-
-**Gravedad:** medio.
-
-**Cómo reproducirlo**
-1. `http://localhost:4400/app/pedidos.html?pedido=1013`, bloque Devolución.
-
-**Qué pasó** — Debajo del selector: *"Sin registro de si Estafeta, FedEx, Redpack, UPS, 99minutos, AMPM **y T1 Envíos** las emiten."* Y una fila con **siete** botones: "Confirmar con Estafeta · Confirmar con FedEx · Confirmar con Redpack · Confirmar con UPS · Confirmar con 99minutos · Confirmar con AMPM · Confirmar con T1 Envíos".
-
-Dos cosas. T1 Envíos es una plataforma que revende guías, no una paquetería: pedirle al comerciante que la llame para preguntarle si emite guías de retorno es mandarlo con quien no lo sabe. Y siete botones iguales en fila dejan de ser una acción y pasan a ser un muro; el ejemplo del documento tiene dos.
-
-Que T1 Envíos tenga fila en la matriz viene del documento —la tabla de `CAPACIDADES` la incluye como novena— mientras §0.1 dice que las plataformas *"no son paqueterías y no tienen fila en la matriz"*. El documento se contradice y la pantalla hereda la contradicción.
-
-**A quién le toca:** al PM la fila de T1 Envíos; al de UX cómo se agrupan las confirmaciones cuando son más de dos.
-
----
-
-### V11. El panel de la regla de recolección dice dos hechos ciertos y calla la conclusión
-
-**Gravedad:** medio.
-
-**Cómo reproducirlo**
-1. Configuración, zona **Cuando hay guías sin recoger**, fila "Almacén Puebla · DHL" → **Editar regla**.
-
-**Qué pasó** — La franja dice *"Ahora mismo hay **4** guías de DHL sin recolección en Almacén Puebla"* y, más abajo, *"**4 de esas 4** se compraron en Skydropx. Con «Se pide directo», esas 4 quedan fuera de la solicitud y se programan a mano."* Las dos son ciertas. Juntas significan que la regla, tal como está guardada, **hoy no recoge nada**, y eso no se dice en ninguna parte.
-
-Es la misma familia que el producto ya resuelve bien dos veces —la regla de embalaje muerta y la paquetería sin cuenta en el primer puesto—, con el mismo remedio disponible: nombrarlo donde se lee. El ejemplo del documento tiene 4 de 9, donde quedan cinco; aquí no queda ninguna.
+El segundo viene del formulario de dirección compartido, así que no es descuido de esta ronda: es lo que aparece al reutilizar el formulario en un panel que ya usaba esa palabra.
 
 **A quién le toca:** al de UX.
 
@@ -233,31 +140,34 @@ Es la misma familia que el producto ya resuelve bien dos veces —la regla de em
 
 ## Menores
 
-- **m1.** El buscador de la pestaña Devoluciones dice `Filtrar por pedido, cliente o destino`; ux.md §1.2 pide `Filtrar por pedido, cliente o guía de retorno`. Busca bien por guía de retorno —lo comprobé—, pero no lo anuncia. — dev
-- **m2.** Las parejas de recolección se ordenan por el id interno del origen, así que "Tienda Roma" sale arriba de "Almacén Puebla", que es el origen predeterminado y el que tiene toda la actividad. — dev
-- **m3.** El pie de esa tarjeta dice *"Solo aparecen las parejas que han tenido envíos"*, pero también aparecen las que solo han tenido citas de recolección (Tienda Roma · FedEx y · UPS no tienen ningún envío). La frase promete un criterio más estrecho que el real. — dev
-- **m4.** `?cuenta=dhl&capacidad=…` sigue funcionando para las paqueterías con cuenta y no hace nada para las otras cinco; el parámetro vivo es `?paqueteria=`. Ningún enlace del producto usa el viejo, así que solo afecta a marcadores de la versión anterior. — dev
-- **m5.** Con el almacenamiento bloqueado el mensaje es correcto, pero la copia en memoria no cubre la sesión: sigue sin poderse entrar. Si la intención era que el prototipo funcionara en ventana privada, falta; si era avisar y no romper, está hecho. — PM, para decidir cuál de las dos era.
-- **m6.** Tras un guardado fallido en el panel de regla, el error *"Falta el nombre de la regla"* se queda a la vista aunque el campo ya esté lleno, hasta el siguiente intento. — dev
-- **m7.** El pie de Devoluciones dice *"$794.00 en retornos del periodo"* y no se mueve al cerrar una devolución ni al capturar un cargo de $310. Puede ser correcto —el flete existe desde que se compra la guía, no desde que se cierra—, pero no hay forma de saber qué suma; la etiqueta no dice si cuenta fletes, cargos o los dos. — PM
-- **m8.** En una devolución "Recibida" el panel ofrece **Marcar recibida** otra vez, sin marca de que ya se hizo. — dev
+- **m1.** Los pedidos `#1024`–`#1029` que el documento pide para los seis estatus **no existen**; el desarrollador montó los seis sobre pedidos que ya estaban (`#10401`, `#10415`, `#10422`, `#10417`, `#10419`, `#10409`). Funciona igual y se prueban los seis, pero quien siga el documento con esos folios no encuentra nada. — PM / dev, para que coincidan
+- **m2.** "Ver la devolución" sale sin línea que lo explique cuando la devolución que ya existe **no** es un RTO (`#10422` en tránsito, `#10403` detenido). Con RTO sí sale. El documento solo previó el caso RTO, así que es un hueco del diseño más que del código. — UX
+- **m3.** Ninguno de los dos buscadores de fichas admite teclado en la lista: las flechas no mueven nada y no hay opción marcada; solo se elige con el ratón. Es la misma carencia en los dos. — dev
+- **m4.** El aviso de destinatario repetido de §5.2 no llegué a verlo dispararse: con nombre igual y CP distinto no sale, que es correcto, pero no encontré en los datos un par que cumpla las dos condiciones dentro de siete días, así que **no puedo afirmar que funcione**. — dev, para dejar un caso en los datos
+
+## La deuda que preguntaste: los dos buscadores
+
+**Todavía no han divergido en lo que se ve.** Los probé en paralelo —el de productos en el diálogo de veto de Configuración y el de destinatarios en el panel de captura de Pedidos— con la misma secuencia: escribir, mirar el panel, flecha abajo, Escape, y un término sin resultados. Se comportan igual en las cinco: mismo panel, misma forma de dos líneas por fila, las flechas no hacen nada en ninguno, Escape cierra el panel sin cerrar el diálogo en los dos, y el vacío usa la misma construcción con la frase de su fuente (*"Ningún pedido trae todavía un producto que se llame así"* / *"Ningún envío anterior va a un destinatario que se llame así"*).
+
+En el código sí son dos: `buscadorFichaHTML(sku, {id})` con `pintarPanel`/`cerrarPanel` en `configuracion.html`, y `buscadorFichaHTML(fuente)` con `pintarPanelFicha`/`cerrarPanelFicha` en `pedidos.html`, y solo el segundo guarda los resultados en `dataset.hallados`. Firmas distintas, nombres distintos, estado distinto.
+
+Mi lectura: la deuda es real y todavía no cuesta nada, pero **ya tiene una factura pendiente y con fecha**, que es **m3**: el día que se le ponga teclado a la lista —y hay que ponérselo— hay que hacerlo dos veces y de dos maneras, y ahí es donde divergen. Sale más barato unificarlos antes de esa corrección que después.
 
 ---
 
 # Veredicto
 
-**Sí se sube y sí se le enseña a un cliente, con una condición: arreglar V2 antes, y no enseñar la emisión de guías de retorno.**
+**Sí se sube, y se le puede enseñar a un cliente, con dos condiciones: arreglar T1 antes, y no enseñar "Registrar devolución" desde una guía hasta que esté.**
 
-El salto entre pasadas es grande y conviene decirlo con números: de los siete graves y once medios de la primera pasada, quedan cerrados todos menos el "así que", que volvió por dos sitios nuevos. Y las dos funciones que no había visto llegan mejor terminadas que las dos que ya conocía. Recolecciones enseña las cinco filas de la tabla de cancelación funcionando con datos reales —botón, botón con corte, corte pasado, "no" y "sin registro"—, valida la ventana contra el horario del origen con las tres frases exactas, avisa de las guías que la regla no va a tomar en los tres sitios donde el documento lo pide, y la cifra de cumplimiento está bien calculada, que era lo que había que comprobar: 63 de 63 para DHL con tres citas vacías correctamente fuera. Devoluciones tiene los cinco mecanismos, el quinto funciona de punta a punta, Tracking marca "Va de regreso" solo en las dos filas donde la paquetería lo declaró con sus palabras y deja en paz la tercera, y el cargo del RTO se captura donde hace falta para la resta.
+Es la ronda con más código y la que menos rompió: ninguna regresión, ni siquiera en el formulario de dirección refactorizado, que era lo que más riesgo tenía y que probé entero. El envío suelto llega terminado y —esto importa más que lo demás— **no envenena ninguna cifra**: capturé un total a mano y los ingresos no se movieron, las dos mitades de la explicación están puestas en Inicio y en Desempeño, y la cola cambió de nombre en los tres sitios. La conversión del rastreo es la mejor pieza de las tres pasadas: conserva lo tecleado, no duplica, separa los dos motivos y desaparece entera donde no aplica.
 
-**V2 hay que arreglarlo antes de subir** porque no es un hueco, es una afirmación falsa: el comerciante elige "Sin registro", lee "Guardado." y se queda con "Sí". Es el mismo tipo de defecto que V1 de la primera pasada, en la pantalla que existe justamente para que el producto no mienta sobre lo que la paquetería expone. Y no hay otra salida: el botón de quitar el registro que el documento diseña no está construido.
+**T1 hay que arreglarlo antes de subir.** No es un acabado: es que la función 6, la que motivó media ronda, no llega a crear nada. Y falla en silencio y borrando lo escrito, que es la peor forma de fallar delante de alguien.
 
-**V1 y V3 no bloquean la demostración pero sí acotan lo que se puede prometer.** Mientras ninguna paquetería emita retorno —que es el día de lanzamiento retratado en los datos— el selector sale vacío y nadie ve que no hay botón. Lo que no se puede hacer es enseñar la matriz cambiando `guiaRetorno` a "Sí" para lucir el selector, porque lo que aparece no lleva a ninguna parte. Con `sumaPiezas` igual: la celda se puede enseñar, la consecuencia que anuncia no existe.
+**T2 conviene arreglarlo antes de enseñar Recolecciones**, porque el botón muerto es el primario del encabezado: es lo primero que va a pulsar cualquiera que abra esa pantalla. Con los siete anteriores ya van nueve botones muertos encontrados en este archivo; sugiero que antes de subir alguien pase una vez más la lista de `<button>` sin `data-*` y sin `id`, que es donde estaban los dos de hoy.
 
-De los medios, V8 es el que más se ve en una demostración —"Invalid Date" nueve veces en la pantalla que es el vocabulario del producto— y es de una línea. V4 y V5 están en el camino que un cliente va a recorrer solo si se le enseña cerrar una devolución; si se enseña, se ven los dos seguidos.
+T3, T4 y T5 no bloquean: se ven solo si el cliente abre el desplegable vacío, si va a Cobros buscando un retorno, o si se queda mirando las dos etiquetas iguales.
 
-**Sobre el criterio del dueño del producto, que es lo que preguntaste aparte:**
+**Sobre las dos preguntas del dueño:**
 
-- **La pantalla de reglas ahora sí se entiende.** Los tres defectos que señalé desaparecieron: la regla que no ganaba nunca lo dice en su fila y ofrece la salida, la regla sin condiciones no se puede crear y el error explica qué hacer en su lugar, y las dos cifras dejaron de contradecirse porque cada una dice de qué habla. Y la cabeza de la tarjeta ahora enseña el principio del orden, que es lo que le faltaba a alguien que llega por primera vez: ya no hay que deducir por qué siete filas están en ese orden.
-- **Recolecciones se entiende rápido.** La tabla de parejas contesta de un vistazo qué está automatizado y qué no, el panel compara los tres modos en vez de esconderlos, cada campo dice su consecuencia, y los avisos de fallas y de `via` están en la fila, no en un informe. Lo único que pediría es V11: que cuando los dos hechos sumen cero, lo diga.
-- **Devoluciones es la más difícil de las cuatro y aun así se sigue**, porque la tabla lleva el mecanismo y el estado juntos y la columna de acción dice el siguiente paso. Donde se tropieza es al final: se recibe y no se puede cerrar desde donde se estaba (V4), y al autorizar no se ve qué regresa (V9). Las dos cosas le pasan a quien haga el recorrido completo, que es exactamente lo que va a hacer un cliente al que se le enseñe.
+- **¿Alguien que no sabe crea un envío suelto y lo despacha rápido? Sí.** El panel pide lo que hace falta y nada más, pone la referencia primero y obligatoria, dice en seis errores exactos qué falta, resuelve el CP desconocido sin pintar nada en rojo y sin bloquear, y al crear no lo manda a ninguna lista: lo deja en el mismo panel con la caja propuesta y el botón activo. Lo hice de principio a fin y el único tropiezo fue leer dos veces la palabra "Referencia" (**T5**).
+- **¿Registra una devolución desde una guía en tránsito entendiendo por qué todavía no se emite nada? Entendería perfectamente por qué —si el botón funcionara.** Toda la explicación está bien puesta y bien escrita: *"El paquete todavía va en camino. JD01480000456 va en tránsito desde el 17-sep. El registro se puede dejar hecho hoy; la guía de retorno se emite cuando la paquetería reporte la entrega."* Nombra el disparador y no el plazo, que es justo lo que el documento pedía. El problema no es que no se entienda: es que después de entenderlo, pulsa el botón y no pasa nada.

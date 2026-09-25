@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Paqueterías · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="paqueterias">
 <main class="contenido contenido--ancho">
@@ -49,13 +49,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
 import { cuentasEnvio, paqueteriasSinCuenta, PLATAFORMAS, conexionesCaidas,
-         telefonoDe, HOY,
+         telefonoDe, HOY, AHORA,
          CAPACIDADES_FILAS, VALORES_CAPACIDAD, MODALIDADES_RETORNO,
          capacidadDe, procedenciaDe, porQueDifiere, resumenCapacidades,
          PAQUETERIAS_DEL_PRODUCTO, hayRegistroDeCuenta,
-         marcarCapacidad } from "../assets/datos.js?v=cdaf6d84";
+         marcarCapacidad } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 
@@ -245,7 +245,9 @@ if (exigirSesion()) {
       ${enMatriz ? pliegueHTML(paq) : ""}
 
       <div class="ficha__pie">
-        <button class="boton boton--sutil boton--chico" type="button">Revisar conexión</button>
+        <button class="boton boton--sutil boton--chico" type="button"
+          data-revisar="${esc(c.id)}">Revisar conexión</button>
+        <span class="apagado" style="font-size:12px" data-revision></span>
       </div>
     </article>`;
   }
@@ -378,6 +380,26 @@ if (exigirSesion()) {
   }
   zonaCuentas.addEventListener("click", alQuitar);
   zonaSinCuenta.addEventListener("click", alQuitar);
+
+  /* Revisar la conexión contesta la única pregunta que esta pantalla puede
+     contestar: si esa cuenta está sincronizando o no. No inventa una prueba
+     contra la paquetería —no hay con qué hacerla— y dice cuándo se comprobó,
+     porque un "correcta" sin hora no se puede volver a mirar. */
+  zonaCuentas.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-revisar]");
+    if (!b) return;
+    const id = b.dataset.revisar;
+    const salida = b.parentElement.querySelector("[data-revision]");
+    b.setAttribute("aria-busy", "true");
+    salida.textContent = "Revisando…";
+    setTimeout(() => {
+      b.removeAttribute("aria-busy");
+      const rota = conexionesCaidas().some((c) => c.id === id);
+      salida.textContent = rota
+        ? `Sin sincronizar desde antes de las ${AHORA}. Se vuelve a intentar desde Inicio.`
+        : `Sincronizando. Comprobada a las ${AHORA}.`;
+    }, 420);
+  });
 
   /* "Confirmar con Redpack", desde donde la acción no existió, abre esta
      pantalla con esa ficha desplegada y esa celda enfocada, esté en la zona de

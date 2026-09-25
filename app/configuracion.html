@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=cdaf6d84">
-<script src="../assets/vigia.js?v=cdaf6d84" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<script src="../assets/vigia.js?v=eb632bac" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -22,14 +22,15 @@
   <p class="guardado" id="guardado" role="status" aria-live="polite" hidden></p>
 
   <section class="zona">
-    <h2 class="zona__titulo">Cuando entra un pedido pagado</h2>
+    <h2 class="zona__titulo">Entrada del pedido</h2>
     <div class="tarjeta">
+      <div class="tarjeta__cabeza"><h2>Qué corre solo cuando el pedido se paga</h2></div>
       <div class="tarjeta__cuerpo campos" id="automatico"></div>
     </div>
   </section>
 
   <section class="zona" id="reglas-embalaje">
-    <h2 class="zona__titulo">Con qué caja sale cada pedido</h2>
+    <h2 class="zona__titulo">Embalaje</h2>
 
     <div class="tarjeta">
       <div class="tarjeta__cabeza">
@@ -50,7 +51,7 @@
     <div class="tarjeta" style="margin-top:14px">
       <div class="tarjeta__cabeza">
         <div>
-          <h2>Tu orden de reglas</h2>
+          <h2>En qué caja va cada pedido</h2>
           <p class="apagado" style="font-size:12px;margin-top:3px">
             Se recorre de arriba abajo y gana la primera que se cumple:
             lo específico va arriba y lo general abajo.
@@ -83,11 +84,11 @@
   </section>
 
   <section class="zona">
-    <h2 class="zona__titulo">Qué paquetería se elige</h2>
+    <h2 class="zona__titulo">Paquetería</h2>
     <div class="tarjeta">
       <div class="tarjeta__cabeza">
         <div>
-          <h2>Tu orden de preferencia</h2>
+          <h2>Con qué paquetería sale cada pedido</h2>
           <p class="apagado" style="font-size:12px;margin-top:3px">
             Se recorre de arriba abajo: la primera que se pueda usar es la preferida.
             <span class="solo-raton">Arrastra una paquetería para cambiar su puesto,
@@ -120,12 +121,12 @@
        solo, después de revisar la dirección, elegir la caja y elegir la
        paquetería. Las zonas quedan en el orden en que ocurren. -->
   <section class="zona" id="recoleccion-automatica">
-    <h2 class="zona__titulo">Cuando hay guías sin recoger</h2>
+    <h2 class="zona__titulo">Recolección</h2>
 
     <div class="tarjeta">
       <div class="tarjeta__cabeza">
         <div>
-          <h2>Recolección automática por origen y paquetería</h2>
+          <h2>Cuándo se pide cada recolección</h2>
           <p class="apagado" style="font-size:12px;margin-top:3px">
             Una solicitud sale por cada origen y cada paquetería. No existe una
             solicitud que junte un paquete de DHL con uno de FedEx.</p>
@@ -159,7 +160,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=cdaf6d84";
+import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
 import { origenes, plantillas, reglasPaqueteria, PAPELES,
          reglasEmbalaje, vetosEmbalaje, efectoEmbalaje, embalaje, CONDICIONES_EMBALAJE,
          DESTINOS, cobroDefecto, guiasConReglas, hechosDeRegla,
@@ -169,8 +170,9 @@ import { origenes, plantillas, reglasPaqueteria, PAPELES,
          MODOS_RECOLECCION, DIAS_SEMANA, ANTICIPACION_VISTA, describirRegla,
          validarReglaRecoleccion, cortePropuesto, viasDeLaPareja,
          guiasSinRecoleccion, sinRegistro, enumerarEs,
+         productosVistos, buscarProductos, pareceSKU, fechaEnTexto,
          FACTOR_VOLUMETRICO, capacidadDe, guardarEmbalaje,
-         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=cdaf6d84";
+         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=eb632bac";
 if (exigirSesion()) {
   montar();
 
@@ -796,6 +798,147 @@ if (exigirSesion()) {
 
   arrastrable(ordenReglas, moverRegla);
 
+
+  /* ================================================================
+     El buscador de fichas
+     ================================================================
+     Teclear un SKU de memoria es pedirle a alguien que recuerde una clave, y
+     un SKU mal tecleado no falla: simplemente no se cumple nunca. Es el peor
+     tipo de error, porque no hace ruido. Así que se busca y se elige.
+
+     Un solo control para los dos sitios donde se elige un producto —la regla y
+     el veto—: dos maneras de elegir el mismo producto en la misma pantalla
+     serían dos maneras de escribirlo mal. */
+
+  const usoDe = (x) => `${x.pedidos} ${x.pedidos === 1 ? "pedido" : "pedidos"}` +
+    (x.ultimaFecha ? ` · el último el ${fechaEnTexto(x.ultimaFecha).replace(/ de \d{4}$/, "")}` : "");
+
+  const productoDe = (sku) => productosVistos().find((x) => x.sku === sku) ?? null;
+
+  /** El campo, en sus dos estados: buscando o con un producto ya elegido. */
+  function buscadorFichaHTML(sku, { id }) {
+    const x = sku ? productoDe(sku) : null;
+
+    if (sku) {
+      /* Sin verlo en ningún pedido se marca, y la marca desaparece sola el día
+         que el producto entre en uno. */
+      return `<div class="buscador-ficha" data-buscador="${esc(id)}" data-sku="${esc(sku)}">
+        <div class="producto producto--elegido${x ? "" : " producto--sin-ver"}">
+          <b>${esc(x?.nombre ?? sku)}</b>
+          ${x ? `<span class="producto__sku">${esc(sku)}</span>
+                 <span class="producto__uso">${esc(usoDe(x))}</span>`
+              : `<span class="producto__uso">Sin pedidos todavía</span>`}
+          <button class="boton boton--sutil boton--chico" type="button"
+                  data-cambiar-producto>Cambiar producto</button>
+        </div>
+      </div>`;
+    }
+
+    return `<div class="buscador-ficha" data-buscador="${esc(id)}" data-sku="">
+      <input type="search" data-buscar-producto autocomplete="off"
+             placeholder="Busca por nombre o SKU" aria-label="Buscar un producto">
+      <span class="campo__ayuda">Se busca entre los productos que han aparecido en tus pedidos.</span>
+    </div>`;
+  }
+
+  /* El panel se coloca con JS: fijo, del ancho del campo y sin heredar el
+     recorte del cuerpo del panel, que lo cortaría a la primera fila. */
+  function colocarPanel(caja, panel) {
+    const r = caja.getBoundingClientRect();
+    panel.style.top = `${Math.round(r.bottom + 6)}px`;
+    panel.style.left = `${Math.round(r.left)}px`;
+    panel.style.width = `${Math.round(Math.max(r.width, 260))}px`;
+  }
+
+  function cerrarPanel(caja) {
+    caja.querySelector(".buscador-ficha__panel")?.remove();
+  }
+
+  function pintarPanel(caja) {
+    const campo = caja.querySelector("[data-buscar-producto]");
+    const texto = campo.value.trim();
+    cerrarPanel(caja);
+    if (!texto) return;
+
+    const hallados = buscarProductos(texto);
+    const panel = document.createElement("div");
+    panel.className = "buscador-ficha__panel";
+
+    panel.innerHTML = hallados.length
+      ? hallados.map((x) => `
+          <button class="producto" type="button" data-elegir="${esc(x.sku)}">
+            <b>${esc(x.nombre)}</b>
+            <span class="producto__sku">${esc(x.sku)}</span>
+            <span class="producto__uso">${esc(usoDe(x))}</span>
+          </button>`).join("")
+      /* La salida no puede ser "no existe": un comerciante vende cosas que
+         todavía no ha vendido. Pero el botón solo aparece si lo escrito tiene
+         forma de SKU, y repite entre comillas lo tecleado para que un
+         MON-VEN-61 por MON-VEN-16 se vea antes de aceptarlo, no un mes después. */
+      : `<div class="buscador-ficha__vacio">
+           <b>Ningún pedido trae todavía un producto que se llame así</b>
+           ${pareceSKU(texto) ? `<div class="grupo-botones">
+             <button class="boton boton--fantasma boton--chico" type="button"
+               data-elegir="${esc(texto.toUpperCase())}">Usar "${esc(texto.toUpperCase())}" como SKU</button>
+           </div>` : ""}
+         </div>`;
+
+    caja.appendChild(panel);
+    colocarPanel(caja, panel);
+  }
+
+  /* Un solo juego de manejadores para todos los buscadores de la pantalla, en
+     el documento: los campos nacen y mueren con los diálogos que los llevan. */
+  document.addEventListener("input", (e) => {
+    if (e.target.matches("[data-buscar-producto]")) pintarPanel(e.target.closest(".buscador-ficha"));
+  });
+
+  document.addEventListener("click", (e) => {
+    const elegir = e.target.closest("[data-elegir]");
+    if (elegir) {
+      const caja = elegir.closest(".buscador-ficha");
+      return reemplazarBuscador(caja, elegir.dataset.elegir);
+    }
+    const cambiar = e.target.closest("[data-cambiar-producto]");
+    if (cambiar) {
+      const caja = cambiar.closest(".buscador-ficha");
+      reemplazarBuscador(caja, "");
+      caja.querySelector("[data-buscar-producto]")?.focus();
+      return;
+    }
+    /* Un clic fuera cierra el panel y deja el campo como estaba. */
+    if (!e.target.closest(".buscador-ficha")) {
+      document.querySelectorAll(".buscador-ficha").forEach(cerrarPanel);
+    }
+  });
+
+  /* Escape cierra el panel y se queda cerrado: si dejara pasar el evento,
+     cerraría además el diálogo entero y se llevaría lo capturado. */
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const caja = e.target.closest(".buscador-ficha");
+    if (!caja || !caja.querySelector(".buscador-ficha__panel")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    cerrarPanel(caja);
+    caja.querySelector("[data-buscar-producto]")?.focus();
+  });
+
+  function reemplazarBuscador(caja, sku) {
+    const id = caja.dataset.buscador;
+    const nuevo = document.createElement("div");
+    nuevo.innerHTML = buscadorFichaHTML(sku, { id });
+    caja.replaceWith(nuevo.firstElementChild);
+    /* Lo que cuelgue del producto elegido se entera: los hechos de la regla y
+       el aviso del SKU se recalculan con lo que hay ahora. */
+    if (id === "regla" && panelRegla.open) refrescarHechos();
+    if (id === "veto") revisarVeto();
+  }
+
+  /** El SKU que tiene ese buscador ahora mismo. */
+  const skuDelBuscador = (raiz, id) =>
+    raiz.querySelector(`[data-buscador="${id}"]`)?.dataset.sku || "";
+
   /* ---------- Nunca en esta caja ----------
      El veto es una lista aparte y no una fila más del orden PORQUE no asigna
      caja: descarta candidatas. Una fila con número de puesto que no asigna
@@ -808,10 +951,13 @@ if (exigirSesion()) {
     }
     caja.innerHTML = vetosEmbalaje.map((v) => {
       const producto = nombreDeSKU(v.sku);
+      /* La fila nombra el producto y la clave va debajo, en pequeño, para
+         confirmar: quien lee la lista reconoce "Juego de 6 copas" antes que
+         MON-CRI-6, y la clave sigue estando para comprobarla. */
       return `<div class="dato">
-        <span>Si el pedido contiene <span class="mono">${esc(v.sku)}</span> → nunca
+        <span>Si el pedido contiene <b>${esc(producto?.nombre ?? v.sku)}</b> → nunca
           ${esc(cajaDe(v.plantilla)?.nombre ?? v.plantilla)}
-          ${producto ? `<span class="apagado" style="display:block;font-size:12px">${esc(producto.nombre)}</span>` : ""}</span>
+          <span class="apagado mono" style="display:block;font-size:12px">${esc(v.sku)}</span></span>
         <span><button class="boton boton--sutil boton--chico" type="button"
           data-quitar-veto="${esc(v.id)}">Quitar veto</button></span>
       </div>`;
@@ -849,11 +995,10 @@ if (exigirSesion()) {
       <div class="dialogo__cabeza"><h2 id="dlg-titulo">Agregar veto</h2></div>
       <div class="dialogo__cuerpo">
         <form id="form-veto" class="campos" novalidate>
-          <label class="campo" data-campo="sku"><span>Si el pedido contiene el SKU</span>
-            <input id="veto-sku" class="mono" name="sku" autocomplete="off" placeholder="MON-CRI-6">
-            <span class="campo__ayuda" id="veto-producto">El SKU tal como lo manda tu canal en la línea del pedido.</span>
+          <div class="campo" data-campo="sku"><span>Si el pedido contiene</span>
+            ${buscadorFichaHTML("", { id: "veto" })}
             <span class="campo__error" hidden></span>
-          </label>
+          </div>
           <label class="campo"><span>Nunca en</span>
             <select id="veto-caja" name="plantilla">
               ${plantillas.map((p) => `<option value="${esc(p.id)}">${esc(p.nombre)} — ${medidasDe(p)}</option>`).join("")}
@@ -866,17 +1011,19 @@ if (exigirSesion()) {
         <button class="boton boton--primario" type="button" data-guardar-veto>Agregar veto</button>
       </div>`;
     dlg.showModal();
-
-    const sku = dlg.querySelector("#veto-sku");
-    const ayuda = dlg.querySelector("#veto-producto");
-    sku.addEventListener("input", () => {
-      const p = nombreDeSKU(sku.value.trim());
-      ayuda.textContent = p
-        ? `${p.nombre}, visto en ${p.pedidos} ${p.pedidos === 1 ? "pedido" : "pedidos"}.`
-        : "El SKU tal como lo manda tu canal en la línea del pedido.";
-    });
-    sku.focus();
+    dlg.querySelector("[data-buscar-producto]")?.focus();
   });
+
+  /** El veto sin producto no protege nada, y se dice al intentar guardarlo. */
+  function revisarVeto() {
+    const caja = dlg.querySelector('#form-veto [data-campo="sku"]');
+    if (!caja) return;
+    if (skuDelBuscador(dlg, "veto")) {
+      caja.classList.remove("campo--error");
+      const err = caja.querySelector(".campo__error");
+      err.hidden = true;
+    }
+  }
 
   dlg.addEventListener("click", (e) => {
     if (e.target.closest("[data-cerrar-dlg]")) return dlg.close();
@@ -903,14 +1050,14 @@ if (exigirSesion()) {
     if (!e.target.closest("[data-guardar-veto]")) return;
     const form = dlg.querySelector("#form-veto");
     const v = Object.fromEntries(new FormData(form).entries());
-    const sku = String(v.sku || "").trim().toUpperCase();
-    const error = dlg.querySelector(".campo__error");
+    const sku = skuDelBuscador(dlg, "veto");
     const etiqueta = dlg.querySelector('[data-campo="sku"]');
+    const error = etiqueta.querySelector(".campo__error");
     if (!sku) {
       etiqueta.classList.add("campo--error");
-      error.textContent = "Falta el SKU del producto.";
+      error.textContent = "Falta elegir el producto.";
       error.hidden = false;
-      dlg.querySelector("#veto-sku").focus();
+      dlg.querySelector("[data-buscar-producto]")?.focus();
       return;
     }
     vetosEmbalaje.push({ id: `v-${sku}-${v.plantilla}`, sku, plantilla: v.plantilla, porque: "" });
@@ -918,7 +1065,8 @@ if (exigirSesion()) {
     pintarVetos();
     pintarReglas();
     pintarTope();
-    guardado(`${sku} ya no puede ir en ${cajaDe(v.plantilla).nombre}.`);
+    const nombre = nombreDeSKU(sku)?.nombre ?? sku;
+    guardado(`${nombre} ya no puede ir en ${cajaDe(v.plantilla).nombre}.`);
   });
 
   /* ---------- Cuándo pasa a revisión manual ----------
@@ -1030,12 +1178,10 @@ if (exigirSesion()) {
             </div>`)}
 
           ${marca("contiene", !!c.contiene, `
-            <label class="campo" data-campo="sku"><span>SKU</span>
-              <input class="mono" name="sku" value="${esc(c.contiene?.sku ?? "")}"
-                     autocomplete="off" placeholder="MON-VEN-16">
-              <span class="campo__ayuda" data-producto></span>
+            <div class="campo" data-campo="sku"><span>Producto</span>
+              ${buscadorFichaHTML(c.contiene?.sku ?? "", { id: "regla" })}
               <span class="campo__error" hidden></span>
-            </label>
+            </div>
             <div class="campos campos--2">
               ${numero("contieneDe", c.contiene?.de ?? 0, "Y además, de")}
               ${numero("contieneA", c.contiene?.a ?? 0, "A")}
@@ -1106,7 +1252,7 @@ if (exigirSesion()) {
     if (puesta("cantidad")) c.cantidad = { de: num("cantidadDe") ?? 1, a: num("cantidadA") };
     if (puesta("costo")) c.costo = { de: num("costoDe") ?? 0, a: num("costoA") };
     if (puesta("contiene")) {
-      c.contiene = { sku: form.querySelector('[name="sku"]').value.trim().toUpperCase(),
+      c.contiene = { sku: skuDelBuscador(form, "regla"),
                      de: num("contieneDe") ?? 0, a: num("contieneA") };
     }
     if (puesta("canal")) c.canal = marcadas("canal");
@@ -1153,22 +1299,17 @@ if (exigirSesion()) {
     revisarSKU(form);
   }
 
-  /** Un SKU mal tecleado no falla: simplemente no se cumple nunca. Se revisa
-      contra los pedidos, que es lo único que hay, y se dice sin bloquear. */
+  /** Elegir de una lista quita el dedazo, pero no el producto que todavía no
+      se ha vendido: eso se sigue diciendo, y se sigue sin bloquear. */
   function revisarSKU(form) {
-    const sku = form.querySelector('[name="sku"]');
-    if (!sku) return;
-    const producto = nombreDeSKU(sku.value.trim().toUpperCase());
-    const nota = form.querySelector("[data-producto]");
-    const error = form.querySelector('[data-campo="sku"] .campo__error');
-    nota.textContent = producto
-      ? `${producto.nombre}, visto en ${producto.pedidos} ${producto.pedidos === 1 ? "pedido" : "pedidos"}.`
-      : "";
-    /* No bloquea el guardado —el producto puede ser nuevo— pero se dice. */
-    const desconocido = skuDesconocido(sku.value.trim().toUpperCase());
+    const caja = form.querySelector('[data-campo="sku"]');
+    if (!caja) return;
+    const sku = skuDelBuscador(form, "regla");
+    const error = caja.querySelector(".campo__error");
+    const desconocido = skuDesconocido(sku);
     error.hidden = !desconocido;
     error.textContent = desconocido
-      ? `Ningún pedido de los últimos 30 días trae el SKU ${sku.value.trim().toUpperCase()}. Revisa que esté bien escrito.`
+      ? `Ningún pedido de los últimos 30 días trae el SKU ${sku}. Esta regla no va a ganar hasta que aparezca.`
       : "";
   }
 
