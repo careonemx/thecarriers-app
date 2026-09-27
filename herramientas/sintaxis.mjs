@@ -33,6 +33,35 @@ const paginas = [
 let fallos = 0;
 let revisados = 0;
 
+/**
+ * Una comilla invertida dentro de un comentario de HTML.
+ *
+ * Es el fallo más caro que puede tener este proyecto, porque `node --check` lo
+ * da por bueno: cierra la plantilla en la que vive y lo que venía después deja
+ * de ser marcado y pasa a ser código. `HTML(...)` seguido de otra plantilla se
+ * convierte en una llamada etiquetada, el navegador dice "no es una función" y
+ * la pantalla se queda sin la mitad de su contenido. Sintácticamente válido,
+ * funcionalmente destruido.
+ *
+ * Viene de escribir comentarios como se escribe en Markdown, que es como están
+ * escritos todos los demás comentarios del proyecto, así que va a volver a
+ * pasar. Dentro de un comentario de HTML el nombre de una clase se escribe sin
+ * adorno, y no se pierde nada.
+ */
+const comillaEnComentario = (js) => {
+  const malos = [];
+  for (const m of js.matchAll(/<!--[\s\S]*?-->/g)) {
+    if (!m[0].includes("`")) continue;
+    malos.push({
+      linea: js.slice(0, m.index).split("\n").length,
+      texto: m[0].replace(/\s+/g, " ").trim().slice(0, 90),
+    });
+  }
+  return malos;
+};
+
+let plantillasRotas = 0;
+
 const revisar = (ruta, etiqueta) => {
   revisados++;
   try {
@@ -49,6 +78,10 @@ for (const f of paginas) {
     .matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
   bloques.forEach((js, i) => {
     if (!js.trim()) return;
+    for (const mal of comillaEnComentario(js)) {
+      plantillasRotas++;
+      console.log(`COMILLA EN COMENTARIO ${f} bloque ${i}, línea ~${mal.linea}: ${mal.texto}`);
+    }
     const tmp = join(temporal, `${f.replace(/\W/g, "_")}-${i}.mjs`);
     writeFileSync(tmp, js);
     revisar(tmp, `${f} bloque ${i}`);
@@ -59,13 +92,14 @@ for (const m of readdirSync("assets").filter((f) => f.endsWith(".js"))) {
   revisar(join("assets", m), `assets/${m}`);
 }
 
-console.log(`${revisados} bloques revisados · ${fallos} con error de sintaxis`);
+console.log(`${revisados} bloques revisados · ${fallos} con error de sintaxis` +
+  ` · ${plantillasRotas} con una comilla invertida dentro de un comentario`);
 
 /* El barrido de botones va después y no antes: con un error de sintaxis, la
    mitad de los manejadores de ese archivo no existen todavía y sus botones
    saldrían señalados por una causa que ya está dicha arriba. */
 let botonesMal = 0;
-if (!fallos) {
+if (!fallos && !plantillasRotas) {
   try {
     execFileSync(process.execPath, [join("herramientas", "botones.mjs")], { stdio: "inherit" });
   } catch {
@@ -73,4 +107,4 @@ if (!fallos) {
   }
 }
 
-process.exit(fallos || botonesMal ? 1 : 0);
+process.exit(fallos || plantillasRotas || botonesMal ? 1 : 0);

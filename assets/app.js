@@ -11,7 +11,7 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=eb632bac";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=0ef28f45";
 
 const CLAVE = "tc_sesion";
 

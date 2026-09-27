@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=eb632bac">
+<link rel="stylesheet" href="assets/app.css?v=0ef28f45">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=eb632bac" defer></script>
+<script src="assets/vigia.js?v=0ef28f45" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -950,6 +950,7 @@
         <div class="regla"><b>Dos hechos ciertos no dicen su conclusión</b><span>“Hay 4 guías” y “4 son de otra plataforma” son verdad por separado y juntas significan que la regla no recoge nada. Eso se dice; deducirlo es trabajo que la pantalla puede ahorrar.</span></div>
         <div class="regla"><b>Donde no aplica, el botón no se dibuja</b><span>Un botón en gris invita a averiguar por qué; deshabilitado y sin motivo, es un callejón. Se quita, y en su lugar va una línea que explica la ausencia: un silencio donde alguien busca una acción cuesta más que las dos cosas. Deshabilitado solo cuando el paso existe y depende de un hecho que todavía no pasó, y entonces el <code>title</code> dice de cuál.</span></div>
         <div class="regla"><b>Un botón que no hace nada no es un botón</b><span>Si la acción necesita un dato que no existe —la dirección del pedido dentro del canal—, o se construye el dato o el botón no se dibuja. Y la ayuda que solo vive en un <code>title</code> no existe para quien navega con el teclado: o se ve, o no está. Esto no se vigila a ojo: <code>node herramientas/botones.mjs</code> barre todos los <code>&lt;button&gt;</code> y falla con los que nadie escucha.</span></div>
+        <div class="regla"><b>Ninguna comilla invertida dentro de una plantilla</b><span>En un comentario de HTML escrito dentro de una plantilla de JavaScript, una comilla invertida la cierra: lo que venía después deja de ser marcado y pasa a ser código, y el navegador dice que algo “no es una función”. <code>node --check</code> lo da por bueno, así que lo caza <code>sintaxis.mjs</code>. Dentro de un comentario, el nombre de una clase se escribe sin adorno.</span></div>
         <div class="regla"><b>Una columna que no aplica lleva guion, no pastilla</b><span>Una pastilla en la columna de pago se compara con los “Pagado” de las filas de al lado y se lee como un tercer estado. El guion dice que la columna no aplica a esa fila, que es lo cierto cuando no hay canal que reporte nada.</span></div>
         <div class="regla"><b>Se nombra el disparador, no el plazo</b><span>“En cuanto el rastreo diga Entregado”, nunca “en tres días”: el plazo lo sabe la paquetería y el disparador es nuestro y es comprobable. Y el reloj de una cola no corre contra quien todavía no puede hacer su parte.</span></div>
         <div class="regla"><b>Se busca y se elige, no se teclea de memoria</b><span>Una clave mal tecleada no falla: simplemente no se cumple nunca, que es el peor tipo de error porque no hace ruido. Donde hay una lista posible se busca en ella, por nombre y por clave a la vez y sin acentos en los dos lados.</span></div>

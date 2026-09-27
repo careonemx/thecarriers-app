@@ -1564,11 +1564,23 @@ Convive con las otras dos principales igual que ya lo hacen entre sí: la primar
 
 `.panel`, el mismo contenedor que Plantillas y que la regla de recolección: lista → panel. Título **"Nuevo envío"**.
 
-**Captura solo lo que lo convierte en un pedido.** Origen, caja, peso, seguro y paquetería son decisiones de la guía y ya tienen su sitio —el bloque Envío, con su cotización en vivo, su `.cobro`, su motivo obligatorio al salirse de la regla y su manejo de fallos—. Duplicarlas aquí sería escribir por segunda vez la pantalla que la función 4 existe para haber escrito una sola vez.
+**Se captura todo lo que hace falta para comprar la guía, en un solo sitio.** Quien crea un envío suelto tiene el paquete delante: ya sabe de qué bodega sale, ya lo midió y ya sabe si lo asegura. Preguntárselo en dos momentos lo obliga a contestar en dos sitios lo que sabe de una vez.
 
-**Y no por eso se parte la tarea en dos viajes:** al crear, el mismo panel no se cierra, se convierte en el panel de ese pedido con el bloque Envío abierto y la paquetería ya propuesta. Capturar y despachar son dos cosas; hacerlas sin cerrar el panel es lo que impide que "Crear envío" termine en una lista en vez de en una guía.
+*Esto corrige la versión anterior de esta sección, que dejaba origen, caja, peso y seguro para el bloque Envío. El argumento valía para un pedido de canal —esos datos se deciden después, sobre algo que ya existe— y no vale para un envío que nace de cero. El defecto es el mismo que corrigió la función 4, entrando por la puerta de atrás.*
 
-**Los bloques, en este orden:**
+**Y no se pregunta dos veces:** al crear, el panel no se cierra, se convierte en el panel de ese envío **con el bloque Envío ya relleno** con lo que se acaba de capturar. Ahí no queda nada que volver a contestar; queda lo que ese bloque sabe hacer y la captura no: comparar las tarifas con el cumplimiento real de cada paquetería, pedir motivo si se sale de la preferida, y comprar.
+
+### De corrido, en bloques. Sin pasos
+
+Es más largo que antes y aun así no lleva asistente, por tres razones y la tercera manda:
+
+- **El número que importa se calcula con lo de todos los bloques a la vez.** El peso facturable sale de las medidas, el precio sale del peso y del destino, y el total sale del seguro. Con pasos, la cifra vive en el último y corregir la caja obliga a retroceder: "el resultado, mientras se escribe" deja de ser posible en cuanto lo que se escribe está en otra pantalla.
+- **Se captura muchas veces al día.** Un asistente cobra tres clics de navegación por envío a quien ya sabe lo que va a escribir.
+- **El panel tiene que convertirse en el panel del envío al crear.** Un asistente que en el último paso deja de ser un asistente son dos cosas con la misma cara. Y `sistema.html` no tiene componente de pasos: inventarlo para una pantalla es un segundo modelo mental para el mismo problema.
+
+Lo largo se resuelve con lo que el sistema ya tiene: **bloques con su `.campos__titulo`**, igual que el panel de un pedido, y **plegado lo que la mayoría no va a tocar**.
+
+### Los bloques, en este orden
 
 **1. Referencia** — primero y obligatoria, porque es lo único que sustituye al folio del canal y ponerla al final la haría parecer opcional.
 
@@ -1580,13 +1592,41 @@ Y debajo, la advertencia que el producto puede dar y no puede resolver, en `.apa
 
 > Si esta venta ya entró por un canal, se van a emitir dos guías y nada las va a cruzar: no hay folio de canal con que compararlas.
 
-**Y una comprobación barata que no estaba pedida y cuesta poco**: al escribir el destinatario, si hay un pedido con el mismo nombre y el mismo código postal en los últimos siete días, se dice. No bloquea:
+**2. De dónde sale** — `.campos__titulo`. Va antes del destino porque es un clic y el destino son catorce campos: lo que casi siempre se deja como está no debe partir el formulario por la mitad.
 
-> `.aviso--alerta` **El pedido `#1016` es del mismo destinatario y del mismo código postal, del 18 de septiembre.** `<a>` **Verlo** `</a>`
+> `.campo` **Origen** — `select` de `origenes`, con el predeterminado ya elegido
+> `.campo__ayuda` Es el remitente que se imprime en la etiqueta y el sitio donde la paquetería recoge.
+>
+> `.boton--sutil.boton--chico` **Capturar otra dirección**
 
-Una defensa humana con un recordatorio automático sigue siendo humana, pero falla menos.
+**El `select` lista orígenes y nada más.** No lleva una opción "Otra dirección…" dentro: un desplegable se llena con lo que hay, y meter una orden entre los datos obliga a leer la lista entera para descubrir que la última fila no es una dirección.
 
-**2. Destinatario y dirección** — **los mismos campos, las mismas etiquetas y la misma validación que la dirección de un pedido.** Una dirección es una dirección, y dos formularios para lo mismo terminan validando distinto y escribiendo la calle de dos maneras.
+**"Capturar otra dirección" despliega los mismos campos de dirección de siempre**, en un `.bloque__caja` debajo del `select`, que queda en `.pastilla--neutra` **"Dirección capturada"**. Una dirección es una dirección: los mismos campos, las mismas etiquetas y la misma validación, más el contacto y el teléfono, que es lo que la paquetería necesita para recoger.
+
+**Esa dirección se imprime en la etiqueta aunque no se guarde.** Es un remitente real; lo único que no hace es entrar en la lista.
+
+> `.marca-campo` **Guardar en Direcciones de Origen** — *desmarcada*
+> `.campo__ayuda` Desmarcada, esta dirección se usa solo en este envío y no entra en la lista.
+
+**Desmarcada por defecto, y es una decisión.** Un envío de una vez no debe ensuciar una lista que después hay que mantener, y esa lista manda en la etiqueta de todos los demás envíos y en las reglas de recolección. Pero quien manda dos veces desde el mismo sitio lo resuelve con una casilla.
+
+**Al marcarla aparecen dos campos más, y solo entonces**, porque son lo que hace falta para ser un registro, no para mandar un paquete:
+
+> `.campos--2` **Abre** · **Cierra** — `input type="time"`
+> `.campo__ayuda` La hora en que hay alguien para entregarle el paquete al repartidor. Las reglas de recolección no pueden programar una ventana fuera de ella.
+> `.campo__error` Falta el horario. Un origen sin horario no se puede usar en una regla de recolección.
+
+Eso es lo que impide que un origen nazca a medias y rompa el panel de la regla de recolección, que enseña *"Horario del origen: 09:00 a 18:00"* en su cabeza.
+
+Al guardar, `.guardado` con la consecuencia y no con la confirmación:
+
+> Guardado. Bodega Norte queda en Direcciones de Origen y ya se puede usar en reglas de recolección.
+
+**Guardarla no la hace predeterminada.** El predeterminado es el remitente que se imprime cuando nada dice lo contrario, y cambiarlo desde aquí sería un efecto lateral de una casilla que no lo nombra. Se cambia donde se cambia: en Direcciones de Origen.
+
+**Y la dirección se copia en el envío, no se apunta a ella.** Da igual si se guardó o no: una guía conserva la dirección con la que se imprimió, que es la regla que ya rige cuando se edita un origen.
+
+**3. A dónde va** — `.campos__titulo`. **Los mismos campos, las mismas etiquetas y la misma validación que la dirección de un pedido.** Dos formularios para lo mismo terminan validando distinto y escribiendo la calle de dos maneras.
 
 Encima de los campos, para el caso del cliente que vuelve:
 
@@ -1594,25 +1634,49 @@ Encima de los campos, para el caso del cliente que vuelve:
 
 Abre el mismo buscador de fichas de 3.3 con otra fuente: los destinatarios de envíos anteriores, que son dato nuestro. Cada fila lleva nombre, ciudad y **"último envío el 4 de septiembre"**, que es lo que deja distinguir dos Arturo García. No es una libreta de contactos y no se construye una: es buscar en lo que ya se escribió.
 
-**3. Total (opcional)** — el "(opcional)" va en la etiqueta, nunca en un marcador que desaparece al escribir.
+**Y una comprobación barata que no estaba pedida y cuesta poco**: si hay un pedido con el mismo nombre y el mismo código postal en los últimos siete días, se dice. No bloquea:
+
+> `.aviso--alerta` **El pedido `#1016` es del mismo destinatario y del mismo código postal, del 18 de septiembre.** `<a>` **Verlo** `</a>`
+
+Una defensa humana con un recordatorio automático sigue siendo humana, pero falla menos.
+
+**4. El paquete** — `.campos__titulo`. Es el bloque que más cambia respecto de un pedido de canal, y está en 5.5.
+
+**5. Seguro** — `.campos__titulo`, leyendo `CAPACIDADES.costoSeguro` de la paquetería propuesta, con los tres estados de 4.2:
+
+> `.campo--corto` **Valor declarado** — propuesto con el total si se capturó; vacío si no
+> `.marca-campo` **Asegurar el envío**
+> `.campo__ayuda` 1.5 % sobre el valor declarado, mínimo $35.00.
+
+Sin registro del costo: *"Sin registro del costo del seguro de DHL: el importe aparece en la factura."* con su **Confirmar con DHL**. Con "no": la casilla no existe y en su lugar la línea *"Estafeta no asegura envíos desde aquí."*
+
+**Aquí el valor declarado no se propone con el total del pedido como en un pedido de canal**, porque el total es opcional y muchas veces no hay ninguno. Cuando no lo hay, el campo va vacío y su ayuda lo dice: *"Sin total capturado no hay valor que proponer. Es lo que la paquetería te repone si se pierde."*
+
+**6. Total (opcional)** — el "(opcional)" va en la etiqueta, nunca en un marcador que desaparece al escribir.
 
 > `.campo` **Total (opcional)**
 > `.campo__ayuda` Si lo capturas, queda marcado como capturado a mano y no cuenta como venta.
 
-**4. Artículos (opcional)** — plegado, porque la mayoría no los va a capturar:
+**7. Artículos (opcional)** — plegado, porque la mayoría no los va a capturar:
 
 > `<details class="desplegable"><summary>Agregar artículos</summary>`
-> El buscador de productos de 3.3, cantidad y precio por línea.
+> El buscador de fichas de 3.3, cantidad y precio por línea.
 > `.campo__ayuda` Con artículos, este envío entra en las reglas por producto y admite devoluciones parciales. Sin ellos, no.
 
 Dice lo que se gana, no lo que se pierde: es la única forma de que alguien decida capturarlos.
 
-**5. Lo que no se comprueba** — va al final, justo encima del pie, porque se lee antes de comprar y después de haber escrito la dirección.
+**8. Lo que no se comprueba** — va al final, justo encima del pie, porque se lee antes de comprar y después de haber escrito la dirección.
 
 > `.aviso--info` **La dirección se comprueba al comprar la guía.**
 > Aquí se revisa la forma: que el código postal tenga cinco dígitos, que la colonia no vaya vacía y que el teléfono esté completo. Que el destino exista y que tu paquetería llegue hasta ahí lo contesta la paquetería al comprar la guía, y si lo rechaza se dice con sus palabras.
 
 **Pie:** **Cancelar** · **Crear envío**.
+
+Y en el pie, a la izquierda, lo que ya se sabe del precio, porque es lo que decide si alguien cambia de caja antes de crear:
+
+> `.apagado` Te cobran 6 kg · desde $258.00 con DHL Express
+
+Es la misma cifra del `.cobro` y de las tarifas, no una segunda cuenta: un resumen que no sale del mismo cálculo es un número que un día dirá otra cosa.
 
 ## 5.3 El código postal que no está en el catálogo
 
@@ -1667,9 +1731,46 @@ Dos cosas que gana el cambio además de ser cierto. **El nombre describe mejor e
 
 **El filtro de canal gana "Sin canal"**, no "Manual": el desplegable contesta por dónde entró la venta, y una forma de capturar no es un sitio por donde entra dinero. Como todos los desplegables del producto, se llena con lo que hay: sin sueltos, la opción no aparece.
 
-## 5.5 El embalaje propone, no decide
+## 5.5 El paquete: la plantilla propone, las medidas mandan
 
-Es el estado nuevo, y se distingue del de la función 4 **por el verbo**. En un pedido de canal la caja ya se decidió sin nadie delante; aquí hay alguien delante de la caja.
+Es el bloque que más se aleja del de un pedido de canal, y por la misma razón que todo lo demás de esta pantalla: **un paquete que no es ninguna de tus cajas es justo el caso de un envío suelto.**
+
+> `.campo` **Caja** — `select` de plantillas
+> `.campos--2` **Largo** · **Ancho** · **Alto** — `.campo--corto`, en cm
+> `.campo--corto` **Peso** — en kg
+> `.cobro` — recalculándose al teclear
+
+**Las cuatro cifras están siempre a la vista, no escondidas detrás de una elección.** La plantilla es una comodidad; las medidas son el paquete. En la pantalla donde lo normal es que no coincidan, esconder las medidas hace de lo normal el caso oculto.
+
+### Cómo conviven
+
+**Elegir una caja rellena las cuatro cifras.** El `select` muestra la plantilla y la ayuda dice de dónde salen:
+
+> `.campo__ayuda` Medidas y peso de Caja chica.
+
+**Tocar una cifra a mano desliga, y lo dice.** El `select` pasa a **"Medidas propias"** —una opción que aparece cuando ya es cierta, no un señuelo permanente en la lista— y la ayuda cambia, con su vuelta atrás:
+
+> `.campo__ayuda` Medidas propias: ya no salen de Caja chica. — `.boton--sutil.boton--chico` **Volver a Caja chica**
+
+**La vuelta atrás importa tanto como el aviso.** Un dedo de más en el alto no puede costar la plantilla, y sin ese botón la única forma de recuperarla es volver a elegirla en el `select`, que ahora tiene una fila más que antes no estaba.
+
+**El peso facturable se recalcula con lo que hay escrito**, venga de donde venga, con `pesoCobrado()` y con el divisor de la matriz. El `.cobro` dice lo de siempre, con la consecuencia primero:
+
+> **Te cobran 6 kg**
+> Pesa 4 kg, pero una caja de 40 × 30 × 25 cm se cobra como si pesara 6.
+
+Y con el divisor sin registro, la línea que ya lleva en 4.2: *"Calculado con divisor 5000, sin registro del de DHL."*
+
+**Con medidas propias, el `.cobro` no sugiere una caja más chica.** En una regla de embalaje la sugerencia compara plantillas y la decisión es del comerciante; aquí las medidas son de un bulto que existe, y proponer una caja menor sería proponer un paquete que no se puede armar. Es el mismo principio que impide al sistema elegir la caja más chica por su cuenta.
+
+**Validación:** las cuatro cifras son obligatorias y mayores que cero.
+
+> `.campo__error` Falta el peso. Sin él no se puede cotizar.
+> `.campo__error` Falta el alto.
+
+### La regla de embalaje propone, no decide
+
+Y aquí la regla sí llega, pero en un papel más chico que en un pedido de canal. **La diferencia está en el verbo:**
 
 | Dónde | `.campo__ayuda` de Caja |
 |---|---|
@@ -1682,7 +1783,13 @@ Y cuando ninguna regla pudo evaluarse, que va a ser lo normal —sin artículos 
 
 Dice qué falta para que decidieran, que es más útil que decir que no decidieron. Obligar a alguien a pelearse con una regla que tiene delante es al revés.
 
+**Cuando el panel se convierte en el del envío**, el bloque Envío enseña esa misma caja ya resuelta, y su ayuda dice lo que pasó: *"Elegida a mano."* o *"Medidas propias: 44 × 30 × 18 cm."* Nunca "La eligió la regla", que a esas alturas ya no sería cierto.
+
 **La paquetería preferida sí aplica completa**, con su porqué y con motivo obligatorio al salirse: el orden de preferencia es un criterio sobre las paqueterías y no tiene nada que ver con por dónde entró la venta. **La recolección también**, sin un solo cambio: la regla es por origen × paquetería, un suelto tiene los dos, y el camión recoge bultos, no pedidos. **La generación automática no**: no hay evento de pago que la dispare.
+
+**Y con un origen capturado y sin guardar, no hay regla de recolección que lo tome**, porque las reglas se definen sobre orígenes de la lista. Se dice donde se decide, en la casilla de guardar:
+
+> `.apagado` Sin guardarla, este envío no entra en ninguna regla de recolección: la recolección se programa a mano.
 
 ## 5.6 Pedidos y Ventas dejan de ser el mismo número
 
@@ -1724,28 +1831,38 @@ En Cobros no cambia la conciliación —lista envíos y su llave es la guía—:
 
 **Guardando:** el botón con `aria-busy="true"` y `.girador`, texto **"Creando envío…"**.
 
-**Varios bultos:** fuera de alcance, igual que el pedido que necesita dos cajas, y se dice donde alguien lo intentaría —en la ayuda de Caja del bloque Envío—: *"Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia."* La referencia es lo que los junta al conciliar.
+**Varios bultos:** fuera de alcance, igual que el pedido que necesita dos cajas, y se dice donde alguien lo intentaría, que ahora es el bloque del paquete de la captura: *"Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia."* La referencia es lo que los junta al conciliar.
+
+**Origen capturado sin guardar, en pantallas de después:** en la etiqueta se imprime como cualquier remitente; en Recolecciones no aparece como origen, porque no está en la lista; y en Cobros la fila dice el nombre que se capturó. Ninguna de las tres lo trata como un hueco, porque no lo es: es una dirección completa que solo vive en ese envío.
+
+**El buscador de fichas, sin resultados:** con una fuente vacía —ningún envío anterior— el botón **Usar una dirección ya enviada** no se dibuja. Un buscador que solo puede contestar que no hay nada es un control que estorba.
 
 ## 5.9 Componentes
 
-**Se reutiliza:** `.panel` con sus `.bloque` · `.campo`, `.campos`, `.campos--2`, `.campos--corto-largo`, `.campo__ayuda`, `.campo__error` · `.desplegable` · `.aviso--info` / `--alerta` / `--mal` · `.pastilla--neutra` · `.tabla-caja` · `.metrica` · `.vacio` · `.dialogo` · `.girador` · y **el bloque Envío entero de la función 4**, sin una sola variante nueva salvo la redacción de la ayuda de Caja.
+**Se reutiliza:** `.panel` con sus `.bloque` y `.bloque__caja` · `.campo`, `.campo--corto`, `.campos`, `.campos--2`, `.campos--corto-largo`, `.campos__titulo`, `.campo__ayuda`, `.campo__error` · `.marca-campo` · `.desplegable` · `.cobro` · `.guardado` · `.aviso--info` / `--alerta` / `--mal` · `.pastilla--neutra` · `.tabla-caja` · `.metrica` · `.vacio` · `.dialogo` · `.girador` · y **el bloque Envío entero de la función 4**, que aquí llega relleno en vez de propuesto.
+
+**Y los campos de dirección, dos veces en el mismo panel**: los del origen capturado y los del destino son el mismo grupo de `.campos` con las mismas etiquetas y la misma validación. Una dirección es una dirección, también cuando las dos están en la misma pantalla.
 
 **Se crea:** nada. Pero **el buscador de 3.3 se generaliza**, porque ahora tiene dos fuentes: productos y destinatarios. `.buscar-producto` pasa a **`.buscador-ficha`**, con `.buscador-ficha__panel` y `.buscador-ficha__vacio`, y las filas se quedan como tipos: `.producto` con su `__sku` y su `__uso`, y **`.destinatario`** con su `__lugar` y su `__uso`. **Una clase nombrada por uno de sus dos usos deja de ser la misma clase**, y el cambio cuesta un renombrado hoy y una divergencia dentro de tres meses.
 
 ## 5.10 El recorrido completo
 
-Tarea principal: **mandar un reemplazo de garantía que no entró por ningún canal.**
+Tarea principal: **mandar un reemplazo de garantía que no entró por ningún canal, en un paquete que no es ninguna de sus cajas.**
 
 1. Pedidos. **Crear envío** abre el panel "Nuevo envío".
 2. Referencia: "Garantía #4412". Es lo primero que pide y es obligatoria.
-3. Empieza a escribir el destinatario y **Usar una dirección ya enviada** encuentra a Laura Méndez, con su ciudad y "último envío el 4 de septiembre". La elige y la dirección se llena.
-4. El CP es 29321 y no está en el catálogo. La ayuda lo dice sin pintar nada en rojo, y escribe la colonia a mano. Nada se bloquea.
-5. Deja el total vacío: es una garantía, no una venta.
-6. Antes del pie lee cuándo se comprueba la dirección de verdad. **Crear envío.**
-7. **El panel no se cierra**: ahora es el panel de `E-0043`, con el bloque Envío abierto. La caja viene propuesta por la regla y la ayuda dice que la elige él. Cambia a Caja chica.
-8. Marca el seguro, ve el `.cobro` recalcularse y las cuatro tarifas con la premisa completa: *"de Almacén Puebla a Tuxtla Gutiérrez · 2 kg facturables"*.
-9. `Generar guía con Estafeta Terrestre · $107.00`. Falla: *"Estafeta no tiene cobertura en 29321."* No se reintenta; las tarifas se repintan sin Estafeta. **Ahí es donde se comprueba la dirección**, exactamente como decía el aviso de la captura.
-10. Genera con la siguiente. En la tabla, `E-0043` sale con `.pastilla--neutra` "Sin canal", su referencia debajo y su guía. Y la métrica de arriba ya dice "43 en el periodo · 3 sin canal".
+3. **De dónde sale:** el origen predeterminado, Almacén Puebla, ya viene elegido. Un clic que no hace falta dar.
+4. **A dónde va:** empieza a escribir y **Usar una dirección ya enviada** encuentra a Laura Méndez, con su ciudad y "último envío el 4 de septiembre". La elige y la dirección se llena.
+5. El CP es 29321 y no está en el catálogo. La ayuda lo dice sin pintar nada en rojo, y escribe la colonia a mano. Nada se bloquea.
+6. **El paquete:** la regla propone Caja chica y rellena 25 × 20 × 15 y 1.5 kg. Pero el bulto mide 44 × 30 × 18. Teclea el largo y el `select` pasa a **"Medidas propias"**, con su **Volver a Caja chica** al lado por si el dedazo fue suyo. Completa las cuatro cifras y el `.cobro` se mueve mientras escribe: *"Te cobran 4.8 kg — Pesa 2 kg, pero una caja de 44 × 30 × 18 cm se cobra como si pesara 4.8."*
+7. **Seguro:** sin total capturado el valor declarado va vacío, y su ayuda dice qué es. Escribe $1,200 y marca la casilla; la ayuda dice el costo porque DHL lo tiene registrado.
+8. Deja el total vacío: es una garantía, no una venta. No abre los artículos.
+9. Antes del pie lee cuándo se comprueba la dirección de verdad. En el pie ya dice *"Te cobran 4.8 kg · desde $258.00 con DHL Express"*. **Crear envío.**
+10. **El panel no se cierra**: ahora es el panel de `E-0043`, y el bloque Envío llega **relleno** con el origen, las medidas propias, el peso y el seguro. Lo único que queda es lo que ese bloque sabe hacer: las cuatro tarifas con la premisa completa —*"de Almacén Puebla a Tuxtla Gutiérrez · 4.8 kg facturables"*— y el cumplimiento real de cada paquetería.
+11. `Generar guía con Estafeta Terrestre · $142.00`. Falla: *"Estafeta no tiene cobertura en 29321."* No se reintenta; las tarifas se repintan sin Estafeta. **Ahí es donde se comprueba la dirección**, exactamente como decía el aviso de la captura.
+12. Genera con la siguiente. En la tabla, `E-0043` sale con `.pastilla--neutra` "Sin canal", su referencia debajo y su guía. Y la métrica de arriba ya dice "43 en el periodo · 3 sin canal".
+
+**El paso 10 es la prueba de que el rediseño está bien:** no hay un solo campo que se conteste dos veces. La captura recoge lo que la persona sabe con el paquete delante; el bloque Envío hace lo que ella no puede hacer de memoria, que es comparar nueve tarifas.
 
 ---
 
@@ -1801,9 +1918,9 @@ Alto rendimiento por hora ahorrada, pero solo paga con volumen.
 
 **No es una quinta tanda: entra pegado a la función 4 y por eso no lleva puesto propio en la lista.** Un envío suelto termina en el bloque Envío que ya se construyó, y lo único que añade es un panel de captura de seis campos y una columna en la tabla. Construirlo aparte sería construir dos veces el mismo despacho.
 
-**Mínimo:** el panel "Nuevo envío" con referencia obligatoria, dirección con la misma validación de siempre y total opcional; `canal: null` con su folio propio; la columna Canal diciendo "Sin canal"; el filtro; el aviso de cuándo se comprueba la dirección de verdad; y la línea que explica por qué Pedidos y Ventas dejan de coincidir.
+**Mínimo:** el panel "Nuevo envío" completo —referencia obligatoria, origen con la opción de capturar otro, destino, **las cuatro cifras del paquete** y seguro—, porque quien tiene el bulto delante contesta las cuatro cosas de una vez y partirlas es el defecto que la función 4 existe para haber corregido; `canal: null` con su folio propio; la columna Canal diciendo "Sin canal"; el filtro; el aviso de cuándo se comprueba la dirección de verdad; y la línea que explica por qué Pedidos y Ventas dejan de coincidir.
 
-**Lo que puede esperar:** los artículos opcionales, el buscador de direcciones ya enviadas y la comprobación de duplicados por destinatario y código postal.
+**Lo que puede esperar:** los artículos opcionales, el buscador de direcciones ya enviadas, la comprobación de duplicados por destinatario y código postal, y **guardar en Direcciones de Origen la dirección capturada** —capturarla y usarla es lo que desbloquea el envío; guardarla es comodidad para la segunda vez—.
 
 **Lo que salió del alcance:** varios bultos en un envío, la libreta de contactos y la comprobación previa de dirección contra un padrón, que no existe.
 
@@ -2014,6 +2131,8 @@ Esta tabla deja el día del lanzamiento retratado: **ninguna paquetería emite r
 | `E-0042` | Venta por WhatsApp | $1,890 **a mano** | El total capturado: se ve la marca "a mano" y sigue sin contar como venta |
 | `E-0043` | Muestra a cliente | *(vacío)* | Con **artículos capturados** —2 × `MON-TAZ-360`— para que se vea que un suelto con líneas sí entra en las reglas por producto y admite devolución parcial |
 
+**`E-0041` con un origen capturado a mano y sin guardar** —"Bodega Norte", que no está en `origenes`— porque es el único modo de ver la pastilla "Dirección capturada", la línea de que no entra en ninguna regla de recolección, y una etiqueta impresa con un remitente que no es de la lista. Y **`E-0042` con medidas propias** que no coinciden con ninguna plantilla —44 × 30 × 18 y 2 kg— para el `select` en "Medidas propias", su **Volver a Caja chica** y un peso facturable que sale del volumen.
+
 `E-0041` y `E-0042` con guía emitida, para que **Cobros y Desempeño los cuenten** y las dos líneas de 5.6 tengan cifras reales que enseñar. **`E-0043` sin guía todavía**, para que se vea caer en "Listos para despachar" junto a los pedidos pagados, con su celda de Pago en guion y su botón de generar activo desde el primer momento. Uno de ellos, `E-0041`, **a un código postal que no está en `coloniasPorCP`** —29321— porque es el único modo de ver la ayuda del catálogo sin inventarla.
 
 Y **`E-0042` con el mismo destinatario y el mismo CP que `#1016`**, con siete días de diferencia, para que la comprobación de duplicado tenga dónde dispararse. Sin ese par, ese aviso no se puede probar.
@@ -2066,7 +2185,7 @@ El teléfono es obligatorio en las nueve, con cuenta o sin ella: es lo que cita 
 
 Los cuatro puntos quedaron resueltos y tres eran confirmaciones. El cuarto salió mejor de lo que yo lo había planteado: yo pedí una conversión en vez de un alta, y de ahí saliste con **dos campos en vez de uno**, que es el arreglo de verdad. "El cliente se arrepintió" y "destinatario ausente" contestan dos preguntas distintas, y en un solo campo el que se escribe después borra al que hacía falta.
 
-Los seis de antes siguen abiertos, y ninguno bloquea:
+Los seis de antes siguen abiertos, ninguno bloquea, y hay uno nuevo que sí te obliga a tocar la definición —el 9—:
 
 **1. La restricción de `via` hay que avisarla antes de que duela, y eso lo decidí yo.** §2.2 dice que quien caiga en el caso lo resuelve separando por origen o eligiendo un camino, pero no dice cuándo se entera. Diseñé tres avisos: uno mientras se edita la regla, uno en la fila de Configuración y la tarjeta de Recolecciones con la acción manual. **Confírmame que quieres los tres**; con menos, la restricción se descubre con un camión vacío.
 
@@ -2080,11 +2199,20 @@ Los seis de antes siguen abiertos, y ninguno bloquea:
 
 **6. §3.6 conserva una rama que en esta versión está muerta.** "El peso del catálogo sumado, si existe" no corre nunca sin catálogo, y quien programe va a escribir una rama que no se puede probar. **Propongo que el documento diga que en la primera versión el peso sale de la plantilla o del canal.**
 
-Y dos cosas nuevas, las dos chicas y las dos de este último ajuste:
+**7. Y una que me equivoqué yo, y que obliga a cambiar un párrafo de §5.3.** El dueño probó el envío suelto y le falta la mitad: origen, medidas y seguro. Tiene razón. Yo decidí que la captura recogiera solo lo que convierte al envío en un pedido y que esos tres fueran decisiones de la guía; tú lo confirmaste y lo escribiste en §5.3 —*"se capturan ahí y no en un formulario propio"*—. **El argumento valía para un pedido de canal y no vale para un envío que nace de cero:** quien lo captura tiene el paquete delante, ya sabe de qué bodega sale, ya lo midió y ya sabe si lo asegura. Partirlo reintroduce por la puerta de atrás el defecto que la función 4 corrigió.
 
-**7. La guía de retorno huérfana necesita renglón propio en la resta del cierre, y lo añadí.** §1.4 dice que al convertir no se pisa la guía ya emitida y que se ofrece cancelarla; §1.9 lista tres costos y ninguno es ése. Una guía emitida, sin usar y cobrada es dinero real, y sin renglón la resta del cierre sale más barata que la factura. **Lo puse como cuarta fila, visible solo cuando la hubo.** Es el cargo que más fácil se pierde: nadie lo pidió dos veces y nadie lo espera.
+**Lo que hay que cambiar en la definición es un párrafo, no la lista.** La lista de §5.3 ya nombraba origen, paquete y seguro, y sigue siendo correcta palabra por palabra. Lo que sobra es el párrafo que dice dónde se capturan. El panel rediseñado está en 5.2 y 5.5 de este documento.
 
-**8. La etiqueta del pendiente cambia en tres sitios, no en uno.** "Pagados sin guía" vive además en la `.metrica__nota` de Pedidos —que hoy dice "Pendientes de despachar", un segundo nombre para lo mismo— y en la tarjeta de Inicio. Los tres pasan a **"Listos para despachar"**. La clave del predicado se queda como está para no romper los enlaces que ya llevan `?pendiente=pagados-sin-guia`. Y vale la pena notar que el nombre nuevo **describe el predicado mejor de lo que lo describía el viejo**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso.
+**Y dos cosas que el rediseño arrastra y conviene que estén en la definición:**
+
+- **Capturar medidas propias, no solo peso.** §5.3 dice "plantilla, o medidas y peso a mano", así que ya estaba contemplado; lo que no estaba es qué pasa cuando conviven, y lo resolví: elegir caja rellena las cuatro cifras, tocar una desliga y lo dice, con vuelta atrás.
+- **Un origen capturado puede guardarse en Direcciones de Origen, y entonces necesita horario.** Las reglas de recolección lo leen y su panel lo enseña en la cabeza. Sin exigirlo al guardar, un origen nace a medias y rompe esa pantalla. Por eso el horario aparece solo al marcar la casilla: es lo que hace falta para ser un registro, no para mandar un paquete.
+
+Y dos cosas más, las dos chicas y las dos del ajuste anterior:
+
+**8. La guía de retorno huérfana necesita renglón propio en la resta del cierre, y lo añadí.** §1.4 dice que al convertir no se pisa la guía ya emitida y que se ofrece cancelarla; §1.9 lista tres costos y ninguno es ése. Una guía emitida, sin usar y cobrada es dinero real, y sin renglón la resta del cierre sale más barata que la factura. **Lo puse como cuarta fila, visible solo cuando la hubo.** Es el cargo que más fácil se pierde: nadie lo pidió dos veces y nadie lo espera.
+
+**9. La etiqueta del pendiente cambia en tres sitios, no en uno.** "Pagados sin guía" vive además en la `.metrica__nota` de Pedidos —que hoy dice "Pendientes de despachar", un segundo nombre para lo mismo— y en la tarjeta de Inicio. Los tres pasan a **"Listos para despachar"**. La clave del predicado se queda como está para no romper los enlaces que ya llevan `?pendiente=pagados-sin-guia`. Y vale la pena notar que el nombre nuevo **describe el predicado mejor de lo que lo describía el viejo**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso.
 
 **Y una que ya no lo es:** el título "Con qué paquetería sale cada pedido" queda confirmado, así que el renombrado de Configuración está cerrado entero.
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Etiquetas · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
+<link rel="stylesheet" href="../assets/app.css?v=0ef28f45">
 
 <!--
   Los estilos de la etiqueta van aquí y no en app.css a propósito.
@@ -141,7 +141,7 @@
   }
 </style>
 <style id="regla-pagina"></style>
-<script src="../assets/vigia.js?v=eb632bac"></script>
+<script src="../assets/vigia.js?v=0ef28f45"></script>
 </head>
 
 <body>
@@ -169,8 +169,8 @@
 <main class="lienzo" id="lienzo"></main>
 
 <script type="module">
-import { svgCodigo } from "../assets/codigo.js?v=eb632bac";
-import { origen, datosEtiqueta, marcarImpresas, vecesImpresa, fechaLarga } from "../assets/datos.js?v=eb632bac";
+import { svgCodigo } from "../assets/codigo.js?v=0ef28f45";
+import { origen, datosEtiqueta, marcarImpresas, vecesImpresa, fechaLarga } from "../assets/datos.js?v=0ef28f45";
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -198,6 +198,10 @@ const perdidas = guias.length - datos.length;
 
 function etiqueta(d) {
   const t = d.destinatario;
+  /* El remitente es el de ESE envío. Una dirección capturada al vuelo se
+     imprime como cualquier otra: es un remitente real, y lo único que no hace
+     es entrar en la lista. */
+  const rem = d.remitente ?? origen;
   const lineas = [
     t.compania,
     t.calle,
@@ -215,9 +219,9 @@ function etiqueta(d) {
 
     <section class="etiqueta__de">
       <span class="etiqueta__rotulo">Remitente</span>
-      <p>${esc(origen.nombre)} · ${esc(origen.contacto)}</p>
-      <p>${esc(origen.calle)} ${esc(origen.numExt)}${origen.numInt ? " " + esc(origen.numInt) : ""}, ${esc(origen.colonia)}</p>
-      <p>${esc(origen.ciudad)}, ${esc(origen.estado)} · CP ${esc(origen.cp)} · Tel. ${esc(origen.telefono)}</p>
+      <p>${esc(rem.nombre)} · ${esc(rem.contacto)}</p>
+      <p>${esc(rem.calle)} ${esc(rem.numExt)}${rem.numInt ? " " + esc(rem.numInt) : ""}, ${esc(rem.colonia)}</p>
+      <p>${esc(rem.ciudad)}, ${esc(rem.estado)} · CP ${esc(rem.cp)} · Tel. ${esc(rem.telefono)}</p>
     </section>
 
     <section class="etiqueta__para">

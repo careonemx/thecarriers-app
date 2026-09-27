@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=eb632bac">
-<script src="../assets/vigia.js?v=eb632bac" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=0ef28f45">
+<script src="../assets/vigia.js?v=0ef28f45" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -176,7 +176,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=eb632bac";
+import { montar, exigirSesion } from "../assets/app.js?v=0ef28f45";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
@@ -198,7 +198,8 @@ import { pedidos, sinGuia, conGuia, conError,
          enlaceCanal, destinatariosVistos, buscarDestinatarios, pedidoParecido,
          retornoDeLaIda, registrarDevolucionDeIda, esperaEntregaIda,
          QUIEN_REGISTRO, ESPERA_ENTREGA, seGuarda,
-         buscarProductos, fechaEnTexto } from "../assets/datos.js?v=eb632bac";
+         buscarProductos, fechaEnTexto,
+         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=0ef28f45";
 if (exigirSesion()) {
   montar();
 
@@ -709,11 +710,11 @@ if (exigirSesion()) {
 
   /** Los campos, sin envoltura: los mismos en los dos sitios donde se captura
       una dirección, con las mismas etiquetas y la misma validación. */
-  function camposDireccionHTML(c = {}) {
+  function camposDireccionHTML(c = {}, { prefijo = "dir" } = {}) {
     const campo = (id, etiqueta, valor, extra = "", ayuda = "") => `
       <label class="campo" data-campo="${id}">
         <span>${etiqueta}</span>
-        <input id="dir-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
+        <input id="${prefijo}-${id}" name="${id}" value="${esc(valor ?? "")}" ${extra}>
         ${ayuda ? `<span class="campo__ayuda">${ayuda}</span>` : ""}
         <span class="campo__error" hidden></span>
       </label>`;
@@ -734,11 +735,11 @@ if (exigirSesion()) {
           <label class="campo" data-campo="telefono">
             <span>Número de contacto</span>
             <span class="campo-tel">
-              <label class="sr-only" for="dir-lada">Código de país</label>
-              <select id="dir-lada" name="lada">
+              <label class="sr-only" for="${prefijo}-lada">Código de país</label>
+              <select id="${prefijo}-lada" name="lada">
                 ${ladas.map((l) => `<option value="${l.codigo}"${l.codigo === (c.lada ?? "+52") ? " selected" : ""}>${l.bandera} ${l.codigo}</option>`).join("")}
               </select>
-              <input id="dir-telefono" name="telefono" value="${esc(c.telefono ?? "")}"
+              <input id="${prefijo}-telefono" name="telefono" value="${esc(c.telefono ?? "")}"
                      inputmode="tel" maxlength="10" placeholder="55 1234 5678" autocomplete="tel-national">
             </span>
             <span class="campo__error" hidden></span>
@@ -758,7 +759,7 @@ if (exigirSesion()) {
         <div class="campos campos--corto-largo">
           <label class="campo" data-campo="cp">
             <span>Código postal</span>
-            <input id="dir-cp" name="cp" value="${esc(c.cp ?? "")}" inputmode="numeric"
+            <input id="${prefijo}-cp" name="cp" value="${esc(c.cp ?? "")}" inputmode="numeric"
                    maxlength="5" autocomplete="postal-code" required>
             <!-- Lo que el catálogo sabe o no sabe va en la AYUDA, nunca en el
                  error: un error afirma que el campo está mal, y aquí el campo
@@ -769,8 +770,8 @@ if (exigirSesion()) {
           </label>
           <label class="campo" data-campo="colonia">
             <span>Colonia</span>
-            <input id="dir-colonia" name="colonia" list="colonias" value="${esc(c.colonia ?? "")}" required>
-            <datalist id="colonias"></datalist>
+            <input id="${prefijo}-colonia" name="colonia" list="${prefijo}-colonias" value="${esc(c.colonia ?? "")}" required>
+            <datalist id="${prefijo}-colonias"></datalist>
             <span class="campo__error" hidden></span>
           </label>
         </div>
@@ -787,11 +788,11 @@ if (exigirSesion()) {
                campo convive con la referencia del envío, que es otra cosa, y
                dos rótulos iguales con significados distintos se confunden. -->
           <span>Referencia para el repartidor</span>
-          <textarea id="dir-referencia" name="referencia" rows="2" maxlength="100"
+          <textarea id="${prefijo}-referencia" name="referencia" rows="2" maxlength="100"
             placeholder="Casa azul con puerta negra, junto a la tienda de la esquina.">${esc(c.referencia ?? "")}</textarea>
           <span class="campo__pie">
             <span class="campo__ayuda">Ayuda al repartidor a encontrar el domicilio.</span>
-            <span class="campo__contador" id="dir-contador">0/100</span>
+            <span class="campo__contador" id="${prefijo}-contador">0/100</span>
           </span>
         </label>
 
@@ -814,19 +815,20 @@ if (exigirSesion()) {
   };
 
   /** El código postal propone colonia, ciudad y estado; y dice de dónde salen. */
-  function cablearDireccion(form) {
-    const cp = form.querySelector("#dir-cp");
-    const colonia = form.querySelector("#dir-colonia");
-    const lista = form.querySelector("#colonias");
-    const ayuda = form.querySelector("[data-ayuda-cp]");
+  function cablearDireccion(raiz, prefijo = "dir") {
+    const cp = raiz.querySelector(`#${prefijo}-cp`);
+    const colonia = raiz.querySelector(`#${prefijo}-colonia`);
+    const lista = raiz.querySelector(`#${prefijo}-colonias`);
+    const ayuda = raiz.querySelector("[data-ayuda-cp]");
+    if (!cp) return;
 
     function sugerirPorCP() {
       const valor = cp.value.trim();
       const info = coloniasPorCP[valor];
       lista.innerHTML = info ? info.colonias.map((x) => `<option value="${esc(x)}">`).join("") : "";
       if (info) {
-        form.querySelector("#dir-ciudad").value = info.ciudad;
-        form.querySelector("#dir-estado").value = info.estado;
+        raiz.querySelector(`#${prefijo}-ciudad`).value = info.ciudad;
+        raiz.querySelector(`#${prefijo}-estado`).value = info.estado;
         if (!info.colonias.includes(colonia.value)) colonia.value = info.colonias[0];
       }
       if (info) {
@@ -847,8 +849,8 @@ if (exigirSesion()) {
     cp.addEventListener("input", sugerirPorCP);
     sugerirPorCP();
 
-    const ref = form.querySelector("#dir-referencia");
-    const contador = form.querySelector("#dir-contador");
+    const ref = raiz.querySelector(`#${prefijo}-referencia`);
+    const contador = raiz.querySelector(`#${prefijo}-contador`);
     const contar = () => {
       const n = ref.value.length;
       contador.textContent = `${n}/100`;
@@ -862,8 +864,16 @@ if (exigirSesion()) {
   /** Revisa la forma, no el destino: que el CP tenga cinco dígitos, que la
       colonia no vaya vacía y que el teléfono esté completo. Que el domicilio
       exista lo contesta la paquetería al comprar la guía. */
+  function valoresDe(raiz) {
+    const v = {};
+    for (const el of raiz.querySelectorAll("input[name], select[name], textarea[name]")) {
+      v[el.name] = el.value;
+    }
+    return v;
+  }
+
   function validarDireccion(form) {
-    const v = Object.fromEntries(new FormData(form).entries());
+    const v = valoresDe(form);
     let ok = true;
     for (const { campo, etiqueta } of CAMPOS_OBLIGATORIOS) {
       if (campo === "cp") continue; // el CP además tiene forma, y se revisa aparte
@@ -1004,6 +1014,28 @@ if (exigirSesion()) {
   function estadoEnvio(folio) {
     if (envios.has(folio)) return envios.get(folio);
     const d = detalleActual(folio);
+    const p = pedidos.find((x) => x.folio === folio);
+
+    /* Un envío suelto llega con el paquete ya medido y el seguro ya decidido:
+       lo capturó quien lo tenía delante. Preguntarlo otra vez aquí sería
+       contestar dos veces lo que se supo de una vez. */
+    if (p?.paquete) {
+      const q = p.paquete;
+      const e = {
+        origen: p.origen ?? null,
+        plantilla: q.plantilla,
+        cajaFuente: q.fuente === "propias" ? "propias" : "manual",
+        regla: null, revision: null, vetadas: new Set(),
+        medidas: { largo: q.largo, ancho: q.ancho, alto: q.alto },
+        peso: q.peso, pesoFuente: "manual",
+        asegurar: !!p.seguro?.asegurar, valor: p.seguro?.valor ?? 0,
+        paqueteria: null, motivo: "", descartadas: [], todas: false,
+        intento: 0, fallo: null, aviso: null,
+      };
+      envios.set(folio, e);
+      return e;
+    }
+
     const caja = embalajeDe(folio) ?? {};
     const e = {
       origen: pedidos.find((x) => x.folio === folio)?.origen ?? origenPredeterminado()?.id ?? null,
@@ -1372,6 +1404,10 @@ if (exigirSesion()) {
     const suelto = esSuelto(d);
     const ayudaCaja = e.cajaFuente === "canal"
       ? `Peso y medidas del pedido, reportados por ${esc(d.canal)}. Las reglas de embalaje no se aplican.`
+      /* Capturada con el paquete delante: decir "la eligió la regla" a estas
+         alturas ya no sería cierto. */
+      : e.cajaFuente === "propias"
+        ? `Medidas propias: ${e.medidas.largo} × ${e.medidas.ancho} × ${e.medidas.alto} cm.`
       : e.cajaFuente === "manual" ? "Elegida a mano."
       : e.revision ? "Ninguna regla pudo elegirla: el motivo está arriba."
       : e.regla ? (suelto
@@ -1407,6 +1443,18 @@ if (exigirSesion()) {
           (dias >= 3 ? " A estas alturas el cliente ya suele preguntar." : ""))}
 
         <div class="campos campos--2">
+          ${d.origenCapturado ? `
+          <div class="campo"><span>Sale de</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <b style="font-weight:500">${esc(d.origenCapturado.nombre)}</b>
+              <span class="pastilla pastilla--neutra">Dirección capturada</span>
+            </div>
+            <span class="campo__ayuda">${esc([d.origenCapturado.campos.calle,
+              d.origenCapturado.campos.numExt, d.origenCapturado.campos.colonia,
+              d.origenCapturado.campos.ciudad].filter(Boolean).join(", "))}.
+              Se imprime en la etiqueta de este envío y no está en la lista, así que ninguna
+              regla de recolección lo toma.</span>
+          </div>` : `
           <label class="campo"><span>Sale de</span>
             <select data-origen>
               ${origenes.map((o) => `<option value="${esc(o.id)}"${
@@ -1415,14 +1463,19 @@ if (exigirSesion()) {
             <span class="campo__ayuda">Es el remitente que se imprime en la etiqueta.
               El paquete lo recoge la recolección de ${esc(
                 origenes.find((o) => o.id === e.origen)?.nombre ?? "ese origen")}.</span>
-          </label>
+          </label>`}
 
           <label class="campo"><span>Caja</span>
             <select data-plantilla>
               ${e.medidas && e.cajaFuente === "canal"
                 ? `<option value=""${e.plantilla ? "" : " selected"}>Medidas del pedido — ${
                     e.medidas.largo} × ${e.medidas.ancho} × ${e.medidas.alto} cm</option>` : ""}
-              ${e.plantilla ? "" : (e.cajaFuente === "canal" ? "" : '<option value="" selected>Sin caja</option>')}
+              ${e.cajaFuente === "propias" && e.medidas
+                /* "Sin caja" negaría lo que la ayuda acaba de afirmar: hay un
+                   bulto medido, lo que no hay es una plantilla detrás. */
+                ? `<option value="" selected>Medidas propias — ${e.medidas.largo} × ${
+                    e.medidas.ancho} × ${e.medidas.alto} cm</option>`
+                : e.plantilla ? "" : (e.cajaFuente === "canal" ? "" : '<option value="" selected>Sin caja</option>')}
               ${plantillas.map((x) => `<option value="${esc(x.id)}"${
                 x.id === e.plantilla ? " selected" : ""}${
                 e.vetadas.has(x.id) ? ` disabled title="Un producto de este pedido tiene prohibida esta caja."` : ""
@@ -2211,7 +2264,7 @@ if (exigirSesion()) {
   function revisarParecido(form) {
     const caja = panel.querySelector("[data-parecido]");
     if (!caja) return;
-    const v = Object.fromEntries(new FormData(form).entries());
+    const v = valoresDe(grupoDestino());
     const nombre = [v.nombre, v.apellido].filter(Boolean).join(" ").trim();
     const p = pedidoParecido({ nombre, cp: String(v.cp || "").trim() });
     caja.innerHTML = p
@@ -2224,8 +2277,187 @@ if (exigirSesion()) {
       : "";
   }
 
+  /* Lo que se está capturando ahora mismo. Vive aquí y no en el DOM porque
+     tres bloques distintos leen lo mismo: el `.cobro` mientras se teclea, el
+     seguro —que depende de la paquetería propuesta, que depende del peso— y el
+     resumen del pie. */
+  let nuevo = null;
+
+  const estadoDeCaptura = () => ({
+    plantilla: nuevo.plantilla,
+    medidas: { largo: nuevo.largo, ancho: nuevo.ancho, alto: nuevo.alto },
+    peso: nuevo.peso,
+    valor: nuevo.valor,
+    asegurar: nuevo.asegurar,
+    paqueteria: null, descartadas: [], todas: false,
+  });
+
+  /* La propuesta sale del mismo cálculo que la del bloque Envío: un resumen
+     que no sale del mismo sitio es un número que un día dirá otra cosa. */
+  const planDeCaptura = () => propuestaDe(estadoDeCaptura(), null);
+
+  function pintarPaquete() {
+    const e = estadoDeCaptura();
+    const plan = planDeCaptura();
+    const paq = plan.elegida;
+    const caja = plantillas.find((x) => x.id === nuevo.plantilla);
+
+    const ayuda = nuevo.cajaFuente === "propias"
+      ? `Medidas propias: ya no salen de ${esc(caja?.nombre ?? "la plantilla")}.`
+      : nuevo.regla
+        ? `La propone la regla «${esc(nuevo.regla)}». Aquí la eliges tú.`
+        : caja ? `Medidas y peso de ${esc(caja.nombre)}.`
+        : "Sin artículos capturados, las reglas de embalaje no tienen con qué decidir. " +
+          "Se propone la plantilla predeterminada.";
+
+    panel.querySelector("[data-caja-nuevo]").innerHTML = `
+      <label class="campo" data-campo="plantilla"><span>Caja</span>
+        <select name="plantilla" data-caja>
+          ${plantillas.map((x) => `<option value="${esc(x.id)}"${
+            x.id === nuevo.plantilla && nuevo.cajaFuente !== "propias" ? " selected" : ""
+          }>${esc(x.nombre)} — ${x.largo} × ${x.ancho} × ${x.alto} cm</option>`).join("")}
+          <!-- "Medidas propias" aparece cuando ya es cierta, no como señuelo
+               permanente en una lista de cajas que sí existen. -->
+          ${nuevo.cajaFuente === "propias"
+            ? '<option value="propias" selected>Medidas propias</option>' : ""}
+        </select>
+        <span class="campo__ayuda">${ayuda}
+          ${nuevo.cajaFuente === "propias" && caja
+            /* Un dedo de más en el alto no puede costar la plantilla. */
+            ? `<button class="boton boton--sutil boton--chico" type="button" style="margin-left:6px"
+                 data-volver-caja>Volver a ${esc(caja.nombre)}</button>` : ""}
+          Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia.</span>
+      </label>`;
+
+    panel.querySelector("[data-cobro-nuevo]").innerHTML = cobroHTML(e, plan.cobro, paq);
+    /* El seguro se repinta con el paquete: su costo lo cobra la paquetería
+       propuesta, y la propuesta cambia con el peso facturable. */
+    panel.querySelector("[data-seguro-nuevo]").innerHTML = seguroDeCapturaHTML(paq);
+    pintarResumenPie(plan, paq);
+  }
+
+  function seguroDeCapturaHTML(paq) {
+    if (!paq) return "";
+    const e = estadoDeCaptura();
+    return `
+      <label class="campo campo--corto" data-campo="valor"><span>Valor declarado</span>
+        <input type="number" name="valor" min="0" step="1" inputmode="numeric"
+               value="${nuevo.valor || ""}">
+        <span class="campo__ayuda">${nuevo.valor
+          ? "Es lo que la paquetería te repone si se pierde."
+          /* En un pedido de canal se propone con el total; aquí el total es
+             opcional y muchas veces no hay ninguno. */
+          : "Sin total capturado no hay valor que proponer. Es lo que la paquetería te repone " +
+            "si se pierde."}</span>
+      </label>
+      ${seguroHTML(e, paq)}`;
+  }
+
+  function pintarResumenPie(plan = planDeCaptura(), paq = null) {
+    const caja = panel.querySelector("[data-resumen-pie]");
+    if (!caja) return;
+    const elegida = paq ?? plan.elegida;
+    const tarifa = elegida ? tarifaDe(elegida, plan.cobro.cobrado) : null;
+    caja.textContent = elegida && plan.cobro.medidas
+      ? `Te cobran ${kg(plan.cobro.cobrado)} · desde ${dinero(tarifa?.precio ?? 0)} con ${
+          elegida}${tarifa?.servicio ? ` ${tarifa.servicio}` : ""}`
+      : "";
+  }
+
+  /* El origen capturado se despliega debajo del `select`, que queda dicho en
+     una pastilla: el desplegable lista orígenes y nada más, porque meter una
+     orden entre los datos obliga a leer la lista entera para descubrir que la
+     última fila no es una dirección. */
+  function pintarOrigen() {
+    const caja = panel.querySelector("[data-origen-nuevo]");
+    const o = origenes.find((x) => x.id === nuevo.origen);
+    caja.innerHTML = `
+      <div class="campos campos--corto-largo">
+        <label class="campo" data-campo="origen"><span>Origen</span>
+          ${nuevo.capturando
+            ? '<span class="pastilla pastilla--neutra">Dirección capturada</span>'
+            : `<select name="origen" data-origen-suelto>
+                ${origenes.map((x) => `<option value="${esc(x.id)}"${
+                  x.id === nuevo.origen ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}
+               </select>`}
+          <span class="campo__ayuda">Es el remitente que se imprime en la etiqueta y el sitio
+            donde la paquetería recoge.</span>
+        </label>
+        <div class="campo">
+          <span>&nbsp;</span>
+          <div class="grupo-botones">
+            ${nuevo.capturando
+              ? `<button class="boton boton--sutil boton--chico" type="button"
+                   data-cancelar-origen>Usar un origen de la lista</button>`
+              : `<button class="boton boton--sutil boton--chico" type="button"
+                   data-capturar-origen>Capturar otra dirección</button>`}
+          </div>
+        </div>
+      </div>
+
+      ${nuevo.capturando ? `
+        <div class="bloque__caja" style="display:grid;gap:14px;margin-top:4px">
+          <p class="apagado" style="font-size:12px">Esta dirección se imprime en la etiqueta
+            aunque no se guarde. Es un remitente real; lo único que no hace es entrar en la lista.</p>
+          <!-- Lo ya tecleado se vuelve a pintar: marcar la casilla de guardar
+               repinta este bloque, y una casilla no puede costar una dirección
+               entera escrita a mano. -->
+          <div class="campos" data-campos-origen>${
+            camposDireccionHTML(nuevo.campos ?? {}, { prefijo: "org" })}</div>
+
+          <label class="marca-campo">
+            <input type="checkbox" data-guardar-origen${nuevo.guardarOrigen ? " checked" : ""}>
+            <span>Guardar en Direcciones de Origen
+              <span class="campo__ayuda" style="display:block">${nuevo.guardarOrigen
+                ? "Queda en la lista y se puede usar en reglas de recolección. No pasa a ser la predeterminada."
+                : "Desmarcada, esta dirección se usa solo en este envío y no entra en la lista. " +
+                  "Sin guardarla, este envío no entra en ninguna regla de recolección: la " +
+                  "recolección se programa a mano."}</span></span>
+          </label>
+
+          ${nuevo.guardarOrigen ? `
+            <div class="campos campos--2">
+              <label class="campo" data-campo="nombreOrigen"><span>Nombre de la dirección</span>
+                <input name="nombreOrigen" value="${esc(nuevo.nombreOrigen ?? "")}"
+                       placeholder="Bodega Norte">
+                <span class="campo__error" hidden></span>
+              </label>
+              <div></div>
+            </div>
+            <!-- Abre y cierra aparecen solo al marcar: son lo que hace falta
+                 para ser un registro, no para mandar un paquete. Sin ellos el
+                 origen nace a medias y rompe la cabeza del panel de la regla
+                 de recolección, que enseña su horario. -->
+            <div class="campos campos--2">
+              <label class="campo campo--corto" data-campo="abre"><span>Abre</span>
+                <input type="time" name="abre" value="${esc(nuevo.abre ?? "")}">
+                <span class="campo__error" hidden></span>
+              </label>
+              <label class="campo campo--corto" data-campo="cierra"><span>Cierra</span>
+                <input type="time" name="cierra" value="${esc(nuevo.cierra ?? "")}">
+                <span class="campo__error" hidden></span>
+              </label>
+            </div>
+            <span class="campo__ayuda" style="margin-top:-8px">La hora en que hay alguien para
+              entregarle el paquete al repartidor. Las reglas de recolección no pueden programar
+              una ventana fuera de ella.</span>` : ""}
+        </div>` : ""}`;
+
+    if (nuevo.capturando) cablearDireccion(panel.querySelector("[data-campos-origen]"), "org");
+  }
+
   function abrirNuevoEnvio() {
     lineasSuelto = [];
+    const predeterminado = origenPredeterminado();
+    const caja = plantillaPredeterminada();
+    nuevo = {
+      origen: predeterminado?.id ?? null, capturando: false, guardarOrigen: false,
+      nombreOrigen: "", abre: "", cierra: "",
+      plantilla: caja?.id ?? null, cajaFuente: "plantilla", regla: null,
+      largo: caja?.largo ?? 0, ancho: caja?.ancho ?? 0, alto: caja?.alto ?? 0,
+      peso: caja?.peso ?? 1, valor: 0, asegurar: false,
+    };
+
     panel.innerHTML = `
       <div class="panel__cabeza">
         <div style="min-width:0">
@@ -2256,12 +2488,54 @@ if (exigirSesion()) {
             </div>
           </div>
 
+          <!-- Antes que el destino porque es un clic y el destino son catorce
+               campos: lo que casi siempre se deja como está no debe partir el
+               formulario por la mitad. -->
           <div class="bloque">
-            <p class="bloque__titulo">Destinatario</p>
+            <p class="bloque__titulo">De dónde sale</p>
+            <div class="bloque__caja" style="display:grid;gap:14px" data-origen-nuevo></div>
+          </div>
+
+          <div class="bloque">
+            <p class="bloque__titulo">A dónde va</p>
             <div class="bloque__caja" style="display:grid;gap:14px">
               <div data-parecido></div>
-              <div class="campos">${camposDireccionHTML({})}</div>
+              <div class="campos" data-campos-destino>${camposDireccionHTML({})}</div>
             </div>
+          </div>
+
+          <div class="bloque">
+            <p class="bloque__titulo">El paquete</p>
+            <div class="bloque__caja" style="display:grid;gap:14px">
+              <div data-caja-nuevo></div>
+              <!-- Las cuatro cifras siempre a la vista: la plantilla es una
+                   comodidad y las medidas son el paquete. En esta pantalla lo
+                   normal es que no coincidan. -->
+              <div class="campos campos--2">
+                <label class="campo campo--corto" data-campo="largo"><span>Largo (cm)</span>
+                  <input type="number" name="largo" min="1" step="1" inputmode="numeric"
+                         value="${nuevo.largo || ""}" data-medida="largo">
+                  <span class="campo__error" hidden></span></label>
+                <label class="campo campo--corto" data-campo="ancho"><span>Ancho (cm)</span>
+                  <input type="number" name="ancho" min="1" step="1" inputmode="numeric"
+                         value="${nuevo.ancho || ""}" data-medida="ancho">
+                  <span class="campo__error" hidden></span></label>
+                <label class="campo campo--corto" data-campo="alto"><span>Alto (cm)</span>
+                  <input type="number" name="alto" min="1" step="1" inputmode="numeric"
+                         value="${nuevo.alto || ""}" data-medida="alto">
+                  <span class="campo__error" hidden></span></label>
+                <label class="campo campo--corto" data-campo="peso"><span>Peso (kg)</span>
+                  <input type="number" name="peso" min="0.1" step="0.1" inputmode="decimal"
+                         value="${nuevo.peso || ""}" data-medida="peso">
+                  <span class="campo__error" hidden></span></label>
+              </div>
+              <div data-cobro-nuevo></div>
+            </div>
+          </div>
+
+          <div class="bloque">
+            <p class="bloque__titulo">Seguro</p>
+            <div class="bloque__caja" style="display:grid;gap:14px" data-seguro-nuevo></div>
           </div>
 
           <div class="bloque">
@@ -2301,6 +2575,12 @@ if (exigirSesion()) {
       </div>
 
       <div class="panel__pie">
+        <!-- Lo que ya se sabe del precio, porque es lo que decide si alguien
+             cambia de caja antes de crear. Sale del mismo cálculo que el
+             cobro y que las tarifas: un resumen que no sale del mismo sitio es
+             un número que un día dirá otra cosa. -->
+        <span class="apagado" style="font-size:12px" data-resumen-pie></span>
+        <span class="filtros__sep"></span>
         <button class="boton boton--sutil" type="button" data-cerrar-panel>Cancelar</button>
         <button class="boton boton--primario" type="button" data-crear-suelto>Crear envío</button>
       </div>`;
@@ -2308,92 +2588,184 @@ if (exigirSesion()) {
     folioAbierto = null;
     panel.showModal();
     const form = panel.querySelector("#form-suelto");
+    pintarOrigen();
+    pintarPaquete();
     cablearDireccion(form);
+
     form.addEventListener("input", (e) => {
       if (["nombre", "apellido", "cp"].includes(e.target.name)) revisarParecido(form);
+
+      const medida = e.target.dataset.medida;
+      if (medida) {
+        nuevo[medida] = Number(e.target.value) || 0;
+        /* Tocar una cifra a mano desliga de la plantilla, y se dice. */
+        if (medida !== "peso" || nuevo.plantilla) nuevo.cajaFuente = "propias";
+        pintarPaquete();
+      }
+      if (e.target.name === "valor") {
+        nuevo.valor = Number(e.target.value) || 0;
+        panel.querySelector("[data-seguro-nuevo]").innerHTML =
+          seguroDeCapturaHTML(planDeCaptura().elegida);
+      }
+      if (e.target.name === "nombreOrigen") nuevo.nombreOrigen = e.target.value;
+      if (e.target.name === "abre") nuevo.abre = e.target.value;
+      if (e.target.name === "cierra") nuevo.cierra = e.target.value;
+
       const cant = e.target.dataset.cantidad;
       if (cant != null) lineasSuelto[+cant].cantidad = Math.max(1, +e.target.value || 1);
       const precio = e.target.dataset.precio;
       if (precio != null) lineasSuelto[+precio].precio = +e.target.value || 0;
     });
-    form.addEventListener("submit", (e) => e.preventDefault());
+
+    form.addEventListener("change", (e) => {
+      if (e.target.matches("[data-origen-suelto]")) nuevo.origen = e.target.value;
+      if (e.target.matches("[data-caja]")) {
+        /* Elegir una caja vuelve a ligar las cuatro cifras y las rellena. */
+        const caja = plantillas.find((x) => x.id === e.target.value);
+        if (caja) usarPlantilla(caja);
+      }
+      if (e.target.matches("[data-asegurar]")) {
+        nuevo.asegurar = e.target.checked;
+        pintarResumenPie();
+      }
+      if (e.target.matches("[data-guardar-origen]")) {
+        nuevo.guardarOrigen = e.target.checked;
+        guardarCamposOrigen();
+        pintarOrigen();
+      }
+    });
+    form.addEventListener("submit", (ev) => ev.preventDefault());
     panel.querySelector("#ref-envio").focus();
   }
+
+  /** Deja las cuatro cifras ligadas otra vez a una plantilla. */
+  function usarPlantilla(caja) {
+    nuevo.plantilla = caja.id;
+    nuevo.cajaFuente = "plantilla";
+    nuevo.largo = caja.largo; nuevo.ancho = caja.ancho; nuevo.alto = caja.alto;
+    nuevo.peso = caja.peso;
+    for (const m of ["largo", "ancho", "alto", "peso"]) {
+      const campo = panel.querySelector(`[data-medida="${m}"]`);
+      if (campo) campo.value = nuevo[m];
+    }
+    pintarPaquete();
+  }
+
+  /* Lo tecleado en la dirección de origen se conserva al repintar el bloque:
+     marcar la casilla no puede costar lo que ya se había escrito. */
+  function guardarCamposOrigen() {
+    const caja = panel.querySelector("[data-campos-origen]");
+    if (!caja) return;
+    nuevo.campos = {};
+    for (const el of caja.querySelectorAll("input, select, textarea")) {
+      if (el.name) nuevo.campos[el.name] = el.value;
+    }
+  }
+
+  /* Los dos grupos de dirección del panel de captura. Una dirección es una
+     dirección: mismos campos, mismas etiquetas y misma validación; lo único
+     que cambia es de cuál de las dos se habla. */
+  /* Cada grupo se nombra: buscar "el primer `.campos`" elegía la fila del
+     `select` de origen, que también es un `.campos`, y el aviso de
+     destinatario repetido se quedaba mudo. */
+  const grupoDestino = () => panel.querySelector("[data-campos-destino]");
+  const grupoOrigen = () => panel.querySelector("[data-campos-origen]");
 
   function crearSuelto() {
     const form = panel.querySelector("#form-suelto");
     const boton = panel.querySelector("[data-crear-suelto]");
     const referencia = form.elements.refEnvio.value.trim();
     marcarCampo(form, "refEnvio", referencia ? "" : "Falta la referencia.");
-    const { ok, valores } = validarDireccion(form);
-    if (!referencia || !ok) {
-      form.querySelector(".campo--error input")?.focus();
+
+    const destino = validarDireccion(grupoDestino());
+    let ok = referencia && destino.ok;
+
+    /* Las cuatro cifras del paquete son obligatorias: sin ellas no se puede
+       cotizar, y cotizar es para lo que se capturan. */
+    for (const [campo, etiqueta] of [["largo", "el largo"], ["ancho", "el ancho"],
+                                     ["alto", "el alto"], ["peso", "el peso"]]) {
+      const falta = !(nuevo[campo] > 0);
+      marcarCampo(form, campo, falta
+        ? (campo === "peso" ? "Falta el peso. Sin él no se puede cotizar." : `Falta ${etiqueta}.`)
+        : "");
+      if (falta) ok = false;
+    }
+
+    /* La dirección capturada se valida igual que cualquier otra, y el horario
+       solo cuando se va a guardar: hace falta para ser un registro, no para
+       mandar un paquete. */
+    let origenCampos = null;
+    if (nuevo.capturando) {
+      const o = validarDireccion(grupoOrigen());
+      origenCampos = o.valores;
+      if (!o.ok) ok = false;
+      if (nuevo.guardarOrigen) {
+        const g = grupoOrigen().closest(".bloque__caja");
+        const sinNombre = !String(nuevo.nombreOrigen ?? "").trim();
+        marcarCampo(g, "nombreOrigen", sinNombre ? "Falta el nombre de la dirección." : "");
+        const sinHorario = !nuevo.abre || !nuevo.cierra;
+        marcarCampo(g, "abre", sinHorario
+          ? "Falta el horario. Un origen sin horario no se puede usar en una regla de recolección."
+          : "");
+        if (sinNombre || sinHorario) ok = false;
+      }
+    }
+
+    if (!ok) {
+      panel.querySelector(".campo--error input, .campo--error select")?.focus();
       return;
     }
 
     boton.setAttribute("aria-busy", "true");
     boton.innerHTML = '<span class="girador" aria-hidden="true"></span> Creando envío…';
 
+    let origen = nuevo.capturando ? null : nuevo.origen;
+    let origenCapturado = null;
+    if (nuevo.capturando) {
+      const nombre = String(nuevo.nombreOrigen ?? "").trim() ||
+        origenCampos.compania || [origenCampos.nombre, origenCampos.apellido].filter(Boolean).join(" ");
+      origenCapturado = { nombre, campos: origenCampos };
+      if (nuevo.guardarOrigen) {
+        const { origen: guardado, guardado: seGuardo } = agregarOrigen({
+          nombre, campos: origenCampos, abre: nuevo.abre, cierra: nuevo.cierra,
+        });
+        /* Guardado, el envío sale de un origen de la lista y entra en sus
+           reglas de recolección como cualquier otro. */
+        origen = guardado.id;
+        origenCapturado = null;
+        avisarGuardado(seGuardo
+          ? `Guardado. ${nombre} queda en Direcciones de Origen y ya se puede usar en reglas de recolección.`
+          : `${nombre} se usa en este envío. No se pudo guardar en la lista.`);
+      }
+    }
+
+    const paquete = {
+      plantilla: nuevo.cajaFuente === "propias" ? null : nuevo.plantilla,
+      fuente: nuevo.cajaFuente,
+      largo: nuevo.largo, ancho: nuevo.ancho, alto: nuevo.alto, peso: nuevo.peso,
+    };
+
     const { pedido } = crearEnvioSuelto({
-      referencia, campos: valores,
+      referencia, campos: destino.valores,
       total: form.elements.totalSuelto.value.trim() || null,
       articulos: lineasSuelto.filter((a) => a.cantidad > 0),
+      origen, origenCapturado, paquete,
+      seguro: { valor: nuevo.valor, asegurar: nuevo.asegurar },
     });
+
     recargarTabla();
-    /* El panel no se cierra: se convierte en el de ese pedido, con el bloque
-       Envío a la vista. Capturar una dirección y tener que irse a otra pantalla
-       a generar la guía es el defecto que la función 4 corrigió. */
+    /* El panel no se cierra: se convierte en el de ese envío, con el bloque
+       Envío relleno con lo que se acaba de capturar. Ni un solo campo se
+       contesta dos veces. */
     abrirPanel(pedido.folio, { irAlEnvio: true });
   }
 
-  /** Un cambio sobre una devolución que NO reinicia su reloj: `desde` es el
-      último hecho real, y editar un campo no es un hecho del paquete. */
-  function editarDevolucion(dev, cambios) {
-    Object.assign(dev, cambios);
-    guardarDevolucion(dev);
-    if (esVistaDev()) pintarDevoluciones();
-    if (folioAbierto === dev.pedido) repintarDevolucionPanel(dev.pedido);
+  /* El aviso de haber guardado vive donde se guardó, que es el panel, y dice
+     la consecuencia en vez de la confirmación. */
+  function avisarGuardado(texto) {
+    pendienteDeAvisar = texto;
   }
-
-  function guardarRegistroDevolucion(folio) {
-    const d = detalleActual(folio);
-    const form = panel.querySelector("#form-registro");
-    const v = Object.fromEntries(new FormData(form).entries());
-    const piezasTotales = d.articulos.reduce((n, a) => n + a.cantidad, 0);
-
-    let ok = true;
-    for (const [campo, mensaje] of [["motivo", "Falta el motivo."],
-                                    ["piezas", "Falta cuántas piezas regresan."],
-                                    ["valor", "Falta el valor declarado de lo que regresa."]]) {
-      const vacio = !String(v[campo] || "").trim();
-      marcarCampo(form, campo, vacio ? mensaje : "");
-      if (vacio) ok = false;
-    }
-    /* No pueden regresar más piezas de las que salieron: el `max` del campo lo
-       sugiere y el teclado lo ignora, y un "2 de 1" es una devolución que no
-       cuadra con nada al recibirla. */
-    if (ok && +v.piezas > piezasTotales) {
-      marcarCampo(form, "piezas", `El pedido tiene ${piezasTotales} ${
-        piezasTotales === 1 ? "pieza" : "piezas"}.`);
-      ok = false;
-    }
-    if (!ok) { form.querySelector(".campo--error select, .campo--error input")?.focus(); return; }
-
-    const r = retornoDeLaIda(d);
-    registrarDevolucionDeIda(d, {
-      motivo: v.motivo,
-      piezas: { regresan: +v.piezas, total: piezasTotales },
-      valor: +v.valor, quienPaga: v.quienPaga,
-      paqueteria: v.paqueteria, peso: +v.peso,
-      /* Con la ida en camino lo único diferido es la emisión, y el reloj de
-         "autorizadas sin movimiento" no arranca hasta la entrega. */
-      espera: r?.estatus === "transito",
-    });
-    registrando.delete(folio);
-    abrirPanel(folio);
-    if (esVistaDev()) pintarDevoluciones();
-    verBloque("[data-bloque-devolucion]");
-  }
+  let pendienteDeAvisar = null;
 
   function abrirPanel(folio, { irAlEnvio = false } = {}) {
     const d = detalleActual(folio);
@@ -2419,6 +2791,7 @@ if (exigirSesion()) {
       </div>
 
       <div class="panel__cuerpo">
+        ${pendienteDeAvisar ? `<p class="guardado">${esc(pendienteDeAvisar)}</p>` : ""}
         ${registrando.has(d.folio) && d.envio ? bloqueRegistroDevolucion(d) : ""}
         ${devolucionAbierta(d.folio) ? bloqueDevolucion(d) : ""}
         ${bloqueEnvio(d)}
@@ -2506,6 +2879,9 @@ if (exigirSesion()) {
           : ""}
       </div>`;
 
+    /* El aviso se consume al pintarlo: es la constancia de lo que acaba de
+       pasar, no un cartel que se quede pegado al panel. */
+    pendienteDeAvisar = null;
     folioAbierto = folio;
     panel.showModal();
     // El foco al contenedor, no al primer botón: así el lector de pantalla
@@ -2846,6 +3222,21 @@ if (exigirSesion()) {
     if (e.target.closest("[data-cerrar-panel]")) return panel.close();
 
     if (e.target.closest("[data-crear-suelto]")) return crearSuelto();
+
+    if (e.target.closest("[data-capturar-origen]")) {
+      nuevo.capturando = true;
+      return pintarOrigen();
+    }
+    if (e.target.closest("[data-cancelar-origen]")) {
+      nuevo.capturando = false;
+      nuevo.guardarOrigen = false;
+      return pintarOrigen();
+    }
+    if (e.target.closest("[data-volver-caja]")) {
+      const caja = plantillas.find((x) => x.id === nuevo.plantilla);
+      if (caja) usarPlantilla(caja);
+      return;
+    }
 
     const quitar = e.target.closest("[data-quitar-linea]");
     if (quitar) {

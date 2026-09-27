@@ -496,7 +496,12 @@ export const origenDeEtiqueta = (o = origenPredeterminado()) => {
   const c = o.campos;
   return {
     nombre: c.compania || o.nombre,
-    contacto: o.nombre,
+    /* Una dirección capturada al vuelo se nombra con su compañía, y entonces
+       el rótulo salía dos veces igual. Cuando coinciden, el contacto es la
+       persona que entrega el paquete, que es lo que el repartidor necesita. */
+    contacto: o.nombre === (c.compania || o.nombre)
+      ? [c.nombre, c.apellido].filter(Boolean).join(" ") || o.nombre
+      : o.nombre,
     calle: c.calle, numExt: c.numExt, numInt: c.numInt,
     colonia: c.colonia, ciudad: c.ciudad, estado: c.estado, cp: c.cp,
     telefono: telefonoMX(c.telefono),
@@ -1178,6 +1183,41 @@ const CLAVE_SUELTOS = "tc:sueltos";
 
 export const esSuelto = (p) => !!p && p.canal === null;
 
+/* =================================================================
+ * Direcciones de origen capturadas sobre la marcha.
+ *
+ * Una dirección de origen puede nacer en la captura de un envío. Guardarla es
+ * una decisión aparte de usarla: la lista manda en la etiqueta de todos los
+ * demás envíos y en las reglas de recolección, y un envío de una vez no debe
+ * ensuciarla. Por eso esto solo se llama cuando alguien marca la casilla.
+ * ================================================================= */
+const CLAVE_ORIGENES = "tc:origenes";
+
+const idDesdeNombre = (nombre) => String(nombre ?? "").toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `origen-${origenes.length + 1}`;
+
+/**
+ * Suma una dirección a la lista. Nunca predeterminada: el predeterminado es el
+ * remitente que se imprime cuando nada dice lo contrario, y cambiarlo desde
+ * una casilla que no lo nombra sería un efecto lateral.
+ */
+export function agregarOrigen({ nombre, campos, abre, cierra }) {
+  const origen = {
+    id: idDesdeNombre(nombre), nombre, predeterminado: false,
+    horario: { abre, cierra },
+    campos: { ...campos },
+  };
+  origenes.push(origen);
+  const mapa = leerMapa(CLAVE_ORIGENES);
+  mapa[origen.id] = origen;
+  return { origen, guardado: escribirMapa(CLAVE_ORIGENES, mapa) };
+}
+
+for (const o of Object.values(leerMapa(CLAVE_ORIGENES))) {
+  if (!origenes.some((x) => x.id === o.id)) origenes.push(o);
+}
+
 /** La referencia es lo único que sustituye al folio del canal. */
 export const referenciaDe = (p) => (esSuelto(p) ? p.referencia ?? null : null);
 
@@ -1200,7 +1240,9 @@ const inicialesDe = (nombre) => String(nombre ?? "").trim().split(/\s+/).slice(0
  * hay es una venta que ningún canal reportó. `pago` igual, por lo mismo:
  * "Pendiente" afirma que alguien lo está esperando.
  */
-export function crearEnvioSuelto({ referencia, campos, total = null, articulos = [] }) {
+export function crearEnvioSuelto({ referencia, campos, total = null, articulos = [],
+                                   origen = null, origenCapturado = null,
+                                   paquete = null, seguro = null }) {
   const folio = folioSueltoSiguiente();
   const nombre = [campos.nombre, campos.apellido].filter(Boolean).join(" ").trim();
   const pedido = {
@@ -1215,6 +1257,15 @@ export function crearEnvioSuelto({ referencia, campos, total = null, articulos =
     pago: null,
     envio: null,
     articulos: articulos.length ? articulos : undefined,
+    /* Lo capturado con el paquete delante se queda con el envío, no se vuelve
+       a preguntar en el bloque Envío. */
+    origen,
+    /* La dirección se COPIA en el envío, no se apunta a ella: una guía
+       conserva la dirección con la que se imprimió, se haya guardado el origen
+       o no. Es la misma regla que rige al editar un origen. */
+    origenCapturado: origenCapturado ? { ...origenCapturado } : null,
+    paquete: paquete ? { ...paquete } : null,
+    seguro: seguro ? { ...seguro } : null,
   };
   pedidos.unshift(pedido);
   const mapa = leerMapa(CLAVE_SUELTOS);
@@ -2346,9 +2397,17 @@ export function datosEtiqueta(guia) {
   if (!c.cp) falta.push("código postal");
   if (!c.telefono && !d.direccion.telefono) falta.push("teléfono");
 
+  /* El remitente sale del envío y no de una constante del módulo: un envío que
+     sale de otra bodega —o de una dirección capturada al vuelo— se imprimía
+     con el origen predeterminado, y la etiqueta es lo que el repartidor lee. */
+  const suOrigen = pedido.origenCapturado
+    ? origenDeEtiqueta(pedido.origenCapturado)
+    : origenDeEtiqueta(origenes.find((o) => o.id === pedido.origen) ?? origenPredeterminado());
+
   return {
     guia,
     folio: pedido.folio,
+    remitente: suOrigen,
     falta,
     corregida: d.correccion?.aplicada === true,
     paqueteria: pedido.envio.paqueteria,
@@ -3135,7 +3194,12 @@ export const guardarReglasRecoleccion = () =>
 
 /** El origen del que sale un pedido. Sin uno propio, el predeterminado: es el
     que se imprime como remitente cuando nada dice lo contrario. */
-export const origenDe = (p) => p.origen ?? origenPredeterminado()?.id ?? null;
+/* Con una dirección capturada y sin guardar no hay origen de la lista al que
+   pertenecer, y las reglas de recolección se definen sobre esa lista: devolver
+   el predeterminado metería el envío en una regla de un sitio del que no sale.
+   Su recolección se programa a mano. */
+export const origenDe = (p) =>
+  p.origenCapturado ? null : p.origen ?? origenPredeterminado()?.id ?? null;
 
 /**
  * Las guías que esperan camión, filtrables por pareja y por plataforma.
