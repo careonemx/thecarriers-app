@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=90b36df2">
+<link rel="stylesheet" href="assets/app.css?v=18af4232">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=90b36df2" defer></script>
+<script src="assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -799,6 +799,12 @@
         <div class="regla"><b>Sobre varios</b><span>En la barra de selección, encima de la tabla. Cada una dice sobre cuántos aplica.</span></div>
         <div class="regla"><b>Confirmar o cancelar</b><span>Abajo a la derecha del panel o del diálogo, en su pie. Cancelar a la izquierda de la confirmación, nunca al revés.</span></div>
         <div class="regla"><b>Filtros y forma de ver</b><span>No son acciones y no van con ellas: viven en la barra de la sección que filtran, alineados a la derecha. Fichas para filtrar, conmutador para cambiar de vista. Y una lista larga se ve de una sola manera: con miles de filas manda la tabla, así que no lleva un segundo modo.</span></div>
+        <div class="regla"><b>Fuera del panel lo que clasifica, dentro lo que refina</b><span>Clasificar es partir la lista en los grupos sobre los que se decide qué atender —las pestañas, la antigüedad, “van de regreso”—; refinar es recortar lo que ya se está mirando —una paquetería, un origen, un rango a medida—. Lo primero se usa en cada visita y se queda a la vista; lo segundo se pliega. Y una ficha de clasificación lleva su cuenta, porque un número dice si vale la pena pulsarla antes de pulsarla: en cero se apaga y deja de ser pulsable, igual que un cero deja de ser enlace en Inicio.</span></div>
+        <div class="regla"><b>El panel aparece a partir de dos refinadores</b><span>Con uno solo, un botón de 110px que esconde un desplegable de 150 ahorra cuarenta píxeles y cobra un clic cada vez. Es la misma regla dando otro resultado porque la entrada es otra, no una excepción: Cobros se queda con sus tres controles a la vista y Tracking pliega tres campos.</span></div>
+        <div class="regla"><b>Ninguna etiqueta de la barra empieza por “Filtrar”</b><span>En una barra que entera es de filtros, y con el buscador diciendo “Filtrar esta lista”, eran tres “filtrar” en un renglón. Cada control nombra su objeto: “Quién lo decidió”, “Campo corregido”, “Paquetería”.</span></div>
+        <div class="regla"><b>Un control no busca y filtra a la vez</b><span>Un campo con etiqueta “Buscar en el historial” y marcador “Filtrar por pedido, destinatario o código postal” pide dos cosas distintas del mismo control. El marcador dice qué hace —<b>Filtrar esta lista</b>— y la etiqueta se queda con los campos que el marcador dejó de enumerar, que es donde sirven de verdad.</span></div>
+        <div class="regla"><b>La cuenta de una ficha es lo que quedaría al pulsarla</b><span>Con los demás filtros puestos y sin el suyo. Sobre la lista entera mentiría en cuanto hubiera cualquier otro filtro; sobre lo que ella misma ya recortó diría siempre lo que se ve. En cero se apaga y deja de ser pulsable —salvo si está pulsada, o se quedaría encendida y sin nadie a quien pulsar para apagarla—.</span></div>
+        <div class="regla"><b>Las fichas de fecha llevan rótulo solo si hay dos fechas</b><span>Un pedido tiene una: la de entrada, y el rótulo “Fecha” repetía lo que las fichas ya decían. Un detenido tiene dos —la de la guía y la del último reporte— y las fichas miden la segunda, así que ahí el rótulo <b>Sin movimiento</b> es lo único que impide leer “7 días” como un plazo de entrega. Un rótulo que desambigua entre dos datos reales no es redundante; uno que nombra lo que ya se ve, sí.</span></div>
         <div class="regla"><b>Una barra de filtros se lee en un renglón</b><span>Lo que se usa siempre se queda fuera —el buscador de la lista y las fichas de fecha—; el resto se pliega en un solo control que abre un <code>.colgante</code>. Ese control dice <b>cuántos</b> hay puestos, no cuáles: una ficha por filtro dice más y cuesta ancho, y con un juego de filtros que cambia de dos a seis según la pestaña, volvería a partir la barra solo a veces, que es peor que siempre. Lo que puso la persona se cuenta en el control con el que lo puso; lo que llegó con la navegación se nombra, porque nadie lo eligió.</span></div>
         <div class="regla"><b>Paginación</b><span>En el pie de la tarjeta que contiene la lista, y siempre con el mismo orden: cuántos se muestran, cuántos por página, y los números a la derecha.</span></div>
         <div class="regla"><b>Cuando no hay nada</b><span>La acción la lleva el estado vacío y la de arriba se oculta. Con la pantalla en blanco es de lo único que se puede hablar, y repetirla no gana nada.</span></div>

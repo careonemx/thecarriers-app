@@ -6,15 +6,16 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Cobros · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
-<script src="../assets/vigia.js?v=90b36df2" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=18af4232">
+<script src="../assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body data-seccion="cobros">
 <main class="contenido contenido--ancho">
   <div class="encabezado">
     <div>
       <h1>Cobros</h1>
-      <p>Lo que cotizaste contra lo que te cobró la paquetería, envío por envío. Las diferencias aparecen aquí antes de que pagues la factura.</p>
+      <p>El importe cotizado contra el que facturó la paquetería, envío por envío. Las
+         diferencias aparecen antes de que la factura se pague.</p>
     </div>
     <div class="encabezado__acciones">
       <button class="boton boton--fantasma" type="button">Exportar conciliación</button>
@@ -24,18 +25,30 @@
   <section class="tarjeta">
     <div class="filtros">
       <div class="buscador">
-        <label class="sr-only" for="q-cobros">Buscar en esta lista</label>
+        <label class="sr-only" for="q-cobros">Filtrar esta lista por guía, pedido o
+          paquetería</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="q-cobros" data-buscar-local autocomplete="off"
-               placeholder="Filtrar por guía, pedido o paquetería">
+               placeholder="Filtrar esta lista">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <button class="ficha-filtro" type="button" aria-pressed="false" data-columna="dif" data-valor="si">Solo con diferencia</button>
-      <span class="filtros__sep"></span>
-      <label class="sr-only" for="fp">Filtrar por paquetería</label>
+      <!-- Clasifica: es la lista de lo que hay que reclamar. Sin el "Solo",
+           que es lo que la ficha hace y no algo que escribir. -->
+      <button class="ficha-filtro" type="button" aria-pressed="false"
+              data-columna="dif" data-valor="si">
+        Con diferencia <span class="ficha-filtro__cuenta" data-cuenta></span>
+      </button>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <!-- Sin panel, y es la misma regla dando otro resultado: el panel aparece
+           a partir de dos refinadores. Con uno, un botón de 110px que esconde un
+           desplegable de 150 ahorra cuarenta píxeles y cobra un clic cada vez. -->
+      <label class="sr-only" for="fp">Paquetería</label>
       <select id="fp" data-filtro="paqueteria"><option value="">Todas las paqueterías</option></select>
+
+      <span class="filtros__sep"></span>
     </div>
     <div class="tabla-caja scroll-fino">
       <table id="tabla">
@@ -56,8 +69,8 @@
   </section>
 </main>
 <script type="module">
-import { montar, exigirSesion, conectarFiltros } from "../assets/app.js?v=90b36df2";
-import { envios, dinero, cargosDe, TIPOS_CARGO } from "../assets/datos.js?v=90b36df2";
+import { montar, exigirSesion, conectarFiltros } from "../assets/app.js?v=18af4232";
+import { envios, dinero, cargosDe, TIPOS_CARGO } from "../assets/datos.js?v=18af4232";
 if (exigirSesion()) {
   montar();
   const facturados = envios.filter((e) => e.facturado != null);
@@ -78,9 +91,12 @@ if (exigirSesion()) {
     `<div class="metrica"><p class="metrica__etiqueta">${etiqueta}</p>
      <p class="metrica__valor tabular">${valor}</p><p class="metrica__nota">${nota}</p></div>`;
   document.getElementById("metricas").innerHTML =
-    metrica("Cotizado", dinero(cot), "Lo que te dijo la plataforma") +
-    metrica("Facturado", dinero(fac), "Lo que te cobró la paquetería") +
-    metrica("Diferencia", dinero(fac - cot), "A tu cargo si no se reclama") +
+    /* Una nota de métrica nombra el dato, no conversa con quien lo lee. Y
+       "lo que te dijo la plataforma" además era impreciso: el cotizado sale de
+       la cotización al generar, y la plataforma es solo una de las vías. */
+    metrica("Cotizado", dinero(cot), "Importe cotizado al generar la guía") +
+    metrica("Facturado", dinero(fac), "Importe de la factura de la paquetería") +
+    metrica("Diferencia", dinero(fac - cot), "Se paga completa si no se reclama") +
     metrica("Envíos con ajuste", conDif.length, `de ${facturados.length} facturados`);
 
   const tabla = document.getElementById("tabla");
@@ -109,6 +125,9 @@ if (exigirSesion()) {
 
   const sel = document.getElementById("fp");
   [...new Set(facturados.map((e) => e.paqueteria))].sort().forEach((v) => sel.add(new Option(v, v)));
+
+  /* La cuenta y el apagado los lleva `conectarFiltros`, que es quien sabe qué
+     filas pasan los demás filtros. */
   conectarFiltros(tabla);
 }
 </script>

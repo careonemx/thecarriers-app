@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Correcciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
-<script src="../assets/vigia.js?v=90b36df2" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=18af4232">
+<script src="../assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body data-seccion="correcciones">
 <main class="contenido contenido--ancho">
@@ -25,32 +25,73 @@
   <section class="tarjeta">
     <div class="filtros">
       <div class="buscador">
-        <label class="sr-only" for="q-corr">Buscar en el historial</label>
+        <!-- Un control no busca y filtra a la vez: el marcador dice qué hace y
+             la etiqueta lleva los campos que el marcador dejó de enumerar. -->
+        <label class="sr-only" for="q-corr">Filtrar esta lista por pedido, destinatario o
+          código postal</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="q-corr" autocomplete="off"
-               placeholder="Filtrar por pedido, destinatario o código postal">
+        <input type="search" id="q-corr" autocomplete="off" placeholder="Filtrar esta lista">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
+      <!-- Clasifica, no refina: parte la bitácora entre las correcciones que
+           llegaron a tiempo y las que no, que es la única pregunta por la que
+           alguien abre esta pantalla con intención de actuar. Sin el "Solo":
+           una ficha pulsada ya significa "solo estas". -->
       <button class="ficha-filtro" type="button" aria-pressed="false" id="f-tarde">
-        Solo las que salieron con la anterior</button>
-      <span class="filtros__sep"></span>
-      <label class="sr-only" for="f-quien">Filtrar por quién lo decidió</label>
-      <select id="f-quien"><option value="">Todos los orígenes</option></select>
-      <label class="sr-only" for="f-campo">Filtrar por campo</label>
-      <select id="f-campo"><option value="">Todos los campos</option></select>
+        Salieron con la anterior <span class="ficha-filtro__cuenta" data-cuenta-tarde></span>
+      </button>
+
+      <span class="filtros__div" aria-hidden="true"></span>
+      <div class="colgante" data-colgante>
+        <button class="boton boton--sutil boton--chico" type="button" id="abrir-filtros"
+                data-abrir aria-expanded="false" aria-controls="panel-filtros">Filtros</button>
+        <div class="colgante__panel filtros__panel" id="panel-filtros" role="dialog"
+             aria-label="Filtros" hidden>
+          <div class="campos">
+            <!-- Las dos fechas son un rango, no dos filtros: si algo se parte,
+                 se parten juntas o queda un "desde" sin su "hasta". -->
+            <div class="campo" data-filtro="rango">
+              <span>Del … al …</span>
+              <div class="rango-fechas">
+                <label class="campo-fecha"><span class="sr-only">Desde</span>
+                  <input type="date" id="f-desde"></label>
+                <span class="filtros__etiqueta">al</span>
+                <label class="campo-fecha"><span class="sr-only">Hasta</span>
+                  <input type="date" id="f-hasta"></label>
+              </div>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="rango" hidden>Quitar</button>
+            </div>
+
+            <!-- Se pliega aunque parezca clasificador: esas dos cifras ya están
+                 en las métricas de arriba, y sacarlas pondría los mismos dos
+                 números dos veces en la misma pantalla. -->
+            <div class="campo" data-filtro="f-quien">
+              <span id="rot-f-quien">Quién lo decidió</span>
+              <select id="f-quien" aria-labelledby="rot-f-quien"><option value="">Todos los orígenes</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-quien" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-filtro="f-campo">
+              <span id="rot-f-campo">Campo corregido</span>
+              <select id="f-campo" aria-labelledby="rot-f-campo"><option value="">Todos los campos</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-campo" hidden>Quitar</button>
+            </div>
+          </div>
+          <div class="filtros__panel-pie">
+            <button class="boton boton--sutil boton--chico" type="button"
+                    data-limpiar-filtros>Quitar filtros</button>
+          </div>
+        </div>
+      </div>
 
       <span class="filtros__sep"></span>
-      <!-- Las dos fechas son un rango, no dos filtros: si la barra se parte,
-           se parten juntas o queda un "desde" sin su "hasta". -->
-      <div class="rango-fechas">
-        <label class="campo-fecha"><span class="sr-only">Desde</span>
-          <input type="date" id="f-desde"></label>
-        <span class="apagado" style="font-size:12px">al</span>
-        <label class="campo-fecha"><span class="sr-only">Hasta</span>
-          <input type="date" id="f-hasta"></label>
-      </div>
+      <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
+        Quitar filtros</button>
     </div>
 
     <div class="tabla-caja scroll-fino">
@@ -72,9 +113,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
+import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
 import { correccionesHechas, QUIEN_CORRIGIO, quienCorrigio,
-         CAMPO_DIRECCION, fechaLarga } from "../assets/datos.js?v=90b36df2";
+         CAMPO_DIRECCION, fechaLarga } from "../assets/datos.js?v=18af4232";
 if (exigirSesion()) {
   montar();
 
@@ -110,7 +151,7 @@ if (exigirSesion()) {
             porPersona ? "el catálogo no alcanzaba: alguien eligió" : "no ha hecho falta");
   }
 
-  function filtradas() {
+  function filtradas({ conTarde = true } = {}) {
     const q = document.getElementById("q-corr").value.trim();
     const quien = document.getElementById("f-quien").value;
     const campo = document.getElementById("f-campo").value;
@@ -124,7 +165,7 @@ if (exigirSesion()) {
       if (campo && c.campo !== campo) return false;
       if (desde && c.fecha < desde) return false;
       if (hasta && c.fecha > hasta) return false;
-      if (soloTarde && c.aTiempo !== false) return false;
+      if (conTarde && soloTarde && c.aTiempo !== false) return false;
       return true;
     });
   }
@@ -146,6 +187,7 @@ if (exigirSesion()) {
   }
 
   function pintar() {
+    pintarFiltros();
     const lista = filtradas();
     const paginas = Math.max(1, Math.ceil(lista.length / porPagina));
     pagina = Math.min(pagina, paginas);
@@ -196,6 +238,70 @@ if (exigirSesion()) {
         </div>
       </div>` : "";
   }
+
+  const abrirFiltros = document.getElementById("abrir-filtros");
+  const panelFiltros = document.getElementById("panel-filtros");
+  const limpiar = document.getElementById("limpiar-filtros");
+  const fichaTarde = document.getElementById("f-tarde");
+
+  const valor = (id) => document.getElementById(id).value;
+
+  const hayFiltro = () => !!(valor("q-corr").trim() || valor("f-quien") || valor("f-campo") ||
+    valor("f-desde") || valor("f-hasta") ||
+    fichaTarde.getAttribute("aria-pressed") === "true");
+
+  /* Cuenta campos con valor, no controles: el rango cuenta uno aunque sean dos
+     campos, porque es un filtro y no dos. */
+  const filtrosPuestos = () =>
+    [!!(valor("f-desde") || valor("f-hasta")), !!valor("f-quien"), !!valor("f-campo")]
+      .filter(Boolean).length;
+
+  function pintarFiltros() {
+    const n = filtrosPuestos();
+    abrirFiltros.className = n ? "ficha-filtro" : "boton boton--sutil boton--chico";
+    if (n) abrirFiltros.setAttribute("aria-pressed", "true");
+    else abrirFiltros.removeAttribute("aria-pressed");
+    abrirFiltros.textContent = n ? `Filtros · ${n}` : "Filtros";
+
+    for (const [campo, puesto] of [["rango", !!(valor("f-desde") || valor("f-hasta"))],
+                                   ["f-quien", !!valor("f-quien")],
+                                   ["f-campo", !!valor("f-campo")]]) {
+      panelFiltros.querySelector(`[data-quitar-filtro="${campo}"]`).hidden = !puesto;
+    }
+
+    /* La cuenta es lo que quedaría al pulsarla: con los demás filtros puestos y
+       sin el suyo. Pulsada no se desactiva, o se quedaría encendida y sin nadie
+       a quien pulsar para apagarla. */
+    const tarde = filtradas({ conTarde: false }).filter((c) => c.aTiempo === false).length;
+    fichaTarde.querySelector("[data-cuenta-tarde]").textContent = tarde || "";
+    fichaTarde.disabled = tarde === 0 && fichaTarde.getAttribute("aria-pressed") !== "true";
+
+    limpiar.hidden = !hayFiltro();
+  }
+
+  limpiar.addEventListener("click", () => {
+    document.getElementById("q-corr").value = "";
+    for (const id of ["f-quien", "f-campo", "f-desde", "f-hasta"]) {
+      document.getElementById(id).value = "";
+    }
+    fichaTarde.setAttribute("aria-pressed", "false");
+    pagina = 1;
+    pintar();
+  });
+
+  panelFiltros.addEventListener("click", (e) => {
+    const quitar = e.target.closest("[data-quitar-filtro]");
+    if (quitar) {
+      const campo = quitar.dataset.quitarFiltro;
+      if (campo === "rango") {
+        document.getElementById("f-desde").value = "";
+        document.getElementById("f-hasta").value = "";
+      } else document.getElementById(campo).value = "";
+      pagina = 1;
+      return pintar();
+    }
+    if (e.target.closest("[data-limpiar-filtros]")) limpiar.click();
+  });
 
   /* Los desplegables se llenan de lo que hay, no de una lista fija: un filtro
      con opciones que no existen en ninguna fila devuelve siempre vacío. */

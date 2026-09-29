@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
-<script src="../assets/vigia.js?v=90b36df2" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=18af4232">
+<script src="../assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -53,7 +53,7 @@
 
     <div class="filtros">
       <div class="buscador">
-        <label class="sr-only" for="q-pedidos">Buscar en esta lista</label>
+        <label class="sr-only" for="q-pedidos">Filtrar esta lista por pedido, cliente o destino</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <!-- "Esta lista" es lo único que contesta cuál de los dos buscadores
@@ -96,36 +96,36 @@
             </div>
 
             <div class="campo" data-filtro="fp">
-              <span>Paquetería</span>
-              <select id="fp"><option value="">Todas las paqueterías</option></select>
+              <span id="rot-fp">Paquetería</span>
+              <select id="fp" aria-labelledby="rot-fp"><option value="">Todas las paqueterías</option></select>
               <button class="boton boton--sutil boton--chico" type="button"
                       data-quitar-filtro="fp" hidden>Quitar</button>
             </div>
 
             <div class="campo" data-filtro="fc">
-              <span>Canal</span>
-              <select id="fc"><option value="">Todos los canales</option></select>
+              <span id="rot-fc">Canal</span>
+              <select id="fc" aria-labelledby="rot-fc"><option value="">Todos los canales</option></select>
               <button class="boton boton--sutil boton--chico" type="button"
                       data-quitar-filtro="fc" hidden>Quitar</button>
             </div>
 
             <div class="campo" data-solo-dev hidden data-filtro="fd-estado">
-              <span>Estado</span>
-              <select id="fd-estado"><option value="">Todos los estados</option></select>
+              <span id="rot-fd-estado">Estado</span>
+              <select id="fd-estado" aria-labelledby="rot-fd-estado"><option value="">Todos los estados</option></select>
               <button class="boton boton--sutil boton--chico" type="button"
                       data-quitar-filtro="fd-estado" hidden>Quitar</button>
             </div>
 
             <div class="campo" data-solo-dev hidden data-filtro="fd-motivo">
-              <span>Motivo</span>
-              <select id="fd-motivo"><option value="">Todos los motivos</option></select>
+              <span id="rot-fd-motivo">Motivo</span>
+              <select id="fd-motivo" aria-labelledby="rot-fd-motivo"><option value="">Todos los motivos</option></select>
               <button class="boton boton--sutil boton--chico" type="button"
                       data-quitar-filtro="fd-motivo" hidden>Quitar</button>
             </div>
 
             <div class="campo" data-solo-dev hidden data-filtro="fd-mecanismo">
-              <span>Mecanismo</span>
-              <select id="fd-mecanismo"><option value="">Todos los mecanismos</option></select>
+              <span id="rot-fd-mecanismo">Mecanismo</span>
+              <select id="fd-mecanismo" aria-labelledby="rot-fd-mecanismo"><option value="">Todos los mecanismos</option></select>
               <button class="boton boton--sutil boton--chico" type="button"
                       data-quitar-filtro="fd-mecanismo" hidden>Quitar</button>
             </div>
@@ -134,7 +134,7 @@
                  sería un tercer estilo de control para la misma tarea. -->
             <label class="marca-campo" data-solo-dev hidden>
               <input type="checkbox" id="fd-quietas">
-              <span>Sin moverse más de 7 días</span>
+              <span>Sin movimiento más de 7 días</span>
             </label>
           </div>
           <div class="filtros__panel-pie">
@@ -225,7 +225,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
+import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
@@ -248,7 +248,7 @@ import { pedidos, sinGuia, conGuia, conError,
          retornoDeLaIda, registrarDevolucionDeIda, esperaEntregaIda,
          QUIEN_REGISTRO, ESPERA_ENTREGA, seGuarda,
          buscarProductos, fechaEnTexto,
-         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=90b36df2";
+         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=18af4232";
 if (exigirSesion()) {
   montar();
 

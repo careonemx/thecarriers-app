@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Recolecciones · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
-<script src="../assets/vigia.js?v=90b36df2" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=18af4232">
+<script src="../assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body data-seccion="recolecciones">
 <main class="contenido contenido--ancho">
@@ -15,8 +15,8 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Recolecciones</h1>
-      <p>Programa recolecciones de cualquier paquetería sin entrar a su portal
-         y verifica su cumplimiento.</p>
+      <p>Recolecciones de cualquier paquetería, sin entrar a su portal, y el cumplimiento
+         de cada una.</p>
     </div>
     <div class="encabezado__acciones">
       <!-- Una recolección se programa sobre guías, no sobre la nada: el camión
@@ -42,48 +42,97 @@
         <button class="pestana" role="tab" type="button" aria-selected="true" data-vista="proximas">Programadas</button>
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="historial">Historial</button>
       </div>
-      <div class="periodo__mando" role="group" aria-label="Periodo del historial" id="mando" hidden>
-        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="7">7 días</button>
-        <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="30">30 días</button>
-        <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="">Todo</button>
-      </div>
+      <!-- Las fichas de fecha bajaron a la barra: son un filtro, y los filtros
+           viven en la barra de la sección que filtran. Tenerlas en otro sitio
+           que en Pedidos y en Tracking obliga a buscar el control cada vez. -->
     </div>
     <div class="filtros">
       <div class="buscador">
-        <label class="sr-only" for="q-reco">Buscar</label>
+        <label class="sr-only" for="q-reco">Filtrar esta lista por folio, paquetería,
+          plataforma u origen</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="q-reco" autocomplete="off" placeholder="Folio, paquetería, plataforma u origen">
+        <input type="search" id="q-reco" autocomplete="off" placeholder="Filtrar esta lista">
       </div>
 
-      <span class="filtros__div" aria-hidden="true"></span>
-      <label class="sr-only" for="desde">Desde</label>
-      <input type="date" id="desde" aria-label="Desde">
-      <span class="filtros__etiqueta">al</span>
-      <label class="sr-only" for="hasta">Hasta</label>
-      <input type="date" id="hasta" aria-label="Hasta">
+      <span class="filtros__div" aria-hidden="true" data-solo-historial hidden></span>
+      <!-- Solo en Historial: una agenda que mira hacia delante no se recorta
+           por antigüedad. -->
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias="7"
+              data-solo-historial hidden>7 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="true" data-dias="30"
+              data-solo-historial hidden>30 días</button>
+      <button class="ficha-filtro" type="button" aria-pressed="false" data-dias=""
+              data-solo-historial hidden>Todo</button>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <label class="sr-only" for="f-paq">Paquetería</label>
-      <select id="f-paq"><option value="">Todas las paqueterías</option></select>
-      <label class="sr-only" for="f-org">Origen</label>
-      <select id="f-org"><option value="">Todos los orígenes</option></select>
-      <label class="sr-only" for="f-via">Comprada en</label>
-      <select id="f-via">
-        <option value="">Directo y plataformas</option>
-        <option value="directo">Solo directo</option>
-      </select>
-      <label class="sr-only" for="f-ven">Ventana</label>
-      <select id="f-ven"><option value="">Todas las ventanas</option></select>
-      <label class="sr-only" for="f-res">Resultado</label>
-      <select id="f-res" hidden>
-        <option value="">Todos los resultados</option>
-        <option value="completa">Completas</option>
-        <option value="parcial">Incompletas</option>
-        <option value="fallida">Sin cumplir</option>
-        <option value="sin-piezas">Sin piezas</option>
-      </select>
+      <div class="colgante" data-colgante>
+        <button class="boton boton--sutil boton--chico" type="button" id="abrir-filtros"
+                data-abrir aria-expanded="false" aria-controls="panel-filtros">Filtros</button>
+        <div class="colgante__panel filtros__panel" id="panel-filtros" role="dialog"
+             aria-label="Filtros" hidden>
+          <div class="campos">
+            <div class="campo" data-filtro="rango">
+              <span>Del … al …</span>
+              <div class="rango-fechas">
+                <label class="sr-only" for="desde">Desde</label>
+                <input type="date" id="desde" aria-label="Desde">
+                <span class="filtros__etiqueta">al</span>
+                <label class="sr-only" for="hasta">Hasta</label>
+                <input type="date" id="hasta" aria-label="Hasta">
+              </div>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="rango" hidden>Quitar</button>
+            </div>
 
+            <div class="campo" data-filtro="f-paq">
+              <span id="rot-f-paq">Paquetería</span>
+              <select id="f-paq" aria-labelledby="rot-f-paq"><option value="">Todas las paqueterías</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-paq" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-filtro="f-org">
+              <span id="rot-f-org">Origen</span>
+              <select id="f-org" aria-labelledby="rot-f-org"><option value="">Todos los orígenes</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-org" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-filtro="f-via">
+              <span id="rot-f-via">Comprada en</span>
+              <select id="f-via" aria-labelledby="rot-f-via">
+                <option value="">Directo y plataformas</option>
+                <option value="directo">Solo directo</option>
+              </select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-via" hidden>Quitar</button>
+            </div>
+
+            <!-- El resultado solo existe en el historial: una recolección que
+                 todavía no ocurre no tiene ninguno, y ofrecerlo en Programadas
+                 promete un corte imposible. -->
+            <div class="campo" data-filtro="f-res" data-solo-historial hidden>
+              <span id="rot-f-res">Resultado</span>
+              <select id="f-res" aria-labelledby="rot-f-res">
+                <option value="">Todos los resultados</option>
+                <option value="completa">Completas</option>
+                <option value="parcial">Incompletas</option>
+                <option value="fallida">Sin cumplir</option>
+                <option value="sin-piezas">Sin piezas</option>
+              </select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="f-res" hidden>Quitar</button>
+            </div>
+          </div>
+          <div class="filtros__panel-pie">
+            <button class="boton boton--sutil boton--chico" type="button"
+                    data-limpiar-filtros>Quitar filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <span class="filtros__sep"></span>
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
         Quitar filtros</button>
     </div>
@@ -95,13 +144,13 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
+import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
 import { recolecciones, recoleccionesPasadas, recoleccionesProximas,
          resultadoRecoleccion, cumplimientoRecolecciones,
          origenes, menosDias, HOY,
          parejasRecoleccion, guiasSinRecoleccion,
          comoCancelar, marcarCancelacionSolicitada,
-         nombrarAusencia, capacidadDe, telefonoDe, ofrece, sinRegistro } from "../assets/datos.js?v=90b36df2";
+         nombrarAusencia, capacidadDe, telefonoDe, ofrece, sinRegistro } from "../assets/datos.js?v=18af4232";
 if (exigirSesion()) {
   montar();
 
@@ -122,23 +171,28 @@ if (exigirSesion()) {
   let pagina = 1;
   let porPagina = 10;
 
-  const mando = document.getElementById("mando");
   const zona = document.getElementById("vista");
+  const fichasFecha = [...document.querySelectorAll("[data-dias]")];
+  const abrirFiltros = document.getElementById("abrir-filtros");
+  const panelFiltros = document.getElementById("panel-filtros");
   const desde = document.getElementById("desde");
   const hasta = document.getElementById("hasta");
   const buscar = document.getElementById("q-reco");
   const fPaq = document.getElementById("f-paq");
   const fOrg = document.getElementById("f-org");
   const fVia = document.getElementById("f-via");
-  const fVen = document.getElementById("f-ven");
   const fRes = document.getElementById("f-res");
   const limpiar = document.getElementById("limpiar-filtros");
 
   /* Los desplegables se llenan con lo que hay, no con una lista fija: una
      opción que nunca devuelve nada es una opción que estorba. */
+  /* Sin "Ventana": es una propiedad que se lee en la fila, no una pregunta que
+     alguien hace, y la pregunta real —qué pasa con esta bodega y esta
+     paquetería— ya la contestan Origen y Paquetería juntos. Además sus opciones
+     salían de las cadenas de horario, así que crecían con cada agenda nueva: un
+     filtro cuyas opciones se multiplican con el uso empeora con el uso. */
   for (const [sel, saca] of [[fPaq, (r) => r.paqueteria],
-                             [fOrg, (r) => nombreOrigen(r.origen)],
-                             [fVen, (r) => r.ventana]]) {
+                             [fOrg, (r) => nombreOrigen(r.origen)]]) {
     [...new Set(recolecciones.map(saca))].sort()
       .forEach((v) => sel.add(new Option(v, v)));
   }
@@ -149,14 +203,33 @@ if (exigirSesion()) {
   const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() ||
-                             fPaq.value || fOrg.value || fVen.value || fVia.value || fRes.value);
+                             fPaq.value || fOrg.value || fVia.value || fRes.value);
+
+  /* Cuenta campos con valor, no controles, y solo los de la pestaña activa. */
+  const filtrosPuestos = () => [
+    !!(desde.value || hasta.value), !!fPaq.value, !!fOrg.value, !!fVia.value,
+    !!fRes.value && vista === "historial",
+  ].filter(Boolean).length;
+
+  function pintarFiltros() {
+    const n = filtrosPuestos();
+    abrirFiltros.className = n ? "ficha-filtro" : "boton boton--sutil boton--chico";
+    if (n) abrirFiltros.setAttribute("aria-pressed", "true");
+    else abrirFiltros.removeAttribute("aria-pressed");
+    abrirFiltros.textContent = n ? `Filtros · ${n}` : "Filtros";
+
+    for (const [campo, puesto] of [["rango", !!(desde.value || hasta.value)],
+                                   ["f-paq", !!fPaq.value], ["f-org", !!fOrg.value],
+                                   ["f-via", !!fVia.value], ["f-res", !!fRes.value]]) {
+      panelFiltros.querySelector(`[data-quitar-filtro="${campo}"]`).hidden = !puesto;
+    }
+  }
 
   function pasa(r) {
     if (desde.value && r.fecha < desde.value) return false;
     if (hasta.value && r.fecha > hasta.value) return false;
     if (fPaq.value && r.paqueteria !== fPaq.value) return false;
     if (fOrg.value && nombreOrigen(r.origen) !== fOrg.value) return false;
-    if (fVen.value && r.ventana !== fVen.value) return false;
     if (fVia.value === "directo" && r.via) return false;
     if (fVia.value && fVia.value !== "directo" && r.via !== fVia.value) return false;
     if (fRes.value && resultadoRecoleccion(r).clave !== fRes.value) return false;
@@ -566,12 +639,13 @@ if (exigirSesion()) {
   function pintar() {
     document.querySelectorAll("[data-vista]").forEach((b) =>
       b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
-    mando.hidden = vista !== "historial";
-    /* El resultado solo existe en el historial: una recolección que todavía
-       no ocurre no tiene ninguno. */
-    fRes.hidden = vista !== "historial";
+    /* Las fichas de fecha y el filtro de resultado solo existen en el
+       historial: lo programado todavía no tiene antigüedad ni desenlace. */
+    document.querySelectorAll("[data-solo-historial]")
+      .forEach((x) => { x.hidden = vista !== "historial"; });
     if (vista !== "historial") fRes.value = "";
     limpiar.hidden = !hayFiltro();
+    pintarFiltros();
     document.querySelectorAll("[data-vista]").forEach((b) =>
       b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
     zona.innerHTML = vista === "proximas" ? proximasHTML() : historialHTML();
@@ -606,11 +680,11 @@ if (exigirSesion()) {
     b.addEventListener("click", () => { vista = b.dataset.vista; pintar(); }));
 
   const alFiltrar = () => { pagina = 1; pintar(); };
-  [desde, hasta, fPaq, fOrg, fVen, fVia, fRes].forEach((c) => c.addEventListener("change", alFiltrar));
+  [desde, hasta, fPaq, fOrg, fVia, fRes].forEach((c) => c.addEventListener("change", alFiltrar));
   buscar.addEventListener("input", alFiltrar);
   limpiar.addEventListener("click", () => {
     desde.value = hasta.value = "";
-    buscar.value = fPaq.value = fOrg.value = fVen.value = fVia.value = fRes.value = "";
+    buscar.value = fPaq.value = fOrg.value = fVia.value = fRes.value = "";
     alFiltrar();
   });
 
@@ -674,13 +748,25 @@ if (exigirSesion()) {
     pintar();
   });
 
-  mando.querySelectorAll("[data-dias]").forEach((b) =>
+  fichasFecha.forEach((b) =>
     b.addEventListener("click", () => {
-      mando.querySelectorAll("[data-dias]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      fichasFecha.forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
       dias = b.dataset.dias === "" ? "" : +b.dataset.dias;
       pagina = 1;
       pintar();
     }));
+
+  panelFiltros.addEventListener("click", (e) => {
+    const quitar = e.target.closest("[data-quitar-filtro]");
+    if (quitar) {
+      const campo = quitar.dataset.quitarFiltro;
+      if (campo === "rango") { desde.value = ""; hasta.value = ""; }
+      else document.getElementById(campo).value = "";
+      pagina = 1;
+      return pintar();
+    }
+    if (e.target.closest("[data-limpiar-filtros]")) limpiar.click();
+  });
 
   /* Los atajos desde Configuración. Un aviso que promete "ver las tres citas"
      y deja la lista entera delante obliga a buscarlas a mano, que es lo que el

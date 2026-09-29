@@ -11,7 +11,7 @@
  * ================================================================= */
 import { empresa, usuario, detenidos, sinGuia, tienda, HOY, planApurado, planQuedan,
          avisos, avisosLeidos, avisosSinLeer, marcarAvisosLeidos, fechaLarga,
-         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=90b36df2";
+         pedidos, envios, origenes, plantillas, recolecciones } from "./datos.js?v=18af4232";
 
 const CLAVE = "tc_sesion";
 
@@ -779,6 +779,29 @@ export function conectarFiltros(tabla) {
     if (contador) contador.textContent = visibles;
     const vacio = document.querySelector("[data-sin-resultados]");
     if (vacio) vacio.hidden = visibles > 0;
+
+    /* La cuenta de una ficha se calcula sobre lo que quedaría al pulsarla, es
+       decir con los demás filtros puestos y sin el suyo: eso es lo que dice si
+       vale la pena pulsarla. Sobre la lista entera mentiría en cuanto hubiera
+       cualquier otro filtro, y sobre lo ya filtrado por ella misma diría
+       siempre lo que se ve. En cero la ficha se apaga. */
+    for (const f of fichas) {
+      const hueco = f.querySelector("[data-cuenta]");
+      if (!hueco) continue;
+      let n = 0;
+      for (const fila of filas) {
+        if (fila.dataset[f.dataset.columna] !== f.dataset.valor) continue;
+        let ok = !texto || fila.textContent.toLowerCase().includes(texto);
+        for (const s of selects) {
+          if (ok && s.value) ok = fila.dataset[s.dataset.filtro] === s.value;
+        }
+        if (ok) n++;
+      }
+      hueco.textContent = n || "";
+      /* Desactivar la que está pulsada la dejaría encendida y sin forma de
+         apagarse, con la lista recortada y nadie a quien pulsar. */
+      f.disabled = n === 0 && f.getAttribute("aria-pressed") !== "true";
+    }
   };
 
   busqueda?.addEventListener("input", aplicar);

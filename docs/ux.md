@@ -33,7 +33,7 @@ Tres cosas mandan sobre todo lo que sigue, y ninguna es mía:
 | Guías manuales | El bloque Envío del panel de `pedidos.html` | Ya está ahí; lo que falta es que todo lo que mueve el precio se pueda cambiar sin salir |
 | Retorno desde una guía con estatus | El mismo bloque Envío, y `envio.html` | El comerciante se entera mirando el rastreo de esa guía, no una cola |
 | El envío suelto | Pedidos, con su panel de captura | Es un pedido sin canal, no una lista aparte |
-| La barra de filtros | Pedidos, compartida por las tres funciones que viven ahí | Lo que se usa siempre a la vista, lo que se usa poco plegado y contado |
+| Las barras de filtros | Pedidos, Tracking y Recolecciones | Fuera lo que clasifica, dentro lo que refina, y el contador dice cuántos hay puestos |
 
 ---
 
@@ -175,17 +175,17 @@ Y cuando la **preferida** —la primera que se puede usar— resulta ser una sin
 
 ---
 
-# La barra de Pedidos: pestañas y filtros
+# Las barras de las pantallas de lista
 
-Pedidos es la pantalla donde viven tres de las cinco funciones, y su barra acabó con doce controles siempre desplegados que a 1440 se parten en dos renglones. No es una sección de una función: es la barra que las tres comparten, y por eso va aparte.
+Cinco pantallas del producto llevan una barra de filtros —**Pedidos, Tracking, Recolecciones, Correcciones y Cobros**— y cuatro tenían el mismo defecto. Se visitan seguidas, así que todas lo resuelven aquí de la misma manera: lo peor que podría pasar es que cada una lo resolviera a su modo.
 
-## El diagnóstico
+## El diagnóstico, que es el mismo en cuatro de ellas
 
 **El problema no es que haya muchos filtros: es que todos están abiertos aunque casi nunca se usen.** Los dos campos de fecha con su "al" en medio ocupan unos 350 píxeles permanentes para un refinamiento que se usa pocas veces, y son los que empujan "Todos los canales" al segundo renglón. Las cuatro fichas de Fecha ya cubren el caso normal, así que esos 350 píxeles están pagando dos veces la misma pregunta.
 
 Y hay un segundo hecho que se suma: **el juego de filtros cambia con la pestaña.** En Todos son dos desplegables; en Devoluciones son cinco controles más. Una barra que se dimensiona para su peor pestaña se ve vacía en las otras cinco, y una que se dimensiona para la mejor se rompe en la peor.
 
-## La barra nueva, de izquierda a derecha
+## Pedidos, de izquierda a derecha
 
 > `[ Filtrar esta lista ]` `|` `[Hoy] [7 días] [30 días] [Todo]` `|` `[Filtros · 2]` ——— `[Pagados sin guía ×]` `[Quitar filtros]`
 
@@ -200,6 +200,16 @@ Y hay un segundo hecho que se suma: **el juego de filtros cambia con la pestaña
 **5. La ficha de foco**, cuando se llega desde Inicio: `.ficha-filtro--quitable` con el nombre del pendiente. Esa se queda fuera del panel, y no es una excepción: **lo que puso la persona se cuenta en el control con el que lo puso; lo que llegó con la navegación se nombra, porque nadie lo eligió.** Un filtro que aparece solo y no se anuncia hace que la lista parezca equivocada.
 
 **6. `Quitar filtros`**, que ya existe y ya aparece solo cuando hay algo que quitar.
+
+## Lo que queda fuera del panel, y la regla que lo decide
+
+Las cinco barras se ven distintas y salen de la misma regla, que conviene dejar escrita porque es la que decide también la pantalla que venga después:
+
+**Fuera del panel va lo que clasifica; dentro va lo que refina.** Clasificar es partir la lista en los grupos sobre los que se decide qué atender —las pestañas, la antigüedad, "van de regreso"—. Refinar es recortar lo que ya se está mirando —una paquetería, un origen, un rango a medida—. Lo primero se usa en cada visita; lo segundo, de vez en cuando.
+
+El reparto de las cinco pantallas está en la tabla del final de esta sección, después de describirlas una por una.
+
+En todas, a la derecha y en este orden: el hueco flexible, la ficha de foco si llegó una, y **Quitar filtros**.
 
 ## Cómo se ve que hay filtros puestos
 
@@ -220,11 +230,11 @@ Y no es un filtro escondido: está contado, marcado como puesto y a un clic de v
 
 Reutiliza `.colgante` —el mismo mecanismo de la campana y de la cuenta—, que ya trae escrito todo lo que un panel flotante tiene que hacer: vive en el `body` con posición fija, cierra con Escape y con un clic fuera, devuelve el foco al botón, y en pantalla angosta deja de colgar y se ancla a los bordes. Un desplegable, una función: escribirlo por segunda vez es olvidarse de la mitad.
 
-Dentro, `.campos`, en este orden:
+Dentro, `.campos`. El primer campo es el mismo en las tres pantallas y los demás salen de la tabla de arriba:
 
 1. **Del … al …** — el `.rango-fechas` con su "al" en medio, entero. Un rango se parte entero o no se parte.
-2. **Paquetería** · **Canal** — los dos de siempre, llenados con lo que hay.
-3. Solo en Devoluciones: **Estado** · **Motivo** · **Mecanismo**, y **Sin moverse más de 7 días** como `.marca-campo`, no como ficha: dentro de un panel de campos, una ficha es un tercer estilo de control para la misma tarea.
+2. Los desplegables de esa pantalla y esa pestaña, llenados con lo que hay.
+3. Y en la pestaña de Devoluciones, **Sin movimiento más de 7 días** como `.marca-campo`, no como ficha: dentro de un panel de campos, una ficha es un tercer estilo de control para la misma tarea.
 
 **Pie:** `.boton--sutil.boton--chico` **Quitar filtros**. No hay botón de aplicar: los filtros se aplican al cambiarlos, como hoy, y un "Aplicar" convertiría en dos pasos lo que hoy es uno.
 
@@ -234,7 +244,130 @@ Dentro, `.campos`, en este orden:
 
 **Mejora, no empeora.** La regla que ya existe pone cada control al 100 % en columna, y hoy eso son cinco o seis renglones: buscador, cuatro fichas, dos fechas y dos o cinco desplegables. Con el panel son tres: el buscador, la fila de fichas —que son chips y caben— y el botón de filtros. Los campos de dentro heredan la disposición en columna que ya está escrita, y el panel se ancla a los bordes por la regla que ya tiene `.colgante`.
 
-## Se quita el conmutador, y con él la vista Mosaico
+## Tracking, de izquierda a derecha
+
+> `[ Filtrar esta lista ]` `|` `Sin movimiento` `[7 días] [30 días] [Todo]` `|` `[Van de regreso · 3]` `|` `[Filtros · 1]` ——— `[Quitar filtros]`
+
+**"Van de regreso" se queda fuera del panel, y es la decisión que más importa de esta pantalla.**
+
+El panel existe para **refinar**: recortar una lista que ya se está leyendo. "Van de regreso" no refina, **clasifica**: separa los envíos que todavía se pueden destrabar de los que ya vuelven y ya cuestan dinero. Es la misma clase de control que las fichas de fecha, no la misma que los desplegables —las dos contestan *"cuál de estos atiendo hoy"*, no *"cómo recorto lo que veo"*—. En Pedidos lo que quedó fuera fueron las pestañas y las fichas de fecha, que son exactamente eso.
+
+Y el argumento de ancho va en su contra: esconder una ficha de unos 120 píxeles detrás de un botón de 110 no ahorra nada y cuesta la única señal que la pantalla existe para destapar.
+
+**Y lleva su cuenta: `Van de regreso · 3`.** Un número dentro de la ficha dice si vale la pena pulsarla antes de pulsarla. **En cero se apaga y deja de ser pulsable**, por la misma razón por la que en Inicio un cero deja de ser enlace: un atajo que no lleva a nada es una promesa rota. Es un `.ficha-filtro__cuenta`, una pieza dentro de un componente que ya existe, y sirve igual para la ficha "Sin movimiento más de 7 días" de la pestaña de Devoluciones.
+
+### El rótulo se queda aquí, y en Pedidos no
+
+La pregunta es legítima: "7 días" suelto puede leerse como un plazo de entrega. La regla que lo resuelve, y que vale para las tres pantallas:
+
+**Las fichas de fecha llevan rótulo cuando la lista tiene más de una fecha que podrían estar midiendo.**
+
+- **Pedidos:** un pedido tiene una sola fecha, la de entrada. El rótulo "Fecha" repetía lo que las fichas ya decían. **Se quita.**
+- **Tracking:** un detenido tiene dos, la de la guía y la del último reporte de la paquetería, y las fichas miden la segunda. Un rótulo que desambigua entre dos datos reales no es redundante: es lo único que impide leer "7 días" como un plazo. **Se queda.**
+- **Recolecciones, en Historial:** una recolección tiene una fecha. **Se quita.**
+
+El rótulo pasa de **"Detenido desde"** a **"Sin movimiento"**: más corto, y no repite "detenido", que ya lo dice la pantalla entera. Lo que el rótulo tiene que añadir es la dimensión que miden las fichas, no el estado que comparten todas las filas. Es además la palabra que usa la paquetería, y la misma que ya lleva la ficha de Devoluciones —que pasa de "Sin moverse más de 7 días" a **"Sin movimiento más de 7 días"**—.
+
+### El panel de Tracking
+
+Dentro, tres campos, y dos de ellos no existen hoy:
+
+1. **Del … al …** — el rango a medida, los mismos 350 píxeles que se pliegan en Pedidos por lo mismo.
+2. **Paquetería** — **no existe y hace falta.** Esta pantalla cuenta en una métrica *en cuántas paqueterías* hay detenidos y después no ofrece ninguna forma de mirar una. Reclamar es una llamada por paquetería.
+3. **Comprada en** — el `via`. Decide a quién se reclama: el transportista falló, pero el contrato es con la plataforma. Ya está en Recolecciones y aquí falta.
+
+Añadir dos filtros a una pantalla que se queja de saturación solo es defendible porque **entran donde no cuestan ancho**. Y sin ellos el botón `Filtros` abriría un panel de un solo campo, que es un control que no se gana su sitio.
+
+## Recolecciones, de izquierda a derecha
+
+Es la peor de las tres: 105 píxeles de alto, varios renglones, cinco desplegables y un rango de fechas.
+
+> **Programadas:** `[ Filtrar esta lista ]` `|` `[Filtros · 1]` ——— `[Quitar filtros]`
+> **Historial:** `[ Filtrar esta lista ]` `|` `[7 días] [30 días] [Todo]` `|` `[Filtros · 2]` ——— `[Quitar filtros]`
+
+**Las fichas de fecha bajan de la fila de pestañas a la barra.** Hoy viven arriba, en `.periodo__mando`, junto a las pestañas. Son un filtro y los filtros viven en la barra de la sección que filtran: tenerlas en otro sitio que en las otras dos pantallas es la clase de diferencia que obliga a buscar el control cada vez. Siguen apareciendo **solo en Historial**, porque una agenda que mira hacia delante no se recorta por antigüedad.
+
+**En Programadas la barra queda con dos controles, y está bien.** Es justo lo que el contador permite: dimensionar cada pestaña por lo que necesita en vez de dimensionarlas todas por la peor.
+
+### Los cinco desplegables, uno por uno
+
+| Filtro | Veredicto |
+|---|---|
+| **Paquetería** | Se queda. Es a quien se le reclama |
+| **Origen** | Se queda. Con tres orígenes y doce parejas, es cómo se mira una bodega |
+| **Comprada en** (`via`) | Se queda. Decide a quién se reclama, que no es lo mismo que quién recoge |
+| **Resultado** | Se queda, **solo en Historial**. Una recolección que todavía no ocurre no tiene resultado, y ofrecerlo en Programadas promete un corte imposible |
+| **Ventana** | **Se quita** |
+
+**Por qué sobra Ventana.** La ventana es una propiedad que se lee en la fila, no una pregunta que alguien hace. Y cuando se hace, la pregunta real es *"qué pasa con Almacén Puebla y DHL"*, que ya contestan Origen y Paquetería juntos: la ventana es una consecuencia de esa pareja, no una dimensión aparte. Además sus opciones salen de las cadenas de horario que existan, así que **crecen con cada agenda nueva y no se pueden ordenar de forma útil**. Un filtro cuyas opciones se multiplican con el uso es un filtro que empeora con el uso.
+
+**Quitar un filtro que nadie usa es mejor que esconderlo bien**, y en un panel de cinco campos el que sobra también estorba.
+
+### Aquí no hay ficha de clasificación, y es a propósito
+
+El equivalente a "Van de regreso" sería una ficha **Sin cumplir**. No se hace: "sin cumplir" es uno de los tres valores del desplegable **Resultado**, y sacar un valor de un desplegable a una ficha deja el mismo filtro en dos controles que pueden contradecirse. En Tracking, "Van de regreso" es un hecho binario que no está en ningún desplegable.
+
+Y lo que esta pantalla necesita destapar ya está destapado más arriba, con más contexto del que cabría en una ficha: el bloque de **cumplimiento por paquetería**, que solo aparece cuando alguien está por debajo del 100 %.
+
+## Correcciones, de izquierda a derecha
+
+107 píxeles de alto en cuatro renglones, con 1,156 disponibles y 1,180 de contenido. El mismo defecto.
+
+> `[ Filtrar esta lista ]` `|` `[Salieron con la anterior · 3]` `|` `[Filtros · 1]` ——— `[Quitar filtros]`
+
+**"Salieron con la anterior" se queda fuera, y es el caso más claro de los cinco.** Parte la bitácora entre las correcciones que llegaron a tiempo y las que no, y esa es la única pregunta por la que alguien abre esta pantalla con intención de actuar: con la corrección aplicada tarde, el pedido está bien y el paquete va camino de otro sitio. `sistema.html` lo dice de esta misma pantalla —*"un registro contesta la pregunta de quien lo abre"*—, y esa columna existe justo por eso. Clasifica, no refina.
+
+**Lleva su cuenta y se apaga en cero**, igual que "Van de regreso": `Salieron con la anterior · 3`.
+
+**Y pierde el "Solo".** Una ficha pulsada ya significa "solo estas": el adverbio es lo que la ficha hace, no algo que haya que escribir. De 226 píxeles baja a unos 185 con la cuenta incluida. **La misma poda le toca a Cobros**, que dice "Solo con diferencia" y pasa a **"Con diferencia"**.
+
+### "Quién lo decidió" se pliega, y aquí me separo de la lectura que me llegó
+
+Parece clasificador —si el catálogo corrige solo, bien; si lo hace una persona una y otra vez, hay un problema de origen— y esa vigilancia es de verdad la razón de ser de la pantalla. Pero **esa pregunta ya está contestada tres centímetros más arriba, sin tocar la barra**: las métricas dicen *"Las decidió el catálogo — 31"* y *"Las decidió una persona — 4"*.
+
+Sacarlo a fichas pondría **los mismos dos números dos veces en la misma pantalla**, y dos copias de una cifra son dos cifras que un día no coinciden. En la barra, con el dato ya dado arriba, ese control solo sirve para mirar esas filas: eso es refinar, y refinar va dentro.
+
+Lo que cuesta el pliegue es un clic para saltar del 4 a esas cuatro filas. Es barato, y la alternativa —volver pulsable una `.metrica`, que hoy no lo es en ninguna pantalla— sería inventar un comportamiento nuevo para ahorrar ese clic.
+
+**Esto no contradice la regla de Recolecciones**, y conviene decir por qué, porque las dos decisiones se parecen y son distintas. Lo que allí se prohibió fue **sacar un valor de un desplegable y dejar el desplegable con el resto**: eso deja el mismo filtro en dos controles que pueden contradecirse. Convertir un desplegable entero en fichas es otra cosa y a veces está bien —un desplegable de dos valores es una elección binaria disfrazada—. Aquí no se hace por la razón de arriba: el dato ya está dado.
+
+### El panel de Correcciones
+
+1. **Del … al …** — el rango, 302 píxeles que se pliegan por lo mismo que en las otras tres.
+2. **Quién lo decidió** — Todos los orígenes · Una persona · Catálogo postal.
+3. **Campo corregido** — Todos los campos · Colonia · Municipio · Estado.
+
+Dos refinadores y un rango: el botón se gana su sitio.
+
+## Cobros, que no necesita panel
+
+> `[ Filtrar esta lista ]` `|` `[Con diferencia · 12]` `|` `[Todas las paqueterías]` ——— `[Quitar filtros]`
+
+Tres controles y cabe de sobra. **"Con diferencia" clasifica** —es la lista de lo que hay que reclamar— y se queda fuera con su cuenta; **Paquetería refina** y se quedaría dentro… salvo que es el único, y entonces no hay dentro.
+
+**El panel aparece a partir de dos refinadores.** Con uno, un botón de unos 110 píxeles que esconde un desplegable de 150 ahorra cuarenta y cobra un clic cada vez. Es la misma regla de las otras cuatro dando otro resultado porque la entrada es otra, no una solución distinta para el mismo problema — y es lo que también obligó a que el panel de Tracking tuviera tres campos y no uno.
+
+## Las cinco pantallas de lista, con su reparto
+
+Son cinco y no hay una sexta: `.filtros` existe en Pedidos, Tracking, Recolecciones, Correcciones y Cobros, y en ninguna otra.
+
+| Pantalla | Fuera del panel | Dentro | ¿Panel? |
+|---|---|---|---|
+| **Pedidos** | Buscador · 4 fichas de fecha | Rango · Paquetería · Canal · *(Devoluciones)* Estado · Motivo · Mecanismo · Sin movimiento más de 7 días | Sí |
+| **Tracking** | Buscador · "Sin movimiento" + 3 fichas · **Van de regreso · N** | Rango · Paquetería · Comprada en | Sí |
+| **Recolecciones** | Buscador · 3 fichas *(solo Historial)* | Rango · Paquetería · Origen · Comprada en · *(solo Historial)* Resultado | Sí |
+| **Correcciones** | Buscador · **Salieron con la anterior · N** | Rango · Quién lo decidió · Campo corregido | Sí |
+| **Cobros** | Buscador · **Con diferencia · N** · Paquetería | — | No |
+
+**Las cuatro fichas con cuenta son las cuatro preguntas que cada pantalla existe para contestar**, y por eso ninguna se pliega: qué va de regreso, qué salió con la dirección vieja, qué se cobró de más. Es la prueba de que la regla separa bien: en las cinco, lo que quedó fuera es lo que alguien mira en cada visita.
+
+## Las etiquetas de la barra no dicen "Filtrar"
+
+Los rótulos para lectores de pantalla dicen hoy **"Filtrar por quién lo decidió"**, **"Filtrar por campo"**, **"Filtrar por paquetería"**. En una barra que entera es de filtros, y con un buscador que ya dice "Filtrar esta lista", son tres "filtrar" en un renglón. **Ninguna etiqueta de la barra empieza por "Filtrar":** nombra su objeto y ya. "Quién lo decidió", "Campo corregido", "Paquetería".
+
+Y el buscador de Correcciones tiene hoy las dos palabras a la vez: etiqueta **"Buscar en el historial"** y marcador **"Filtrar por pedido, destinatario o código postal"**. Un control no busca y filtra al mismo tiempo. En las cinco pantallas: **el marcador dice "Filtrar esta lista" y la etiqueta lleva los campos que el marcador dejó de enumerar** —"Filtrar esta lista por pedido, destinatario o código postal"—, que es donde sirven de verdad.
+
+## Se quita el conmutador de Pedidos, y con él la vista Mosaico
 
 Es una orden del dueño y además la pantalla estaba contradiciendo dos reglas suyas.
 
@@ -243,6 +376,8 @@ Es una orden del dueño y además la pantalla estaba contradiciendo dos reglas s
 **Qué se pierde, dicho sin adornos.** La tarjeta enseñaba folio, canal, pago, cliente, ciudad, envío, total y acción sin desplazamiento lateral; la tabla en un teléfono se desplaza a lo ancho, porque tiene un mínimo de 560 píxeles. **Eso es lo único que se pierde, y se pierde solo en el teléfono.** A cambio, Pedidos se comporta como Tracking, Recolecciones, Correcciones y Cobros, que llevan tabla con desplazamiento desde siempre: dejar de ser la excepción vale más que una segunda vista que nadie eligió.
 
 **Y si algún día el teléfono se vuelve un caso de verdad, la respuesta es menos columnas en angosto, no una segunda vista.** Las tres que sobran ahí son **Canal**, **Destino** y **Total**: en un teléfono nadie decide con ellas, y el trabajo se hace con el folio, el cliente, el envío y la acción. Queda escrito para que nadie vuelva a alcanzar un segundo modo cuando el problema sea el ancho.
+
+**Y el conmutador de Plantillas se queda donde está**, que es la misma regla dando el resultado contrario: `sistema.html` dice que con dos o tres registros mandan las tarjetas y con veinte manda la lista, y Plantillas tiene cuatro cajas. Quitar el de Pedidos no fue una campaña contra los conmutadores: fue aplicar esa frase a una lista de cinco mil filas.
 
 La fila de pestañas se queda con las pestañas y nada a la derecha. No se mete nada en ese hueco: sumar a una fila de ancho fijo es quitarle a algo, y el recuento ya vive en el pie de la tarjeta, que es su sitio.
 
@@ -258,7 +393,75 @@ El dueño no los nombró y contribuyen, pero no por lo que ocupan.
 
 > `placeholder="Filtrar esta lista"`
 
-"Esta lista" es la única palabra que contesta la pregunta que alguien se hace mirando los dos: cuál de los dos toca lo que tengo delante. Los campos por los que busca se quedan en su etiqueta para lectores de pantalla, que es donde sirven de verdad. **Y desaparece de paso el marcador que cambiaba en la pestaña de Devoluciones**, que era una pieza móvil más para no decir nada nuevo.
+"Esta lista" es la única palabra que contesta la pregunta que alguien se hace mirando los dos: cuál de los dos toca lo que tengo delante. Los campos por los que busca se quedan en su etiqueta para lectores de pantalla, que es donde sirven. **Y desaparece de paso el marcador que cambiaba en la pestaña de Devoluciones**, que era una pieza móvil más para no decir nada nuevo.
+
+**El mismo marcador en las cinco pantallas de lista**, porque hacen lo mismo y enumerar campos no cabe en ninguna:
+
+| Pantalla | Antes | Ahora |
+|---|---|---|
+| Pedidos | Filtrar por pedido, cliente o destino | **Filtrar esta lista** |
+| Tracking | Guía, cliente, paquetería, plataforma o destino *(se corta)* | **Filtrar esta lista** |
+| Recolecciones | Folio, paquetería, plataforma u origen | **Filtrar esta lista** |
+| Correcciones | Filtrar por pedido, destinatario o código postal | **Filtrar esta lista** |
+| Cobros | Filtrar por guía, pedido o paquetería | **Filtrar esta lista** |
+
+En Tracking la enumeración era de cinco elementos y **no cabía: se cortaba en "…o destin…"**. Un texto que se corta no enumera nada; solo enseña que no cabe.
+
+## El registro en las pantallas de lista
+
+El mismo repaso que se hizo en el modal de captura, aplicado a lo que quedó escrito en las otras pantallas. Ninguno de estos textos está en la definición del PM: son todos de producto.
+
+**Tracking**
+
+| | |
+|---|---|
+| Antes | Los envíos que tus paqueterías reportaron detenidos, juntos en un solo lugar. **Se destraban** con ellas o con el cliente; **aquí tienes** la guía y el contacto para hacerlo. |
+| Ahora | Los envíos que las paqueterías reportaron detenidos, reunidos en un solo lugar. Se resuelven con la paquetería o con el destinatario: cada fila lleva el número de guía, el rastreo público y el contacto. |
+
+Gana además precisión: nombra las tres cosas que la fila lleva de verdad, y el rastreo público no estaba mencionado.
+
+| | |
+|---|---|
+| Antes | Métrica "En cuántas paqueterías" · nota: **Hay que hablar con varias** |
+| Ahora | Nota: **Cada una con su propio reclamo** · en singular, **Una sola** |
+
+Una nota de métrica dice contra qué se compara la cifra, no qué tiene que hacer quien la lee. Y la versión nueva explica por qué el número importa, que es lo que la vieja quería decir.
+
+**Cobros**
+
+| | |
+|---|---|
+| Antes | **Lo que cotizaste** contra **lo que te cobró** la paquetería, envío por envío. Las diferencias aparecen aquí antes de que **pagues** la factura. |
+| Ahora | El importe cotizado contra el que facturó la paquetería, envío por envío. Las diferencias aparecen antes de que la factura se pague. |
+
+| Métrica | Antes | Ahora |
+|---|---|---|
+| Cotizado | Lo que te dijo la plataforma | **Importe cotizado al generar la guía** |
+| Facturado | Lo que te cobró la paquetería | **Importe de la factura de la paquetería** |
+| Diferencia | A tu cargo si no se reclama | **Se paga completa si no se reclama** |
+
+"Lo que te dijo la plataforma" además era impreciso: el cotizado sale de la cotización al generar, la plataforma es solo una de las vías.
+
+**Recolecciones**
+
+| | |
+|---|---|
+| Antes | **Programa** recolecciones de cualquier paquetería sin entrar a su portal y **verifica** su cumplimiento. |
+| Ahora | Recolecciones de cualquier paquetería, sin entrar a su portal, y el cumplimiento de cada una. |
+
+Es el caso más leve de los tres —dos imperativos en un subtítulo se leen como un anuncio, no como una conversación— y se corrige porque cuesta una línea y porque las tres pantallas se visitan seguidas.
+
+Sus métricas —"Piezas sin recoger", "Recolecciones sin cumplir"— **no se tocan**: son el ejemplo que `sistema.html` usa para explicar el registro neutro.
+
+**Correcciones**
+
+Su subtítulo ya describe en vez de conversar, y conviene decirlo: *"Qué se cambió de cada dirección antes de pedir la guía, y con qué se decidió. Las que todavía no se resuelven están en Pedidos, junto a su pedido."* Es el modelo de lo que tienen que ser los otros cuatro.
+
+Sus métricas también: *"el código postal no deja lugar a duda"* y *"el catálogo no alcanzaba: alguien eligió"* describen por qué la cifra es la que es, que es lo que una nota de métrica tiene que hacer. **No se tocan.**
+
+Lo que cambia son la barra —arriba— y las etiquetas que empiezan por "Filtrar".
+
+**Dos que quedan fuera de este pase y hay que anotar**, porque son de pantallas que ninguna de estas rondas tocó: `plantillas.html` dice *"te dice por cuánto te va a cobrar la paquetería"* dos veces, y `plan.html` rotula *"envíos te quedan"*. La primera queda resuelta cuando se aplique el `.cobro` nuevo a Plantillas; la segunda es un rótulo de medidor y va con el repaso de esa pantalla, que no está en este documento.
 
 # 1. Devoluciones
 
@@ -299,7 +502,7 @@ La segunda es la más importante y no es la que uno esperaría: con cinco mecani
 - **Estado**, llenado con los estados que de verdad hay.
 - **Motivo**, con la lista fija. El comercial: la causa del transportista es texto libre y no se agrupa.
 - **Mecanismo**, con los cinco.
-- **Sin moverse más de 7 días**, que cubre a la vez la autorizada sin guía y la guía sin usar, porque son el mismo problema visto en dos estados.
+- **Sin movimiento más de 7 días**, que cubre a la vez la autorizada sin guía y la guía sin usar, porque son el mismo problema visto en dos estados.
 
 Fuera del panel no cambia nada: el mismo buscador, las mismas cuatro fichas de fecha y la misma ficha de foco. **Esta pestaña es la razón por la que el panel existe**: con sus cuatro controles desplegados, la barra se partía en dos renglones a 1440.
 
@@ -2372,6 +2575,10 @@ Y dos cosas más, las dos chicas y las dos del ajuste anterior:
 **Y una que ya no lo es:** el título "Con qué paquetería sale cada pedido" queda confirmado, así que el renombrado de Configuración está cerrado entero.
 
 **10. Y una de texto que sale de este panel y acaba en cuatro pantallas.** El dueño rechazó el modal de "Nuevo envío" por apretado y por coloquial. Lo segundo pesa más, porque atraviesa el producto: *"te cobran"*, *"no abulta más que eso"*, *"nada las va a cruzar"*, *"sin pedido detrás"*. **El `.cobro` cambia en las cuatro pantallas donde se pinta** —Plantillas, la regla de embalaje, el panel del pedido y el de captura—, y `.tarifa__cumple` pasa de "a tiempo contigo" a "a tiempo en tus envíos". No hay nada que decidir en la definición: **ninguno de esos textos está en ella**, todos salieron de este documento. Lo apunto para que quede constancia de que el cambio es de una vez y no por pantalla, y para que nadie lo arregle en un sitio y lo deje en los otros tres.
+
+**11. Las cinco barras de lista se arreglan con el mismo patrón, y de paso sobra un filtro.** El dueño señaló Pedidos, Tracking, Recolecciones y Correcciones; Cobros ya cabía en un renglón y solo cambia de textos. Nada de esto toca la definición, pero hay dos decisiones que conviene que veas: **"Van de regreso" se queda fuera del panel** en Tracking, porque clasifica en vez de refinar y es la señal que esa pantalla existe para destapar; y **el filtro "Ventana" de Recolecciones se quita**, porque sus opciones crecen con cada agenda nueva, no se pueden ordenar de forma útil, y la pregunta real —qué pasa con una pareja de origen y paquetería— ya la contestan Origen y Paquetería juntos. Añadí además a Tracking dos filtros que no tenía y que hacen falta —**Paquetería** y **Comprada en**—, y entran dentro del panel, donde no cuestan ancho: esa pantalla cuenta en una métrica en cuántas paqueterías hay detenidos y después no ofrecía ninguna forma de mirar una.
+
+Y en Correcciones me separé de la lectura que me llegó: **"Quién lo decidió" se pliega**, porque sus dos cifras ya están en las métricas de esa misma pantalla y sacarlas a fichas pondría los mismos dos números dos veces a tres centímetros de distancia. Las cuatro fichas que sí quedan fuera —"Van de regreso", "Salieron con la anterior", "Con diferencia" y la antigüedad— son las preguntas que cada pantalla existe para contestar.
 
 **Y una que no te toca decidir pero conviene que sepas:** el dueño pidió quitar el conmutador Clásico/Mosaico de Pedidos y que la barra de filtros se lea en un renglón. **La definición no cambia por esto** —no menciona ninguna de las dos cosas—, y la barra nueva está descrita en la sección "La barra de Pedidos", antes de la función 1. Lo único que quiero dejar anotado es que quitar Mosaico no fue solo obedecer: esa pantalla era la única con dos formas de ver la misma lista, y contradecía a la vez la regla de `sistema.html` sobre cuándo manda la tabla y el criterio del propio dueño de que las listas largas son tablas porque hay clientes con cinco mil envíos.
 

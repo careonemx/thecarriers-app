@@ -537,6 +537,23 @@ select option { background: var(--pagina); }
 .ficha-filtro[aria-pressed="true"] {
   border-color: var(--destacado-borde-fuerte); background: var(--destacado-fuerte); color: var(--enlace);
 }
+/* La cuenta dentro de la ficha dice si vale la pena pulsarla antes de
+   pulsarla. Vacía no ocupa nada, y en cero la ficha se apaga y deja de ser
+   pulsable: un atajo que no lleva a ningún sitio es una promesa rota. */
+.ficha-filtro__cuenta:not(:empty) {
+  display: inline-block; margin-left: 2px;
+  padding: 0 5px; border-radius: 999px;
+  background: var(--destacado); color: var(--enlace);
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.ficha-filtro[aria-pressed="true"] .ficha-filtro__cuenta:not(:empty) {
+  background: var(--tarjeta);
+}
+.ficha-filtro:disabled {
+  opacity: .5; cursor: default; border-color: var(--hairline);
+}
+.ficha-filtro:disabled:hover { border-color: var(--hairline); color: var(--muted); }
+
 /* Ficha que se quita: la pone la franja al enfocar un pendiente. Sin ella la
    lista se queda corta y nada en pantalla dice por qué. */
 .ficha-filtro--quitable span { opacity: .7; font-size: 13px; line-height: 1; }

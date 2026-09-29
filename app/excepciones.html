@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Tracking · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
-<script src="../assets/vigia.js?v=90b36df2" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=18af4232">
+<script src="../assets/vigia.js?v=18af4232" defer></script>
 </head>
 <body data-seccion="excepciones">
 <main class="contenido contenido--ancho">
@@ -15,9 +15,9 @@
   <div class="encabezado" style="margin-bottom:24px">
     <div>
       <h1>Tracking</h1>
-      <p>Los envíos que tus paqueterías reportaron detenidos, juntos en un solo
-         lugar. Se destraban con ellas o con el cliente; aquí tienes la guía y el
-         contacto para hacerlo.</p>
+      <p>Los envíos que las paqueterías reportaron detenidos, reunidos en un solo lugar.
+         Se resuelven con la paquetería o con el destinatario: cada fila lleva el número de
+         guía, el rastreo público y el contacto.</p>
     </div>
   </div>
 
@@ -27,30 +27,79 @@
 
   <section class="tarjeta">
     <div class="filtros">
-      <label class="sr-only" for="q-detenidos">Buscar</label>
+      <label class="sr-only" for="q-detenidos">Filtrar esta lista por guía, cliente,
+        paquetería, plataforma o destino</label>
       <div class="buscador">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" id="q-detenidos" autocomplete="off"
-               placeholder="Guía, cliente, paquetería, plataforma o destino">
+        <input type="search" id="q-detenidos" autocomplete="off" placeholder="Filtrar esta lista">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <span class="filtros__etiqueta">Detenido desde</span>
+      <!-- El rótulo se queda aquí y en Pedidos no: un detenido tiene dos fechas
+           —la de la guía y la del último reporte— y las fichas miden la segunda.
+           Un rótulo que desambigua entre dos datos reales no es redundante. -->
+      <span class="filtros__etiqueta">Sin movimiento</span>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="7">7 días</button>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="30">30 días</button>
       <button class="ficha-filtro" type="button" aria-pressed="true" data-rango="">Todo</button>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <button class="ficha-filtro" type="button" aria-pressed="false" id="solo-regreso">Van de regreso</button>
+      <!-- Fuera del panel porque no refina, clasifica: separa los envíos que
+           todavía se pueden destrabar de los que ya vuelven y ya cuestan
+           dinero. Y esconder una ficha de 120px tras un botón de 110 no ahorra
+           nada y cuesta la única señal que esta pantalla existe para destapar. -->
+      <button class="ficha-filtro" type="button" aria-pressed="false" id="solo-regreso">
+        Van de regreso <span class="ficha-filtro__cuenta" data-cuenta-regreso></span>
+      </button>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <label class="sr-only" for="desde">Desde</label>
-      <input type="date" id="desde" aria-label="Desde">
-      <span class="filtros__etiqueta">al</span>
-      <label class="sr-only" for="hasta">Hasta</label>
-      <input type="date" id="hasta" aria-label="Hasta">
+      <div class="colgante" data-colgante>
+        <button class="boton boton--sutil boton--chico" type="button" id="abrir-filtros"
+                data-abrir aria-expanded="false" aria-controls="panel-filtros">Filtros</button>
+        <div class="colgante__panel filtros__panel" id="panel-filtros" role="dialog"
+             aria-label="Filtros" hidden>
+          <div class="campos">
+            <div class="campo" data-filtro="rango">
+              <span>Del … al …</span>
+              <div class="rango-fechas">
+                <label class="sr-only" for="desde">Desde</label>
+                <input type="date" id="desde" aria-label="Desde">
+                <span class="filtros__etiqueta">al</span>
+                <label class="sr-only" for="hasta">Hasta</label>
+                <input type="date" id="hasta" aria-label="Hasta">
+              </div>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="rango" hidden>Quitar</button>
+            </div>
 
+            <!-- Esta pantalla cuenta en una métrica en cuántas paqueterías hay
+                 detenidos y no ofrecía forma de mirar una. Reclamar es una
+                 llamada por paquetería. -->
+            <div class="campo" data-filtro="fp">
+              <span id="rot-fp">Paquetería</span>
+              <select id="fp" aria-labelledby="rot-fp"><option value="">Todas las paqueterías</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fp" hidden>Quitar</button>
+            </div>
+
+            <!-- El transportista falló, pero el contrato es con la plataforma:
+                 decide a quién se reclama. -->
+            <div class="campo" data-filtro="fv">
+              <span id="rot-fv">Comprada en</span>
+              <select id="fv" aria-labelledby="rot-fv"><option value="">Todas</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fv" hidden>Quitar</button>
+            </div>
+          </div>
+          <div class="filtros__panel-pie">
+            <button class="boton boton--sutil boton--chico" type="button"
+                    data-limpiar-filtros>Quitar filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <span class="filtros__sep"></span>
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
         Quitar filtros</button>
     </div>
@@ -77,9 +126,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
+import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
 import { detenidos, detalleDe, enlaceRastreo, diasDesde, fechaCorta, declaraRetorno,
-         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=90b36df2";
+         telefonoMX, menosDias, HOY } from "../assets/datos.js?v=18af4232";
 if (exigirSesion()) {
   montar();
 
@@ -92,6 +141,17 @@ if (exigirSesion()) {
   const buscar = document.getElementById("q-detenidos");
   const limpiar = document.getElementById("limpiar-filtros");
   const fichas = [...document.querySelectorAll("[data-rango]")];
+  const selPaq = document.getElementById("fp");
+  const selVia = document.getElementById("fv");
+  const abrirFiltros = document.getElementById("abrir-filtros");
+  const panelFiltros = document.getElementById("panel-filtros");
+
+  /* Los desplegables se llenan con lo que hay: una opción que no devuelve nada
+     es una opción que estorba. */
+  for (const [sel, campo] of [[selPaq, (e) => e.paqueteria], [selVia, (e) => e.via]]) {
+    [...new Set(detenidos.map(campo).filter(Boolean))].sort()
+      .forEach((v) => sel.add(new Option(v, v)));
+  }
 
   const sinAcentos = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -104,10 +164,31 @@ if (exigirSesion()) {
   const soloRegreso = document.getElementById("solo-regreso");
   let filtroRegreso = false;
 
-  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() || filtroRegreso);
+  const hayFiltro = () => !!(desde.value || hasta.value || buscar.value.trim() ||
+    filtroRegreso || selPaq.value || selVia.value);
 
-  function pasa(e) {
-    if (filtroRegreso && !declaraRetorno(e.original)) return false;
+  /* El contador cuenta campos con valor, no controles: el rango a medida cuenta
+     uno aunque sean dos campos, porque es un filtro y no dos. */
+  const filtrosPuestos = () =>
+    [!!(desde.value || hasta.value), !!selPaq.value, !!selVia.value].filter(Boolean).length;
+
+  function pintarFiltros() {
+    const n = filtrosPuestos();
+    abrirFiltros.className = n ? "ficha-filtro" : "boton boton--sutil boton--chico";
+    if (n) abrirFiltros.setAttribute("aria-pressed", "true");
+    else abrirFiltros.removeAttribute("aria-pressed");
+    abrirFiltros.textContent = n ? `Filtros · ${n}` : "Filtros";
+
+    for (const [campo, puesto] of [["rango", !!(desde.value || hasta.value)],
+                                   ["fp", !!selPaq.value], ["fv", !!selVia.value]]) {
+      panelFiltros.querySelector(`[data-quitar-filtro="${campo}"]`).hidden = !puesto;
+    }
+  }
+
+  function pasa(e, { conRegreso = true } = {}) {
+    if (conRegreso && filtroRegreso && !declaraRetorno(e.original)) return false;
+    if (selPaq.value && e.paqueteria !== selPaq.value) return false;
+    if (selVia.value && e.via !== selVia.value) return false;
     if (desde.value && e.detenidoDesde < desde.value) return false;
     if (hasta.value && e.detenidoDesde > hasta.value) return false;
     const q = sinAcentos(buscar.value.trim());
@@ -205,6 +286,18 @@ if (exigirSesion()) {
     const paqueterias = new Set(items.map((e) => e.paqueteria)).size;
 
     limpiar.hidden = !hayFiltro();
+    pintarFiltros();
+
+    /* La cuenta es lo que quedaría al pulsarla: con los demás filtros puestos
+       y sin el suyo. Así el cero se alcanza solo —filtrando por una paquetería
+       cuyos detenidos no declaran retorno— y no hay que creerse el número.
+       Pulsada no se desactiva: se quedaría encendida y sin nadie a quien
+       pulsar para apagarla. */
+    const deRegreso = detenidos
+      .filter((e) => pasa(e, { conRegreso: false }) && declaraRetorno(e.original)).length;
+    soloRegreso.querySelector("[data-cuenta-regreso]").textContent = deRegreso || "";
+    soloRegreso.disabled = deRegreso === 0 && !filtroRegreso;
+
     document.querySelector("[data-sin-resultados]").hidden = items.length > 0;
 
     document.getElementById("metricas").innerHTML =
@@ -212,8 +305,10 @@ if (exigirSesion()) {
               hayFiltro() ? `de ${detenidos.length} en total` : "En todas tus paqueterías") +
       metrica("El que más lleva", elQueMas ? dias(elQueMas) : "—",
               "Desde el último reporte", elQueMas >= 3 ? ' style="color:var(--mal)"' : "") +
+      /* Una nota de métrica dice contra qué se compara la cifra, no qué tiene
+         que hacer quien la lee. */
       metrica("En cuántas paqueterías", paqueterias,
-              paqueterias === 1 ? "Una sola" : "Hay que hablar con varias");
+              paqueterias === 1 ? "Una sola" : "Cada una con su propio reclamo");
   }
 
   /* Los atajos escriben en los campos de fecha, como en Pedidos: así el rango
@@ -233,7 +328,19 @@ if (exigirSesion()) {
   }));
 
   [desde, hasta].forEach((i) => i.addEventListener("change", () => { marcarAtajo(); pintar(); }));
+  [selPaq, selVia].forEach((s) => s.addEventListener("change", pintar));
   buscar.addEventListener("input", pintar);
+
+  panelFiltros.addEventListener("click", (e) => {
+    const quitar = e.target.closest("[data-quitar-filtro]");
+    if (quitar) {
+      const campo = quitar.dataset.quitarFiltro;
+      if (campo === "rango") { desde.value = ""; hasta.value = ""; marcarAtajo(); }
+      else document.getElementById(campo).value = "";
+      return pintar();
+    }
+    if (e.target.closest("[data-limpiar-filtros]")) limpiar.click();
+  });
   soloRegreso.addEventListener("click", () => {
     filtroRegreso = !filtroRegreso;
     soloRegreso.setAttribute("aria-pressed", String(filtroRegreso));
@@ -244,6 +351,7 @@ if (exigirSesion()) {
     filtroRegreso = false;
     soloRegreso.setAttribute("aria-pressed", "false");
     desde.value = hasta.value = ""; buscar.value = "";
+    selPaq.value = selVia.value = "";
     marcarAtajo();
     pintar();
   });
