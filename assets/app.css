@@ -499,6 +499,34 @@ select option { background: var(--pagina); }
 .filtros input[type="date"] { min-width: 0; width: 138px; padding: 5px 9px; font-size: 13px; }
 .filtros select { padding: 5px 9px; font-size: 13px; }
 
+/* ---------- El panel de filtros ----------
+   Lo que no es el caso normal vive aquí dentro, colgado del único control cuyo
+   ancho no cambia con lo que haya seleccionado. Dentro se comporta como un
+   formulario y no como una barra: los campos ocupan el ancho del panel, que es
+   justo lo que `.filtros` les quita fuera. */
+/* El ancho lo pone `.colgante__panel`: un panel flotante que mide distinto
+   según de qué cuelgue son dos paneles. */
+.filtros__panel .campos { padding: 14px; gap: 12px; }
+.filtros__panel .campo { gap: 6px; }
+.filtros__panel select,
+.filtros__panel input[type="date"] { width: 100%; min-width: 0; }
+/* El campo de fecha va envuelto en `.campo-fecha` —se lo pone `app.js` para
+   colgarle su botón de calendario—, así que es ese envoltorio el que tiene que
+   encoger: repartir el ancho entre los `input` deja los dos a ancho completo y
+   el segundo se sale del panel. */
+.filtros__panel .rango-fechas .campo-fecha { flex: 1 1 0; min-width: 0; }
+.filtros__panel .rango-fechas input { width: 100%; }
+/* El quitar de cada campo, pegado a su derecha: centrado bajo el control se
+   lee como una acción del panel y no de ese filtro. */
+.filtros__panel .campo > .boton { justify-self: end; }
+.filtros__panel .marca-campo { margin-top: 2px; }
+/* El mismo "Quitar filtros" que está fuera, al alcance de quien ya abrió el
+   panel para mirarlos: ahí es donde se decide quitarlos. */
+.filtros__panel-pie {
+  display: flex; justify-content: flex-end;
+  padding: 10px 14px; border-top: 1px solid var(--hairline);
+}
+
 .ficha-filtro {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 5px 11px; border: 1px solid var(--hairline); border-radius: 999px;
@@ -535,8 +563,10 @@ thead th {
   font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted); white-space: nowrap;
 }
-tbody td { padding: 11px 16px; border-bottom: 1px solid var(--hairline); }
-tbody tr:last-child td { border-bottom: 0; }
+tbody td,
+tbody th { padding: 11px 16px; border-bottom: 1px solid var(--hairline); }
+tbody tr:last-child td,
+tbody tr:last-child th { border-bottom: 0; }
 tbody tr { transition: background-color .15s var(--curva); }
 tbody tr:hover { background: var(--hover); }
 tbody tr[data-href] { cursor: pointer; }
@@ -1469,28 +1499,6 @@ tr.fila--principal td:first-child::before {
 }
 .barra-seleccion__cuenta { font-weight: 600; }
 .barra-seleccion__sep { flex: 1; }
-
-/* ---------- Mosaico de pedidos ---------- */
-.mosaico { display: grid; gap: 12px; padding: 18px;
-           grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); }
-.tarjeta-pedido {
-  display: grid; gap: 11px; padding: 15px;
-  border: 1px solid var(--hairline); border-radius: var(--r-lg); background: var(--hundido);
-  transition: border-color .2s var(--curva);
-}
-.tarjeta-pedido:hover { border-color: var(--hairline-fuerte); }
-/* Al ras de arriba, no centrado: desde que debajo del folio va el canal, lo que
-   se centra contra dos renglones es la pastilla, y se queda a medio camino
-   entre el folio, que es con lo que se lee, y el canal, que no. */
-.tarjeta-pedido__alto { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
-.tarjeta-pedido__folio { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
-.tarjeta-pedido__cliente { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.tarjeta-pedido__cliente div { min-width: 0; }
-.tarjeta-pedido__cliente b { display: block; font-weight: 500; }
-.tarjeta-pedido__cliente span { display: block; color: var(--muted); font-size: 12px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tarjeta-pedido__pie { display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding-top: 11px; border-top: 1px solid var(--hairline); }
 
 /* ---------- Tarea del inicio ---------- */
 .tarea {

@@ -27,6 +27,7 @@ Tres cosas mandan sobre todo lo que sigue, y ninguna es mía:
 | Guías manuales | El bloque Envío del panel de `pedidos.html` | Ya está ahí; lo que falta es que todo lo que mueve el precio se pueda cambiar sin salir |
 | Retorno desde una guía con estatus | El mismo bloque Envío, y `envio.html` | El comerciante se entera mirando el rastreo de esa guía, no una cola |
 | El envío suelto | Pedidos, con su panel de captura | Es un pedido sin canal, no una lista aparte |
+| La barra de filtros | Pedidos, compartida por las tres funciones que viven ahí | Lo que se usa siempre a la vista, lo que se usa poco plegado y contado |
 
 ---
 
@@ -168,6 +169,91 @@ Y cuando la **preferida** —la primera que se puede usar— resulta ser una sin
 
 ---
 
+# La barra de Pedidos: pestañas y filtros
+
+Pedidos es la pantalla donde viven tres de las cinco funciones, y su barra acabó con doce controles siempre desplegados que a 1440 se parten en dos renglones. No es una sección de una función: es la barra que las tres comparten, y por eso va aparte.
+
+## El diagnóstico
+
+**El problema no es que haya muchos filtros: es que todos están abiertos aunque casi nunca se usen.** Los dos campos de fecha con su "al" en medio ocupan unos 350 píxeles permanentes para un refinamiento que se usa pocas veces, y son los que empujan "Todos los canales" al segundo renglón. Las cuatro fichas de Fecha ya cubren el caso normal, así que esos 350 píxeles están pagando dos veces la misma pregunta.
+
+Y hay un segundo hecho que se suma: **el juego de filtros cambia con la pestaña.** En Todos son dos desplegables; en Devoluciones son cinco controles más. Una barra que se dimensiona para su peor pestaña se ve vacía en las otras cinco, y una que se dimensiona para la mejor se rompe en la peor.
+
+## La barra nueva, de izquierda a derecha
+
+> `[ Filtrar esta lista ]` `|` `[Hoy] [7 días] [30 días] [Todo]` `|` `[Filtros · 2]` ——— `[Pagados sin guía ×]` `[Quitar filtros]`
+
+**1. El buscador local.** Primero y flexible, como está. Se queda con el ancho que sobra.
+
+**2. Las cuatro fichas de fecha, sin su rótulo.** "Hoy · 7 días · 30 días · Todo" se lee como un rango de fechas sin que nada lo anuncie, y la etiqueta **"Fecha"** cuesta unos 45 píxeles para repetir lo que las cuatro fichas ya dicen. Se quita: no repetir lo que el contexto ya dice.
+
+**3. `Filtros`, un solo control para todo lo que no es el caso normal.** Abre un panel con el rango de fechas a medida, los desplegables de la pestaña activa y lo que cada una añada. Es lo que devuelve la barra a un renglón, y **es lo único cuyo ancho no cambia con lo que haya dentro**: en Todos abre dos campos y en Devoluciones seis, y mide lo mismo.
+
+**4. El hueco flexible** — `.filtros__sep`, que ya existe.
+
+**5. La ficha de foco**, cuando se llega desde Inicio: `.ficha-filtro--quitable` con el nombre del pendiente. Esa se queda fuera del panel, y no es una excepción: **lo que puso la persona se cuenta en el control con el que lo puso; lo que llegó con la navegación se nombra, porque nadie lo eligió.** Un filtro que aparece solo y no se anuncia hace que la lista parezca equivocada.
+
+**6. `Quitar filtros`**, que ya existe y ya aparece solo cuando hay algo que quitar.
+
+## Cómo se ve que hay filtros puestos
+
+El control lo dice, y es el único que lo dice:
+
+| Estado | Cómo se ve |
+|---|---|
+| Ninguno puesto | `.boton--sutil.boton--chico` **Filtros** |
+| Dos puestos | `.ficha-filtro[aria-pressed="true"]` **Filtros · 2** |
+
+**Por qué un contador y no una ficha por filtro.** Las fichas dicen cuál, que es mejor, y cuestan ancho, que es el problema. Con el juego de filtros cambiando de dos a seis según la pestaña, cuatro fichas activas en Devoluciones vuelven a partir la barra, y habríamos cambiado un amontonamiento por otro que solo aparece a veces —que es peor, porque no se puede prever—. **El ancho de este control no depende de lo que haya seleccionado, y esa es la única forma de garantizar un renglón en las seis pestañas.**
+
+Y no es un filtro escondido: está contado, marcado como puesto y a un clic de verse entero. Dentro del panel, cada campo con valor lleva su propio **Quitar**, y el pie del panel lleva **Quitar filtros**, el mismo que está fuera.
+
+**El contador cuenta campos con valor, no controles.** El rango de fechas a medida cuenta uno aunque sean dos campos: es un filtro, no dos.
+
+## El panel
+
+Reutiliza `.colgante` —el mismo mecanismo de la campana y de la cuenta—, que ya trae escrito todo lo que un panel flotante tiene que hacer: vive en el `body` con posición fija, cierra con Escape y con un clic fuera, devuelve el foco al botón, y en pantalla angosta deja de colgar y se ancla a los bordes. Un desplegable, una función: escribirlo por segunda vez es olvidarse de la mitad.
+
+Dentro, `.campos`, en este orden:
+
+1. **Del … al …** — el `.rango-fechas` con su "al" en medio, entero. Un rango se parte entero o no se parte.
+2. **Paquetería** · **Canal** — los dos de siempre, llenados con lo que hay.
+3. Solo en Devoluciones: **Estado** · **Motivo** · **Mecanismo**, y **Sin moverse más de 7 días** como `.marca-campo`, no como ficha: dentro de un panel de campos, una ficha es un tercer estilo de control para la misma tarea.
+
+**Pie:** `.boton--sutil.boton--chico` **Quitar filtros**. No hay botón de aplicar: los filtros se aplican al cambiarlos, como hoy, y un "Aplicar" convertiría en dos pasos lo que hoy es uno.
+
+**Las fichas de fecha y el rango a medida son un solo filtro con dos controles.** Elegir "7 días" borra el rango escrito; escribir un rango deja las cuatro fichas sin ninguna marcada. Sin esa regla, la barra puede decir "30 días" mientras el panel dice "del 1 al 15" y la lista obedece a uno de los dos sin decir a cuál.
+
+## En angosto
+
+**Mejora, no empeora.** La regla que ya existe pone cada control al 100 % en columna, y hoy eso son cinco o seis renglones: buscador, cuatro fichas, dos fechas y dos o cinco desplegables. Con el panel son tres: el buscador, la fila de fichas —que son chips y caben— y el botón de filtros. Los campos de dentro heredan la disposición en columna que ya está escrita, y el panel se ancla a los bordes por la regla que ya tiene `.colgante`.
+
+## Se quita el conmutador, y con él la vista Mosaico
+
+Es una orden del dueño y además la pantalla estaba contradiciendo dos reglas suyas.
+
+**`sistema.html` ya lo dice:** *"Cuántas hay cambia cómo se ven. Con dos o tres, las tarjetas… Con veinte, esa misma tarjeta es un muro de cuatro mil píxeles; ahí manda la lista."* Y el criterio del propio dueño sobre esta pantalla: **"hay clientes que tendrán 5,000 envíos"**, de donde salió que las listas largas son tablas. Pedidos es, por definición, la lista más larga del producto. Era la única pantalla con dos formas de ver la misma cosa.
+
+**Qué se pierde, dicho sin adornos.** La tarjeta enseñaba folio, canal, pago, cliente, ciudad, envío, total y acción sin desplazamiento lateral; la tabla en un teléfono se desplaza a lo ancho, porque tiene un mínimo de 560 píxeles. **Eso es lo único que se pierde, y se pierde solo en el teléfono.** A cambio, Pedidos se comporta como Tracking, Recolecciones, Correcciones y Cobros, que llevan tabla con desplazamiento desde siempre: dejar de ser la excepción vale más que una segunda vista que nadie eligió.
+
+**Y si algún día el teléfono se vuelve un caso de verdad, la respuesta es menos columnas en angosto, no una segunda vista.** Las tres que sobran ahí son **Canal**, **Destino** y **Total**: en un teléfono nadie decide con ellas, y el trabajo se hace con el folio, el cliente, el envío y la acción. Queda escrito para que nadie vuelva a alcanzar un segundo modo cuando el problema sea el ancho.
+
+La fila de pestañas se queda con las pestañas y nada a la derecha. No se mete nada en ese hueco: sumar a una fila de ancho fijo es quitarle a algo, y el recuento ya vive en el pie de la tarjeta, que es su sitio.
+
+## Los dos buscadores
+
+El dueño no los nombró y contribuyen, pero no por lo que ocupan.
+
+**El reparto está bien y ya está decidido:** *"Global busca, local filtra. El buscador de la barra superior está en todas las pantallas, así que tiene que servir en todas: encuentra y lleva. Cada lista trae el suyo."* Dos controles a quince centímetros con alcances distintos es correcto.
+
+**Lo que está mal son los dos marcadores de posición.** Arriba, *"Buscar guía, pedido o destinatario"*; abajo, *"Filtrar por pedido, cliente o destino"*. Dos enumeraciones de tres campos parecidos obligan a compararlas para saber cuál es cuál, y esa comparación —no el ancho— es la parte de la sensación de amontonamiento que sí es de los buscadores.
+
+**El local deja de enumerar y dice qué hace:**
+
+> `placeholder="Filtrar esta lista"`
+
+"Esta lista" es la única palabra que contesta la pregunta que alguien se hace mirando los dos: cuál de los dos toca lo que tengo delante. Los campos por los que busca se quedan en su etiqueta para lectores de pantalla, que es donde sirven de verdad. **Y desaparece de paso el marcador que cambiaba en la pestaña de Devoluciones**, que era una pieza móvil más para no decir nada nuevo.
+
 # 1. Devoluciones
 
 ## 1.1 Dónde vive
@@ -202,15 +288,14 @@ La segunda es la más importante y no es la que uno esperaría: con cinco mecani
 
 **Con una excepción que hay que respetar:** las devoluciones registradas sobre una guía todavía en tránsito nacen en *Autorizada* sin que el comprador pueda hacer nada, así que **no entran en esa métrica hasta que la ida se entregue** (1.3 bis). Contarlas sería acusar a quien no es.
 
-**Los filtros** reutilizan la `.filtros` de Pedidos:
+**Los filtros** son los de la barra de Pedidos, descrita arriba, con lo propio de esta pestaña dentro del panel **Filtros**:
 
-- Buscador local: `placeholder="Filtrar por pedido, cliente o guía de retorno"`.
-- `.rango-fechas` (el de `correcciones.html`, con su "al" en medio: un rango se parte entero o no se parte).
-- `select` **Estado**, llenado con los estados que de verdad hay.
-- `select` **Motivo**, con la lista fija.
-- `select` **Mecanismo**, con los cinco.
-- `.ficha-filtro` **"Sin moverse más de 7 días"**, que cubre a la vez la autorizada sin guía y la guía sin usar, porque son el mismo problema visto en dos estados.
-- `.ficha-filtro--quitable` de foco, igual que en Pedidos, para cuando se llega desde Inicio.
+- **Estado**, llenado con los estados que de verdad hay.
+- **Motivo**, con la lista fija. El comercial: la causa del transportista es texto libre y no se agrupa.
+- **Mecanismo**, con los cinco.
+- **Sin moverse más de 7 días**, que cubre a la vez la autorizada sin guía y la guía sin usar, porque son el mismo problema visto en dos estados.
+
+Fuera del panel no cambia nada: el mismo buscador, las mismas cuatro fichas de fecha y la misma ficha de foco. **Esta pestaña es la razón por la que el panel existe**: con sus cuatro controles desplegados, la barra se partía en dos renglones a 1440.
 
 **La tabla.** Lista larga, así que tabla, no tarjetas. Columnas en este orden:
 
@@ -1729,7 +1814,7 @@ Un envío suelto puede existir sin guía —se captura hoy y se despacha mañana
 
 Dos cosas que gana el cambio además de ser cierto. **El nombre describe mejor el predicado de lo que lo describía antes**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso. Y **los tres sitios dicen ahora lo mismo**, que es lo que pide la regla de un nombre por pantalla; hasta hoy el pendiente decía "Pagados sin guía" y la métrica de la misma pantalla decía "Pendientes de despachar", dos nombres para una cosa.
 
-**El filtro de canal gana "Sin canal"**, no "Manual": el desplegable contesta por dónde entró la venta, y una forma de capturar no es un sitio por donde entra dinero. Como todos los desplegables del producto, se llena con lo que hay: sin sueltos, la opción no aparece.
+**El filtro de canal gana "Sin canal"**, no "Manual": el desplegable contesta por dónde entró la venta, y una forma de capturar no es un sitio por donde entra dinero. Como todos los desplegables del producto, se llena con lo que hay: sin sueltos, la opción no aparece —y sin sueltos **el desplegable de canal tampoco tiene por qué ofrecer nada más que los canales conectados**—. Vive dentro del panel **Filtros**, y puesto cuenta uno en el contador.
 
 ## 5.5 El paquete: la plantilla propone, las medidas mandan
 
@@ -2215,5 +2300,7 @@ Y dos cosas más, las dos chicas y las dos del ajuste anterior:
 **9. La etiqueta del pendiente cambia en tres sitios, no en uno.** "Pagados sin guía" vive además en la `.metrica__nota` de Pedidos —que hoy dice "Pendientes de despachar", un segundo nombre para lo mismo— y en la tarjeta de Inicio. Los tres pasan a **"Listos para despachar"**. La clave del predicado se queda como está para no romper los enlaces que ya llevan `?pendiente=pagados-sin-guia`. Y vale la pena notar que el nombre nuevo **describe el predicado mejor de lo que lo describía el viejo**: ese pendiente ya excluía los pedidos con error y los que esperan corrección, precisamente porque no están listos, y "pagados" nunca dijo eso.
 
 **Y una que ya no lo es:** el título "Con qué paquetería sale cada pedido" queda confirmado, así que el renombrado de Configuración está cerrado entero.
+
+**Y una que no te toca decidir pero conviene que sepas:** el dueño pidió quitar el conmutador Clásico/Mosaico de Pedidos y que la barra de filtros se lea en un renglón. **La definición no cambia por esto** —no menciona ninguna de las dos cosas—, y la barra nueva está descrita en la sección "La barra de Pedidos", antes de la función 1. Lo único que quiero dejar anotado es que quitar Mosaico no fue solo obedecer: esa pantalla era la única con dos formas de ver la misma lista, y contradecía a la vez la regla de `sistema.html` sobre cuándo manda la tabla y el criterio del propio dueño de que las listas largas son tablas porque hay clientes con cinco mil envíos.
 
 Sobre partirla en pestañas: **no todavía**, por la razón que tú mismo dejaste escrita —el corte es en la quinta zona y hay cuatro— más una que conviene anotar: `sistema.html` reserva las pestañas para vistas del mismo objeto, y estas cuatro zonas son cuatro pasos de un proceso. Un proceso se lee en orden. Lo que sí deja hecho el renombrado es el corte futuro: las zonas ya se llaman **Entrada · Embalaje · Paquetería · Recolección**, y agrupar las dos de en medio bajo Envío el día que toque es mover dos rótulos, no reescribir nada.

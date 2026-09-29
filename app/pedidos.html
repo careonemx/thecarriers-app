@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=0ef28f45">
-<script src="../assets/vigia.js?v=0ef28f45" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=665eca3a">
+<script src="../assets/vigia.js?v=665eca3a" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -46,10 +46,9 @@
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="entregados">Entregados</button>
         <button class="pestana" role="tab" type="button" aria-selected="false" data-vista="devoluciones">Devoluciones</button>
       </div>
-      <div class="conmutador" role="group" aria-label="Forma de ver la lista">
-        <button type="button" aria-pressed="true" data-modo="clasico">Clásico</button>
-        <button type="button" aria-pressed="false" data-modo="mosaico">Mosaico</button>
-      </div>
+      <!-- La fila de pestañas se queda con las pestañas y nada a la derecha:
+           sumar a una fila de ancho fijo es quitarle a algo, y el recuento ya
+           vive en el pie de la tarjeta, que es su sitio. -->
     </div>
 
     <div class="filtros">
@@ -57,45 +56,97 @@
         <label class="sr-only" for="q-pedidos">Buscar en esta lista</label>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
           stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <!-- "Esta lista" es lo único que contesta cuál de los dos buscadores
+             toca lo que tienes delante. Los campos por los que busca se quedan
+             en la etiqueta, que es donde sirven de verdad. -->
         <input type="search" id="q-pedidos" data-buscar-local autocomplete="off"
-               placeholder="Filtrar por pedido, cliente o destino"
-               data-placeholder-dev="Filtrar por pedido, cliente o guía de retorno">
+               placeholder="Filtrar esta lista">
       </div>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <span class="filtros__etiqueta">Fecha</span>
+      <!-- Sin rótulo "Fecha": las cuatro fichas ya dicen que son fechas, y la
+           etiqueta costaba 45px para repetirlo. -->
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="0">Hoy</button>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="7">7 días</button>
       <button class="ficha-filtro" type="button" aria-pressed="false" data-rango="30">30 días</button>
       <button class="ficha-filtro" type="button" aria-pressed="true" data-rango="">Todo</button>
 
       <span class="filtros__div" aria-hidden="true"></span>
-      <label class="sr-only" for="desde">Desde</label>
-      <input type="date" id="desde" aria-label="Desde">
-      <span class="filtros__etiqueta">al</span>
-      <label class="sr-only" for="hasta">Hasta</label>
-      <input type="date" id="hasta" aria-label="Hasta">
 
-      <span class="filtros__div" aria-hidden="true"></span>
-      <label class="sr-only" for="fp">Filtrar por paquetería</label>
-      <select id="fp"><option value="">Todas las paqueterías</option></select>
-      <label class="sr-only" for="fc">Filtrar por canal</label>
-      <select id="fc"><option value="">Todos los canales</option></select>
+      <!-- Un solo control para todo lo que no es el caso normal. Su ancho no
+           depende de lo que haya dentro ni de lo seleccionado, y eso es lo
+           único que garantiza un renglón en las seis pestañas. -->
+      <div class="colgante" data-colgante>
+        <button class="boton boton--fantasma boton--chico" type="button" id="abrir-filtros"
+                data-abrir aria-expanded="false" aria-controls="panel-filtros">Filtros</button>
+        <div class="colgante__panel filtros__panel" id="panel-filtros" role="dialog"
+             aria-label="Filtros" hidden>
+          <div class="campos">
+            <div class="campo" data-filtro="rango">
+              <span>Del … al …</span>
+              <div class="rango-fechas">
+                <label class="sr-only" for="desde">Desde</label>
+                <input type="date" id="desde" aria-label="Desde">
+                <span class="filtros__etiqueta">al</span>
+                <label class="sr-only" for="hasta">Hasta</label>
+                <input type="date" id="hasta" aria-label="Hasta">
+              </div>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="rango" hidden>Quitar</button>
+            </div>
 
-      <span class="filtros__div" aria-hidden="true" data-solo-dev hidden></span>
-      <label class="sr-only" for="fd-estado">Filtrar por estado</label>
-      <select id="fd-estado" data-solo-dev hidden><option value="">Todos los estados</option></select>
-      <label class="sr-only" for="fd-motivo">Filtrar por motivo</label>
-      <select id="fd-motivo" data-solo-dev hidden><option value="">Todos los motivos</option></select>
-      <label class="sr-only" for="fd-mecanismo">Filtrar por mecanismo</label>
-      <select id="fd-mecanismo" data-solo-dev hidden><option value="">Todos los mecanismos</option></select>
-      <button class="ficha-filtro" type="button" id="fd-quietas" aria-pressed="false"
-              data-solo-dev hidden>Sin moverse más de 7 días</button>
+            <div class="campo" data-filtro="fp">
+              <span>Paquetería</span>
+              <select id="fp"><option value="">Todas las paqueterías</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fp" hidden>Quitar</button>
+            </div>
 
-      <span class="filtros__div" aria-hidden="true"></span>
-      <button class="ficha-filtro ficha-filtro--quitable" type="button" id="ficha-foco" hidden></button>
+            <div class="campo" data-filtro="fc">
+              <span>Canal</span>
+              <select id="fc"><option value="">Todos los canales</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fc" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-solo-dev hidden data-filtro="fd-estado">
+              <span>Estado</span>
+              <select id="fd-estado"><option value="">Todos los estados</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fd-estado" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-solo-dev hidden data-filtro="fd-motivo">
+              <span>Motivo</span>
+              <select id="fd-motivo"><option value="">Todos los motivos</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fd-motivo" hidden>Quitar</button>
+            </div>
+
+            <div class="campo" data-solo-dev hidden data-filtro="fd-mecanismo">
+              <span>Mecanismo</span>
+              <select id="fd-mecanismo"><option value="">Todos los mecanismos</option></select>
+              <button class="boton boton--sutil boton--chico" type="button"
+                      data-quitar-filtro="fd-mecanismo" hidden>Quitar</button>
+            </div>
+
+            <!-- Casilla y no ficha: dentro de un panel de campos, una ficha
+                 sería un tercer estilo de control para la misma tarea. -->
+            <label class="marca-campo" data-solo-dev hidden>
+              <input type="checkbox" id="fd-quietas">
+              <span>Sin moverse más de 7 días</span>
+            </label>
+          </div>
+          <div class="filtros__panel-pie">
+            <button class="boton boton--sutil boton--chico" type="button"
+                    data-limpiar-filtros>Quitar filtros</button>
+          </div>
+        </div>
+      </div>
 
       <span class="filtros__sep"></span>
+      <button class="ficha-filtro ficha-filtro--quitable" type="button" id="ficha-foco" hidden></button>
+
       <button class="boton boton--sutil boton--chico" type="button" id="limpiar-filtros" hidden>
         Quitar filtros
       </button>
@@ -132,8 +183,6 @@
         <tbody></tbody>
       </table>
     </div>
-
-    <div class="mosaico" id="vista-mosaico" hidden></div>
 
     <!-- La sexta lente. Lista larga, así que tabla y no tarjetas. -->
     <div class="tabla-caja scroll-fino" id="vista-devoluciones" hidden>
@@ -176,7 +225,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=0ef28f45";
+import { montar, exigirSesion } from "../assets/app.js?v=665eca3a";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
@@ -199,7 +248,7 @@ import { pedidos, sinGuia, conGuia, conError,
          retornoDeLaIda, registrarDevolucionDeIda, esperaEntregaIda,
          QUIEN_REGISTRO, ESPERA_ENTREGA, seGuarda,
          buscarProductos, fechaEnTexto,
-         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=0ef28f45";
+         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=665eca3a";
 if (exigirSesion()) {
   montar();
 
@@ -341,35 +390,6 @@ if (exigirSesion()) {
 
   cuerpo.innerHTML = pedidos.map(filaHTML).join("");
 
-  const tarjetaHTML = (p) => `
-    <article class="tarjeta-pedido" data-vista="${vistaDe(p)}">
-      <div class="tarjeta-pedido__alto">
-        <!-- El canal también aquí: el filtro es el mismo en las dos formas de
-             ver, y una lista que se recorta sin decir por qué se lee igual de
-             mal en tarjetas que en tabla. Va debajo del folio, donde la tabla
-             pone la fecha, para no meter un tercer elemento en el renglón que
-             comparten el folio y el pago. -->
-        <div>
-          <button class="tarjeta-pedido__folio" type="button" data-abrir="${p.folio}" style="background:none;border:0;padding:0;font:inherit;color:var(--enlace);cursor:pointer;text-decoration:underline">${p.folio}</button>
-          <div class="apagado" style="font-size:12px">${
-            esSuelto(p) ? esc(referenciaDe(p) ?? "Sin canal") : p.canal}</div>
-        </div>
-        ${esSuelto(p)
-          ? '<span class="pastilla pastilla--neutra">Sin canal</span>'
-          : `<span class="pastilla pastilla--${p.pago === "Pagado" ? "ok" : "aviso"}">${p.pago}</span>`}
-      </div>
-      <div>
-        <b style="font-weight:500">${p.cliente.nombre}</b>
-        <div class="apagado" style="font-size:12px">${p.ciudad}</div>
-      </div>
-      <div>${celdaEnvio(p)}</div>
-      <div class="tarjeta-pedido__pie">
-        <span class="tabular" style="font-weight:600">${dinero(p.total)}</span>
-        ${celdaAccion(p)}
-      </div>
-    </article>`;
-
-  document.getElementById("vista-mosaico").innerHTML = pedidos.map(tarjetaHTML).join("");
 
   /* ---------- Panel de detalle ----------
      El orden de los bloques no es el del MVP. Ahí venía cliente, totales,
@@ -677,7 +697,9 @@ if (exigirSesion()) {
      cerraría el panel entero y se llevaría la dirección a medio capturar. */
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    const caja = e.target.closest(".buscador-ficha");
+    /* El destino de un Escape no siempre es un elemento —puede ser el propio
+       documento—, y ahí `closest` no existe. */
+    const caja = e.target?.closest?.(".buscador-ficha");
     if (!caja || !caja.querySelector(".buscador-ficha__panel")) return;
     e.preventDefault();
     e.stopPropagation();
@@ -3830,12 +3852,11 @@ if (exigirSesion()) {
   });
 
   /* ---------- Vistas, filtros y selección ----------
-     Un solo predicado decide qué se ve, y lo aplican por igual la tabla y
-     el mosaico. Si cada vista tuviera su propio filtrado, tarde o temprano
-     una mostraría algo que la otra esconde. */
+     Un solo predicado decide qué se ve. Hubo un segundo modo de ver esta misma
+     lista y se quitó: Pedidos es, por definición, la lista más larga del
+     producto, y las listas largas son tablas. */
   const filas = [...cuerpo.rows];
-  const tarjetas = [...document.querySelectorAll(".tarjeta-pedido")];
-  const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, i, fila: filas[i], tarjeta: tarjetas[i] }]));
+  const porFolio = new Map(pedidos.map((p, i) => [p.folio, { p, i, fila: filas[i] }]));
 
   /* El de la barra superior busca en toda la aplicación; este filtra ESTA
      lista. Son dos cosas distintas y por eso son dos campos. */
@@ -3844,13 +3865,10 @@ if (exigirSesion()) {
      dejaría la fila nueva fuera del recuento hasta la siguiente recarga. */
   function recargarTabla() {
     cuerpo.innerHTML = pedidos.map(filaHTML).join("");
-    document.getElementById("vista-mosaico").innerHTML = pedidos.map(tarjetaHTML).join("");
     filas.length = 0;
     filas.push(...cuerpo.rows);
-    tarjetas.length = 0;
-    tarjetas.push(...document.querySelectorAll(".tarjeta-pedido"));
     porFolio.clear();
-    pedidos.forEach((p, i) => porFolio.set(p.folio, { p, i, fila: filas[i], tarjeta: tarjetas[i] }));
+    pedidos.forEach((p, i) => porFolio.set(p.folio, { p, i, fila: filas[i] }));
     /* El desplegable gana "Sin canal" con el primero que aparece, y no antes:
        una opción que no devuelve nada es una opción que estorba. */
     if (pedidos.some(esSuelto) && ![...selCanal.options].some((o) => o.value === SIN_CANAL)) {
@@ -3943,6 +3961,7 @@ if (exigirSesion()) {
     if (esVistaDev()) {
       aplicarVista();
       limpiar.hidden = !hayFiltro();
+      pintarFiltros();
       return;
     }
     aplicarVista();
@@ -3954,11 +3973,7 @@ if (exigirSesion()) {
     const ini = (pagina - 1) * tam;
     const enPagina = new Set(coinciden.slice(ini, ini + tam));
 
-    for (const item of porFolio.values()) {
-      const visible = enPagina.has(item);
-      item.fila.hidden = !visible;
-      item.tarjeta.hidden = !visible;
-    }
+    for (const item of porFolio.values()) item.fila.hidden = !enPagina.has(item);
 
     rangoPagina.innerHTML = coinciden.length
       ? `Mostrando <b>${ini + 1}–${Math.min(ini + tam, coinciden.length)}</b> de <b>${coinciden.length}</b>` +
@@ -3974,6 +3989,7 @@ if (exigirSesion()) {
 
     document.querySelector("[data-sin-resultados]").hidden = coinciden.length > 0;
     limpiar.hidden = !hayFiltro();
+    pintarFiltros();
     pintarFoco();
     revisarSeleccion();
   }
@@ -4026,6 +4042,68 @@ if (exigirSesion()) {
     todosCheck.indeterminate = marcadas.length > 0 && marcadas.length < posibles.length;
   }
 
+  /* ---------- El control "Filtros" ----------
+     Un contador y no una ficha por filtro, a propósito: las fichas dicen cuál,
+     que es mejor, y cuestan ancho, que es el problema. Con el juego de filtros
+     cambiando de dos a seis según la pestaña, cuatro fichas activas volverían a
+     partir la barra en dos renglones, y solo a veces, que es peor. El ancho de
+     este control no depende de lo seleccionado. */
+  const abrirFiltros = document.getElementById("abrir-filtros");
+  const panelFiltros = document.getElementById("panel-filtros");
+
+  /* Cuenta campos con valor, no controles: el rango a medida cuenta uno aunque
+     sean dos campos, porque es un filtro y no dos. */
+  const filtrosPuestos = () => {
+    const dev = esVistaDev();
+    return [
+      !!(desde.value || hasta.value),
+      !!selPaq.value && !dev,
+      !!selCanal.value && !dev,
+      !!fdEstado.value && dev,
+      !!fdMotivo.value && dev,
+      !!fdMecanismo.value && dev,
+      devQuietas && dev,
+    ].filter(Boolean).length;
+  };
+
+  function pintarFiltros() {
+    const n = filtrosPuestos();
+    /* Dos formas del mismo control: apagado cuando no hay nada puesto, y
+       marcado con su cuenta cuando sí. No es un filtro escondido: está contado,
+       marcado y a un clic de verse entero. */
+    abrirFiltros.className = n
+      ? "ficha-filtro"
+      /* `--fantasma` y no `--sutil`: sin borde, al lado de cuatro fichas
+         redondeadas, el control se leía como el rótulo de lo que venía
+         después en vez de como algo que se pulsa. */
+      : "boton boton--fantasma boton--chico";
+    abrirFiltros.setAttribute("aria-pressed", String(!!n));
+    if (!n) abrirFiltros.removeAttribute("aria-pressed");
+    abrirFiltros.textContent = n ? `Filtros · ${n}` : "Filtros";
+
+    const conValor = {
+      rango: !!(desde.value || hasta.value),
+      fp: !!selPaq.value, fc: !!selCanal.value,
+      "fd-estado": !!fdEstado.value, "fd-motivo": !!fdMotivo.value,
+      "fd-mecanismo": !!fdMecanismo.value,
+    };
+    for (const [campo, puesto] of Object.entries(conValor)) {
+      const b = panelFiltros.querySelector(`[data-quitar-filtro="${campo}"]`);
+      if (b) b.hidden = !puesto;
+    }
+  }
+
+  panelFiltros.addEventListener("click", (e) => {
+    const quitar = e.target.closest("[data-quitar-filtro]");
+    if (quitar) {
+      const campo = quitar.dataset.quitarFiltro;
+      if (campo === "rango") { desde.value = ""; hasta.value = ""; marcarAtajo(); }
+      else document.getElementById(campo).value = "";
+      return aplicar();
+    }
+    if (e.target.closest("[data-limpiar-filtros]")) limpiar.click();
+  });
+
   // Los atajos escriben en los campos de fecha en vez de guardar estado aparte:
   // así el rango elegido siempre está a la vista y se puede ajustar a mano.
   function marcarAtajo() {
@@ -4043,6 +4121,9 @@ if (exigirSesion()) {
     aplicar();
   }));
 
+  /* Escribir un rango deja las cuatro fichas sin marcar, y elegir una ficha
+     reescribe el rango: sin esa regla, la barra puede decir "30 días" mientras
+     el panel dice "del 1 al 15", y la lista obedece a uno sin decir a cuál. */
   [desde, hasta].forEach((i) => i.addEventListener("change", () => { marcarAtajo(); aplicar(); }));
   [selPaq, selCanal].forEach((sel) => sel.addEventListener("change", aplicar));
 
@@ -4055,7 +4136,7 @@ if (exigirSesion()) {
     fdEstado.value = fdMotivo.value = fdMecanismo.value = "";
     devQuietas = false;
     focoDev = null;
-    fdQuietas.setAttribute("aria-pressed", "false");
+    fdQuietas.checked = false;
     marcarAtajo();
     aplicar();
   });
@@ -4067,15 +4148,6 @@ if (exigirSesion()) {
   }));
   const inicial = pestanas.find((b) => b.dataset.vista === vista);
   if (inicial) pestanas.forEach((o) => o.setAttribute("aria-selected", String(o === inicial)));
-
-  document.querySelectorAll(".conmutador button").forEach((b) =>
-    b.addEventListener("click", () => {
-      document.querySelectorAll(".conmutador button")
-        .forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
-      const mosaico = b.dataset.modo === "mosaico";
-      document.getElementById("vista-tabla").hidden = mosaico || esVistaDev();
-      document.getElementById("vista-mosaico").hidden = !mosaico || esVistaDev();
-    }));
 
   busqueda?.addEventListener("input", aplicar);
 
@@ -4107,7 +4179,7 @@ if (exigirSesion()) {
   }
 
   document.addEventListener("click", (e) => {
-    /* "Generar guía" y "Reintentar" de la lista, en tabla y en mosaico. Llevan
+    /* "Generar guía" y "Reintentar" de la lista. Llevan
        al mismo panel que el folio, pero pidiendo el bloque de Envío: el folio
        abre el pedido para consultarlo y éstos abren la tarea. Dos atributos y
        no uno con valor, para que el destino se lea en el HTML de la fila. */
@@ -4266,17 +4338,13 @@ if (exigirSesion()) {
 
   function aplicarVista() {
     const dev = esVistaDev();
-    document.getElementById("vista-tabla").hidden = dev || mosaicoActivo();
-    document.getElementById("vista-mosaico").hidden = dev || !mosaicoActivo();
+    document.getElementById("vista-tabla").hidden = dev;
     document.querySelectorAll("[data-solo-dev]").forEach((x) => { x.hidden = !dev; });
-    /* El buscador busca otra cosa en esta lente, y lo anuncia. */
-    if (busqueda) {
-      busqueda.placeholder = dev
-        ? busqueda.dataset.placeholderDev
-        : "Filtrar por pedido, cliente o destino";
+    /* Se oculta el campo entero y no el `select`: escondido solo el control,
+       su etiqueta se queda flotando encima de nada. */
+    for (const campo of ["fp", "fc"]) {
+      panelFiltros.querySelector(`[data-filtro="${campo}"]`).hidden = dev;
     }
-    for (const id of ["fp", "fc"]) document.getElementById(id).hidden = dev;
-    document.querySelector(".conmutador").hidden = dev;
     document.getElementById("seleccion").hidden = dev || document.getElementById("seleccion").hidden;
     /* "Crear envío" solo donde crear un envío es lo siguiente que se hace:
        en las lentes de seguimiento la acción de la pantalla es otra. */
@@ -4292,13 +4360,9 @@ if (exigirSesion()) {
     }
   }
 
-  const mosaicoActivo = () =>
-    document.querySelector('.conmutador [data-modo="mosaico"]')?.getAttribute("aria-pressed") === "true";
-
   [fdEstado, fdMotivo, fdMecanismo].forEach((s) => s.addEventListener("change", aplicar));
-  fdQuietas.addEventListener("click", () => {
-    devQuietas = !devQuietas;
-    fdQuietas.setAttribute("aria-pressed", String(devQuietas));
+  fdQuietas.addEventListener("change", () => {
+    devQuietas = fdQuietas.checked;
     aplicar();
   });
 
@@ -4307,7 +4371,7 @@ if (exigirSesion()) {
       fdEstado.value = fdMotivo.value = fdMecanismo.value = "";
       devQuietas = false;
       focoDev = null;
-      fdQuietas.setAttribute("aria-pressed", "false");
+      fdQuietas.checked = false;
       desde.value = hasta.value = "";
       if (busqueda) busqueda.value = "";
       return aplicar();

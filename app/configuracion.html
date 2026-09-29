@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=0ef28f45">
-<script src="../assets/vigia.js?v=0ef28f45" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=665eca3a">
+<script src="../assets/vigia.js?v=665eca3a" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -160,7 +160,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=0ef28f45";
+import { montar, exigirSesion } from "../assets/app.js?v=665eca3a";
 import { origenes, plantillas, reglasPaqueteria, PAPELES,
          reglasEmbalaje, vetosEmbalaje, efectoEmbalaje, embalaje, CONDICIONES_EMBALAJE,
          DESTINOS, cobroDefecto, guiasConReglas, hechosDeRegla,
@@ -172,7 +172,7 @@ import { origenes, plantillas, reglasPaqueteria, PAPELES,
          guiasSinRecoleccion, sinRegistro, enumerarEs,
          productosVistos, buscarProductos, pareceSKU, fechaEnTexto,
          FACTOR_VOLUMETRICO, capacidadDe, guardarEmbalaje,
-         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=0ef28f45";
+         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=665eca3a";
 if (exigirSesion()) {
   montar();
 
@@ -916,7 +916,9 @@ if (exigirSesion()) {
      cerraría además el diálogo entero y se llevaría lo capturado. */
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    const caja = e.target.closest(".buscador-ficha");
+    /* El destino de un Escape no siempre es un elemento —puede ser el propio
+       documento—, y ahí `closest` no existe. */
+    const caja = e.target?.closest?.(".buscador-ficha");
     if (!caja || !caja.querySelector(".buscador-ficha__panel")) return;
     e.preventDefault();
     e.stopPropagation();

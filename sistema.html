@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=0ef28f45">
+<link rel="stylesheet" href="assets/app.css?v=665eca3a">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=0ef28f45" defer></script>
+<script src="assets/vigia.js?v=665eca3a" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -791,7 +791,8 @@
         <div class="regla"><b>Sobre un registro</b><span>Dentro de su fila o tarjeta, a la izquierda. La principal en <code>.boton--fantasma</code>, el resto en <code>.boton--sutil</code>, y la destructiva separada al extremo derecho con un <code>flex:1</code> de por medio: no es una acción más de la fila, es la que no tiene vuelta atrás.</span></div>
         <div class="regla"><b>Sobre varios</b><span>En la barra de selección, encima de la tabla. Cada una dice sobre cuántos aplica.</span></div>
         <div class="regla"><b>Confirmar o cancelar</b><span>Abajo a la derecha del panel o del diálogo, en su pie. Cancelar a la izquierda de la confirmación, nunca al revés.</span></div>
-        <div class="regla"><b>Filtros y forma de ver</b><span>No son acciones y no van con ellas: viven en la barra de la sección que filtran, alineados a la derecha. Fichas para filtrar, conmutador para cambiar de vista.</span></div>
+        <div class="regla"><b>Filtros y forma de ver</b><span>No son acciones y no van con ellas: viven en la barra de la sección que filtran, alineados a la derecha. Fichas para filtrar, conmutador para cambiar de vista. Y una lista larga se ve de una sola manera: con miles de filas manda la tabla, así que no lleva un segundo modo.</span></div>
+        <div class="regla"><b>Una barra de filtros se lee en un renglón</b><span>Lo que se usa siempre se queda fuera —el buscador de la lista y las fichas de fecha—; el resto se pliega en un solo control que abre un <code>.colgante</code>. Ese control dice <b>cuántos</b> hay puestos, no cuáles: una ficha por filtro dice más y cuesta ancho, y con un juego de filtros que cambia de dos a seis según la pestaña, volvería a partir la barra solo a veces, que es peor que siempre. Lo que puso la persona se cuenta en el control con el que lo puso; lo que llegó con la navegación se nombra, porque nadie lo eligió.</span></div>
         <div class="regla"><b>Paginación</b><span>En el pie de la tarjeta que contiene la lista, y siempre con el mismo orden: cuántos se muestran, cuántos por página, y los números a la derecha.</span></div>
         <div class="regla"><b>Cuando no hay nada</b><span>La acción la lleva el estado vacío y la de arriba se oculta. Con la pantalla en blanco es de lo único que se puede hablar, y repetirla no gana nada.</span></div>
       </div>
