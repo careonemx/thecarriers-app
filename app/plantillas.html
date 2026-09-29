@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Plantillas · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=665eca3a">
-<script src="../assets/vigia.js?v=665eca3a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
+<script src="../assets/vigia.js?v=90b36df2" defer></script>
 </head>
 <body data-seccion="plantillas">
 <main class="contenido contenido--ancho">
@@ -48,9 +48,9 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=665eca3a";
+import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
 import { plantillas, pesoCobrado, FACTOR_VOLUMETRICO,
-         cotizar, precioDe, dinero } from "../assets/datos.js?v=665eca3a";
+         cotizar, precioDe, dinero } from "../assets/datos.js?v=90b36df2";
 if (exigirSesion()) {
   montar();
 
@@ -91,14 +91,13 @@ if (exigirSesion()) {
      transportista. Quien lee esto quiere saber por qué la factura no coincide
      con la báscula. */
   /* Una sola redacción para toda la pantalla. La tarjeta y el panel tenían cada
-     uno la suya y ya habían divergido: una decía "y la caja no abulta más que
-     eso" y la otra le añadía un "así que pagas por lo que pesa" que sobra y que
-     además es un modismo. Dos copias del mismo texto dejan de ser el mismo
-     texto, igual que un color repetido a mano deja de ser el mismo color. */
+     uno la suya y ya habían divergido en el matiz y en el registro. Dos copias
+     del mismo texto dejan de ser el mismo texto, igual que un color repetido a
+     mano deja de ser el mismo color. */
   const explicacion = (p, c) => c.porVolumen
     ? `Pesa ${kg(c.real)}, pero una caja de ${p.largo} × ${p.ancho} × ${p.alto} cm
        se cobra como si pesara ${kg(c.volumetrico)}.`
-    : `Pesa ${kg(c.real)} y la caja no abulta más que eso.`;
+    : `Pesa ${kg(c.real)} y sus medidas no superan ese peso.`;
 
   function tarjeta(p) {
     const c = pesoCobrado(p);
@@ -118,7 +117,9 @@ if (exigirSesion()) {
           : ""}
 
         <dl class="ficha__datos">
-          <div><dt>Te cobran</dt>
+          <!-- Quien cobra el volumen es la paquetería, no nosotros. Aquí no
+               hay ninguna elegida, así que va la forma genérica. -->
+          <div><dt>La paquetería cobra</dt>
             <dd class="ficha__cifra tabular"${c.porVolumen ? ' style="color:var(--aviso)"' : ""}>${kg(c.cobrado)}</dd></div>
           <div><dt>Costo estimado</dt><dd class="ficha__cifra tabular">${esc(precio(c))}</dd></div>
         </dl>
@@ -305,7 +306,7 @@ if (exigirSesion()) {
     caj.className = `aviso aviso--bloque ${c.porVolumen ? "aviso--alerta" : "aviso--ok"}`;
 
     if (!c.porVolumen) {
-      caj.innerHTML = `<b>Te cobran ${kg(c.cobrado)}</b>
+      caj.innerHTML = `<b>La paquetería cobra ${kg(c.cobrado)}</b>
         <p>${explicacion(caja, c)}</p>
         <p>Costo estimado: <b>${esc(precio(c))}</b>. ${esc(masBarata(c))}</p>`;
       return;
@@ -318,7 +319,7 @@ if (exigirSesion()) {
     const ahorro = precioDe("Estafeta", c.cobrado) - precioDe("Estafeta", c.real);
 
     caj.innerHTML = `
-      <b>Te cobran ${kg(c.cobrado)}, no ${kg(c.real)}</b>
+      <b>La paquetería cobra ${kg(c.cobrado)}, no ${kg(c.real)}</b>
       <p>Una caja de ${caja.largo} × ${caja.ancho} × ${caja.alto} cm ocupa el lugar de
          ${kg(c.volumetrico)} en el camión, y eso es lo que se paga aunque pese menos.</p>
       <p>Costo estimado: <b>${esc(precio(c))}</b>. ${esc(masBarata(c))}</p>

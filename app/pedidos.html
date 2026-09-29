@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=665eca3a">
-<script src="../assets/vigia.js?v=665eca3a" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=90b36df2">
+<script src="../assets/vigia.js?v=90b36df2" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -225,7 +225,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=665eca3a";
+import { montar, exigirSesion } from "../assets/app.js?v=90b36df2";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
@@ -248,7 +248,7 @@ import { pedidos, sinGuia, conGuia, conError,
          retornoDeLaIda, registrarDevolucionDeIda, esperaEntregaIda,
          QUIEN_REGISTRO, ESPERA_ENTREGA, seGuarda,
          buscarProductos, fechaEnTexto,
-         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=665eca3a";
+         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=90b36df2";
 if (exigirSesion()) {
   montar();
 
@@ -608,7 +608,7 @@ if (exigirSesion()) {
              aria-label="${fuente === "producto" ? "Buscar un producto" : "Buscar un destinatario"}">
       <span class="campo__ayuda">${fuente === "producto"
         ? "Se busca entre los productos que han aparecido en tus pedidos."
-        : "Se busca entre los destinatarios de tus envíos anteriores. Al elegir uno, la dirección se llena."}</span>
+        : "Se busca entre los destinatarios de envíos anteriores. Al elegir uno, sus datos se copian en este envío."}</span>
     </div>`;
 
   const buscadorDestinatarioHTML = () => buscadorFichaHTML("destinatario");
@@ -744,7 +744,7 @@ if (exigirSesion()) {
     return `
         ${buscadorDestinatarioHTML()}
 
-        <p class="separador-o"><span>o escríbela</span></p>
+        <p class="separador-o"><span>o capturar los datos</span></p>
 
         <div class="campos campos--2">
           ${campo("nombre", "Nombre de contacto", c.nombre, 'autocomplete="given-name" required')}
@@ -855,13 +855,14 @@ if (exigirSesion()) {
       }
       if (info) {
         ayuda.textContent = `Colonias del catálogo de The Carriers para el ${valor}. ` +
-          "Si la tuya no está, escríbela.";
+          "Si no aparece la que corresponde, escríbela.";
         ayuda.hidden = false;
       } else if (/^\d{5}$/.test(valor)) {
         /* No bloquea nada: ni el guardado ni el botón de generar. Lo único que
            cambia es que no hay colonia que proponer. */
         ayuda.innerHTML = `<b>El código postal ${esc(valor)} no está en el catálogo de colonias.</b>
-          No quiere decir que no exista: quiere decir que no hay colonia que proponer. Escríbela.`;
+          Eso no significa que el código postal no exista: significa que no hay colonia que
+          proponer. Escríbela.`;
         ayuda.hidden = false;
       } else {
         ayuda.textContent = "";
@@ -1157,11 +1158,13 @@ if (exigirSesion()) {
     const m = cobro.medidas;
     const sinConfirmarDivisor = !capacidadDe(paq, "divisorVolumetrico").fuente;
     return `<div class="cobro${cobro.porVolumen ? " cobro--aviso" : ""}">
-      <p class="cobro__cifra">Te cobran ${kg(cobro.cobrado)}</p>
+      <!-- Se nombra a quien cobra: es cierto y dice quién. Sin paquetería
+           elegida queda la forma genérica, como en Plantillas. -->
+      <p class="cobro__cifra">${paq ? esc(paq) : "La paquetería"} cobra ${kg(cobro.cobrado)}</p>
       <p class="cobro__porque">${cobro.porVolumen
         ? `Pesa ${kg(cobro.real)}, pero una caja de ${m.largo} × ${m.ancho} × ${m.alto} cm
            se cobra como si pesara ${kg(cobro.volumetrico)}.`
-        : `Pesa ${kg(cobro.real)} y la caja no abulta más que eso.`}</p>
+        : `Pesa ${kg(cobro.real)} y sus medidas no superan ese peso.`}</p>
       ${cobro.porVolumen && sinConfirmarDivisor
         ? `<p class="cobro__porque">Calculado con divisor ${divisorDe(paq)}.
            No está confirmado con ${esc(paq)}.</p>` : ""}
@@ -1191,7 +1194,7 @@ if (exigirSesion()) {
                 <b>${esc(o.paqueteria)}</b> · ${esc(o.servicio)}
                 <span class="tarifa__meta">
                   Entrega en ${esc(o.dias)}${o.aTiempo != null
-                    ? ` · <span class="tarifa__cumple" data-bajo="${o.aTiempo < 90}">${o.aTiempo}% a tiempo contigo</span>`
+                    ? ` · <span class="tarifa__cumple" data-bajo="${o.aTiempo < 90}">${o.aTiempo}% a tiempo en tus envíos</span>`
                     : ""}${o.papel === "evitar" ? " · Marcada como evitar" : ""}
                 </span>
               </span>
@@ -1294,7 +1297,7 @@ if (exigirSesion()) {
        <span class="instruccion__dato">${esc(guia)}</span>.
        <button class="boton boton--sutil boton--chico" type="button"
                data-copiar="${esc(guia)}">Copiar guía</button>`,
-      "La guía queda sin usar. Si tu contrato cobra las guías emitidas, esta se te cobra.",
+      "La guía queda sin usar. Si el contrato cobra las guías emitidas, esta se cobra igualmente.",
     ];
   };
 
@@ -1504,7 +1507,8 @@ if (exigirSesion()) {
                 }>${esc(x.nombre)} — ${x.largo} × ${x.ancho} × ${x.alto} cm</option>`).join("")}
             </select>
             <span class="campo__ayuda">${ayudaCaja}${suelto
-              ? " Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia."
+              ? " Cada envío corresponde a un bulto. Para dos bultos se crean dos envíos con la " +
+                "misma referencia, que es lo que los relaciona en la conciliación."
               : ""}</span>
           </label>
 
@@ -1928,7 +1932,8 @@ if (exigirSesion()) {
     return `<div class="aviso aviso--alerta">
       <b>La guía de retorno ${esc(r.guia)} sigue emitida y sin usar</b>
       <p style="margin-top:4px">El paquete ya regresa por cuenta de ${esc(r.paqueteria)}, así que
-        esta guía no se va a usar. Si tu contrato cobra las guías emitidas, esta se te cobra.</p>
+        esta guía no se va a usar. Si el contrato cobra las guías emitidas, esta se cobra
+        igualmente.</p>
       ${ofrece(r.paqueteria, "cancelaGuia")
         ? `<div class="grupo-botones">
             <button class="boton boton--sutil boton--chico" type="button"
@@ -2325,7 +2330,7 @@ if (exigirSesion()) {
     const caja = plantillas.find((x) => x.id === nuevo.plantilla);
 
     const ayuda = nuevo.cajaFuente === "propias"
-      ? `Medidas propias: ya no salen de ${esc(caja?.nombre ?? "la plantilla")}.`
+      ? `Medidas capturadas: ya no corresponden a ${esc(caja?.nombre ?? "la plantilla")}.`
       : nuevo.regla
         ? `La propone la regla «${esc(nuevo.regla)}». Aquí la eliges tú.`
         : caja ? `Medidas y peso de ${esc(caja.nombre)}.`
@@ -2348,7 +2353,7 @@ if (exigirSesion()) {
             /* Un dedo de más en el alto no puede costar la plantilla. */
             ? `<button class="boton boton--sutil boton--chico" type="button" style="margin-left:6px"
                  data-volver-caja>Volver a ${esc(caja.nombre)}</button>` : ""}
-          Un envío es un bulto. Para dos, se capturan dos envíos con la misma referencia.</span>
+          </span>
       </label>`;
 
     panel.querySelector("[data-cobro-nuevo]").innerHTML = cobroHTML(e, plan.cobro, paq);
@@ -2366,11 +2371,11 @@ if (exigirSesion()) {
         <input type="number" name="valor" min="0" step="1" inputmode="numeric"
                value="${nuevo.valor || ""}">
         <span class="campo__ayuda">${nuevo.valor
-          ? "Es lo que la paquetería te repone si se pierde."
+          ? "Es el importe que la paquetería indemniza en caso de pérdida."
           /* En un pedido de canal se propone con el total; aquí el total es
              opcional y muchas veces no hay ninguno. */
-          : "Sin total capturado no hay valor que proponer. Es lo que la paquetería te repone " +
-            "si se pierde."}</span>
+          : "Sin total capturado no hay valor que proponer. Es el importe que la paquetería " +
+            "indemniza en caso de pérdida."}</span>
       </label>
       ${seguroHTML(e, paq)}`;
   }
@@ -2381,7 +2386,9 @@ if (exigirSesion()) {
     const elegida = paq ?? plan.elegida;
     const tarifa = elegida ? tarifaDe(elegida, plan.cobro.cobrado) : null;
     caja.textContent = elegida && plan.cobro.medidas
-      ? `Te cobran ${kg(plan.cobro.cobrado)} · desde ${dinero(tarifa?.precio ?? 0)} con ${
+      /* Un resumen de un renglón nombra la magnitud y su precio; la regla de
+         la consecuencia primero gobierna el bloque que explica, no esto. */
+      ? `${kg(plan.cobro.cobrado)} facturables · desde ${dinero(tarifa?.precio ?? 0)} con ${
           elegida}${tarifa?.servicio ? ` ${tarifa.servicio}` : ""}`
       : "";
   }
@@ -2392,78 +2399,72 @@ if (exigirSesion()) {
      última fila no es una dirección. */
   function pintarOrigen() {
     const caja = panel.querySelector("[data-origen-nuevo]");
-    const o = origenes.find((x) => x.id === nuevo.origen);
     caja.innerHTML = `
-      <div class="campos campos--corto-largo">
-        <label class="campo" data-campo="origen"><span>Origen</span>
-          ${nuevo.capturando
-            ? '<span class="pastilla pastilla--neutra">Dirección capturada</span>'
-            : `<select name="origen" data-origen-suelto>
-                ${origenes.map((x) => `<option value="${esc(x.id)}"${
-                  x.id === nuevo.origen ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}
-               </select>`}
-          <span class="campo__ayuda">Es el remitente que se imprime en la etiqueta y el sitio
-            donde la paquetería recoge.</span>
-        </label>
-        <div class="campo">
-          <span>&nbsp;</span>
-          <div class="grupo-botones">
-            ${nuevo.capturando
-              ? `<button class="boton boton--sutil boton--chico" type="button"
-                   data-cancelar-origen>Usar un origen de la lista</button>`
-              : `<button class="boton boton--sutil boton--chico" type="button"
-                   data-capturar-origen>Capturar otra dirección</button>`}
-          </div>
-        </div>
+      <!-- El desplegable a todo el ancho y la salida debajo: un campo con ayuda de
+           más de cuatro o cinco palabras no comparte renglón, porque la ayuda
+           hereda el ancho del campo y una frase en 148 píxeles no se lee. -->
+      <label class="campo" data-campo="origen"><span>Origen</span>
+        ${nuevo.capturando
+          ? '<span class="pastilla pastilla--neutra">Dirección capturada</span>'
+          : `<select name="origen" data-origen-suelto>
+              ${origenes.map((x) => `<option value="${esc(x.id)}"${
+                x.id === nuevo.origen ? " selected" : ""}>${esc(x.nombre)}</option>`).join("")}
+             </select>`}
+        <span class="campo__ayuda">Es el remitente que se imprime en la etiqueta y la dirección
+          donde la paquetería recoge el paquete.</span>
+      </label>
+
+      <div class="grupo-botones">
+        ${nuevo.capturando
+          ? `<button class="boton boton--sutil boton--chico" type="button"
+               data-cancelar-origen>Usar un origen de la lista</button>`
+          : `<button class="boton boton--sutil boton--chico" type="button"
+               data-capturar-origen>Capturar otra dirección</button>`}
       </div>
 
       ${nuevo.capturando ? `
-        <div class="bloque__caja" style="display:grid;gap:14px;margin-top:4px">
-          <p class="apagado" style="font-size:12px">Esta dirección se imprime en la etiqueta
-            aunque no se guarde. Es un remitente real; lo único que no hace es entrar en la lista.</p>
-          <!-- Lo ya tecleado se vuelve a pintar: marcar la casilla de guardar
-               repinta este bloque, y una casilla no puede costar una dirección
-               entera escrita a mano. -->
-          <div class="campos" data-campos-origen>${
-            camposDireccionHTML(nuevo.campos ?? {}, { prefijo: "org" })}</div>
+        <p class="apagado" style="font-size:12px">Esta dirección se imprime en la etiqueta aunque
+          no se guarde: es un remitente completo, y lo único que no hace es agregarse a la lista.</p>
+        <!-- Lo ya tecleado se vuelve a pintar: marcar la casilla de guardar
+             repinta este bloque, y una casilla no puede costar una dirección
+             entera escrita a mano. -->
+        <div class="campos" data-campos-origen>${
+          camposDireccionHTML(nuevo.campos ?? {}, { prefijo: "org" })}</div>
 
-          <label class="marca-campo">
-            <input type="checkbox" data-guardar-origen${nuevo.guardarOrigen ? " checked" : ""}>
-            <span>Guardar en Direcciones de Origen
-              <span class="campo__ayuda" style="display:block">${nuevo.guardarOrigen
-                ? "Queda en la lista y se puede usar en reglas de recolección. No pasa a ser la predeterminada."
-                : "Desmarcada, esta dirección se usa solo en este envío y no entra en la lista. " +
-                  "Sin guardarla, este envío no entra en ninguna regla de recolección: la " +
-                  "recolección se programa a mano."}</span></span>
+        <label class="marca-campo">
+          <input type="checkbox" data-guardar-origen${nuevo.guardarOrigen ? " checked" : ""}>
+          <span>Guardar en Direcciones de Origen
+            <span class="campo__ayuda" style="display:block">${nuevo.guardarOrigen
+              ? "Queda en la lista y se puede usar en reglas de recolección. No pasa a ser la predeterminada."
+              : "Sin guardarla, esta dirección se usa solo en este envío y no se agrega a la lista, " +
+                "de modo que ninguna regla de recolección la toma."}</span></span>
+        </label>
+
+        ${nuevo.guardarOrigen ? `
+          <label class="campo" data-campo="nombreOrigen"><span>Nombre de la dirección</span>
+            <input name="nombreOrigen" value="${esc(nuevo.nombreOrigen ?? "")}"
+                   placeholder="Bodega Norte">
+            <span class="campo__ayuda">Es como aparece en Direcciones de Origen y en las reglas
+              de recolección.</span>
+            <span class="campo__error" hidden></span>
           </label>
-
-          ${nuevo.guardarOrigen ? `
-            <div class="campos campos--2">
-              <label class="campo" data-campo="nombreOrigen"><span>Nombre de la dirección</span>
-                <input name="nombreOrigen" value="${esc(nuevo.nombreOrigen ?? "")}"
-                       placeholder="Bodega Norte">
-                <span class="campo__error" hidden></span>
-              </label>
-              <div></div>
-            </div>
-            <!-- Abre y cierra aparecen solo al marcar: son lo que hace falta
-                 para ser un registro, no para mandar un paquete. Sin ellos el
-                 origen nace a medias y rompe la cabeza del panel de la regla
-                 de recolección, que enseña su horario. -->
-            <div class="campos campos--2">
-              <label class="campo campo--corto" data-campo="abre"><span>Abre</span>
-                <input type="time" name="abre" value="${esc(nuevo.abre ?? "")}">
-                <span class="campo__error" hidden></span>
-              </label>
-              <label class="campo campo--corto" data-campo="cierra"><span>Cierra</span>
-                <input type="time" name="cierra" value="${esc(nuevo.cierra ?? "")}">
-                <span class="campo__error" hidden></span>
-              </label>
-            </div>
-            <span class="campo__ayuda" style="margin-top:-8px">La hora en que hay alguien para
-              entregarle el paquete al repartidor. Las reglas de recolección no pueden programar
-              una ventana fuera de ella.</span>` : ""}
-        </div>` : ""}`;
+          <!-- Abre y cierra aparecen solo al marcar: son lo que hace falta para
+               ser un registro, no para mandar un paquete. Sin ellos el origen
+               nace incompleto y rompe la cabeza del panel de la regla de
+               recolección, que enseña su horario. -->
+          <div class="campos campos--2">
+            <label class="campo campo--corto" data-campo="abre"><span>Abre</span>
+              <input type="time" name="abre" value="${esc(nuevo.abre ?? "")}">
+              <span class="campo__error" hidden></span>
+            </label>
+            <label class="campo campo--corto" data-campo="cierra"><span>Cierra</span>
+              <input type="time" name="cierra" value="${esc(nuevo.cierra ?? "")}">
+              <span class="campo__error" hidden></span>
+            </label>
+          </div>
+          <span class="campo__ayuda" style="margin-top:-8px">Horario en que hay personal para
+            entregar el paquete al repartidor. Las reglas de recolección no pueden programar una
+            ventana fuera de él.</span>` : ""}` : ""}`;
 
     if (nuevo.capturando) cablearDireccion(panel.querySelector("[data-campos-origen]"), "org");
   }
@@ -2484,43 +2485,63 @@ if (exigirSesion()) {
       <div class="panel__cabeza">
         <div style="min-width:0">
           <h2 id="panel-titulo">Nuevo envío</h2>
-          <p>Una guía sin pedido detrás: lo que se vendió fuera de tus canales.</p>
+          <p>Una guía para una venta que no entró por ningún canal conectado.</p>
         </div>
         <button class="panel__cerrar" type="button" aria-label="Cerrar" data-cerrar-panel>✕</button>
       </div>
 
       <div class="panel__cuerpo">
         <form id="form-suelto" novalidate>
-          <!-- La referencia va primero y es obligatoria: es lo único que
-               sustituye al folio del canal, y al final parecería opcional. -->
+
+          <!-- Tres cajas, no siete: una caja existe para agrupar varias cosas
+               contra un fondo, y alrededor de un solo campo no agrupa nada.
+               Dentro, los subgrupos van con un título de campos, que es una
+               etiqueta y no un marco. -->
           <div class="bloque">
-            <p class="bloque__titulo">Referencia</p>
-            <div class="bloque__caja" style="display:grid;gap:14px">
+            <p class="bloque__titulo">El envío</p>
+            <div class="bloque__caja" style="display:grid;gap:16px">
               <label class="campo" data-campo="refEnvio">
                 <span>Referencia</span>
                 <input id="ref-envio" name="refEnvio" maxlength="60" required
                        placeholder="Garantía #4412">
-                <span class="campo__ayuda">Por qué existe este envío: "Garantía #4412",
-                  "Venta por WhatsApp". Es lo que se lee dentro de un mes al conciliar.</span>
+                <span class="campo__ayuda">Sustituye al folio del canal: es el dato que
+                  identifica este envío en la conciliación. Por ejemplo, "Garantía #4412" o
+                  "Venta por WhatsApp".</span>
                 <span class="campo__error" hidden></span>
               </label>
-              <p class="apagado" style="font-size:12px;margin-top:-4px">Si esta venta ya entró
-                por un canal, se van a emitir dos guías y nada las va a cruzar: no hay folio de
-                canal con que compararlas.</p>
+              <p class="apagado" style="font-size:12px;margin-top:-6px">Si esta venta también
+                entró por un canal, se emitirán dos guías y no habrá folio de canal que permita
+                relacionarlas.</p>
+
+              <label class="campo campo--corto" data-campo="totalSuelto">
+                <span>Total (opcional)</span>
+                <input type="number" name="totalSuelto" min="0" step="1" inputmode="numeric">
+                <span class="campo__ayuda">Se registra como importe capturado manualmente y no
+                  se suma a las cifras de venta.</span>
+              </label>
+
+              <details class="desplegable">
+                <summary>Agregar artículos</summary>
+                <div class="desplegable__cuerpo" style="display:grid;gap:12px">
+                  ${buscadorFichaHTML("producto")}
+                  <div data-lineas style="display:grid;gap:8px"></div>
+                  <span class="campo__ayuda">Con artículos capturados, este envío entra en las
+                    reglas de embalaje por producto y admite devoluciones parciales.</span>
+                </div>
+              </details>
             </div>
           </div>
 
-          <!-- Antes que el destino porque es un clic y el destino son catorce
-               campos: lo que casi siempre se deja como está no debe partir el
-               formulario por la mitad. -->
           <div class="bloque">
-            <p class="bloque__titulo">De dónde sale</p>
-            <div class="bloque__caja" style="display:grid;gap:14px" data-origen-nuevo></div>
-          </div>
+            <p class="bloque__titulo">Origen y destino</p>
+            <div class="bloque__caja" style="display:grid;gap:16px">
+              <!-- El origen va antes del destino porque es un control y el
+                   destino son catorce campos: lo que casi siempre se deja como
+                   está no debe partir la caja por la mitad. -->
+              <p class="campos__titulo" style="margin:0">De dónde sale</p>
+              <div style="display:grid;gap:12px" data-origen-nuevo></div>
 
-          <div class="bloque">
-            <p class="bloque__titulo">A dónde va</p>
-            <div class="bloque__caja" style="display:grid;gap:14px">
+              <p class="campos__titulo" style="margin:6px 0 0">A dónde va</p>
               <div data-parecido></div>
               <div class="campos" data-campos-destino>${camposDireccionHTML({})}</div>
             </div>
@@ -2528,7 +2549,7 @@ if (exigirSesion()) {
 
           <div class="bloque">
             <p class="bloque__titulo">El paquete</p>
-            <div class="bloque__caja" style="display:grid;gap:14px">
+            <div class="bloque__caja" style="display:grid;gap:16px">
               <div data-caja-nuevo></div>
               <!-- Las cuatro cifras siempre a la vista: la plantilla es una
                    comodidad y las medidas son el paquete. En esta pantalla lo
@@ -2551,56 +2572,36 @@ if (exigirSesion()) {
                          value="${nuevo.peso || ""}" data-medida="peso">
                   <span class="campo__error" hidden></span></label>
               </div>
+              <!-- Se dice donde alguien lo intentaría: con las medidas delante. -->
+              <p class="apagado" style="font-size:12px;margin-top:-6px">Cada envío corresponde a
+                un bulto. Para dos bultos se crean dos envíos con la misma referencia, que es lo
+                que los relaciona en la conciliación.</p>
               <div data-cobro-nuevo></div>
+
+              <p class="campos__titulo" style="margin:6px 0 0">Seguro</p>
+              <div style="display:grid;gap:12px" data-seguro-nuevo></div>
             </div>
           </div>
 
-          <div class="bloque">
-            <p class="bloque__titulo">Seguro</p>
-            <div class="bloque__caja" style="display:grid;gap:14px" data-seguro-nuevo></div>
-          </div>
-
-          <div class="bloque">
-            <p class="bloque__titulo">Total</p>
-            <div class="bloque__caja" style="display:grid;gap:14px">
-              <!-- "(opcional)" va en la etiqueta y nunca en un marcador, que
-                   desaparece en cuanto alguien escribe. -->
-              <label class="campo campo--corto" data-campo="totalSuelto">
-                <span>Total (opcional)</span>
-                <input type="number" name="totalSuelto" min="0" step="1" inputmode="numeric">
-                <span class="campo__ayuda">Si lo capturas, queda marcado como capturado a mano
-                  y no cuenta como venta.</span>
-              </label>
-
-              <details class="desplegable">
-                <summary>Agregar artículos</summary>
-                <div class="desplegable__cuerpo" style="display:grid;gap:12px">
-                  ${buscadorFichaHTML("producto")}
-                  <div data-lineas style="display:grid;gap:8px"></div>
-                  <!-- Dice lo que se gana, no lo que se pierde: es la única
-                       forma de que alguien decida capturarlos. -->
-                  <span class="campo__ayuda">Con artículos, este envío entra en las reglas por
-                    producto y admite devoluciones parciales. Sin ellos, no.</span>
-                </div>
-              </details>
+          <!-- Fuera de las tres cajas: se lee después de haber escrito la
+               dirección y antes de comprar. -->
+          <div class="aviso aviso--info">
+            <div>
+              <b>La dirección se comprueba al comprar la guía.</b>
+              En esta pantalla se valida el formato: cinco dígitos en el código postal, colonia
+              presente y teléfono completo. La existencia del destino y la cobertura de la
+              paquetería las verifica la paquetería al emitir la guía, y si la rechaza su
+              respuesta se muestra literal.
             </div>
           </div>
-
-          <p class="aviso aviso--info">
-            <b>La dirección se comprueba al comprar la guía.</b>
-            Aquí se revisa la forma: que el código postal tenga cinco dígitos, que la colonia no
-            vaya vacía y que el teléfono esté completo. Que el destino exista y que tu paquetería
-            llegue hasta ahí lo contesta la paquetería al comprar la guía, y si lo rechaza se dice
-            con sus palabras.
-          </p>
         </form>
       </div>
 
       <div class="panel__pie">
         <!-- Lo que ya se sabe del precio, porque es lo que decide si alguien
-             cambia de caja antes de crear. Sale del mismo cálculo que el
-             cobro y que las tarifas: un resumen que no sale del mismo sitio es
-             un número que un día dirá otra cosa. -->
+             cambia de caja antes de crear. Sale del mismo cálculo que el cobro
+             y que las tarifas: un resumen que no sale del mismo sitio es un
+             número que un día dirá otra cosa. -->
         <span class="apagado" style="font-size:12px" data-resumen-pie></span>
         <span class="filtros__sep"></span>
         <button class="boton boton--sutil" type="button" data-cerrar-panel>Cancelar</button>

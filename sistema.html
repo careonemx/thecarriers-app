@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Sistema de diseño · The Carriers</title>
 <link rel="icon" href="assets/brand/mark-white.svg">
-<link rel="stylesheet" href="assets/app.css?v=665eca3a">
+<link rel="stylesheet" href="assets/app.css?v=90b36df2">
 <style>
   /* Estilos de la guía misma, no del sistema. Todo lo que se documenta abajo
      usa las clases reales de app.css, sin una sola regla inventada aquí. */
@@ -49,7 +49,7 @@
                     padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
   }
 </style>
-<script src="assets/vigia.js?v=665eca3a" defer></script>
+<script src="assets/vigia.js?v=90b36df2" defer></script>
 </head>
 <body>
 <div class="guia">
@@ -677,7 +677,7 @@
       <h3>El cobro</h3>
       <div class="muestra">
         <div class="cobro cobro--aviso">
-          <p class="cobro__cifra">Te cobran 6 kg</p>
+          <p class="cobro__cifra">DHL cobra 6 kg</p>
           <p class="cobro__porque">Pesa 4 kg, pero una caja de 40 × 30 × 25 cm se cobra como si pesara 6 kg.</p>
         </div>
         <span class="cls">.cobro .cobro__cifra .cobro__porque · --aviso --mal</span>
@@ -686,6 +686,13 @@
         La consecuencia primero y el dato después. Estaba escrito tres veces con estilos en línea
         dentro de Plantillas, y un patrón repetido a mano deja de ser el mismo patrón, igual que un
         color. El tono lo pone lo que cuesta, no el componente.
+      </p>
+      <p class="intro" style="margin-top:10px">
+        <b>Se nombra a quien cobra.</b> Quien cobra el volumen es la paquetería, no nosotros:
+        “DHL cobra 6 kg”, y “La paquetería cobra 6 kg” donde todavía no hay ninguna elegida, como
+        en Plantillas. Este componente se pinta en <b>cuatro pantallas</b> —Plantillas, la regla
+        de embalaje, el bloque Envío del panel y el panel de captura de un envío suelto—, así que
+        cada palabra suya se cambia en las cuatro o deja de ser el mismo texto.
       </p>
     </section>
 
@@ -889,8 +896,11 @@
         <div class="regla"><b>Un scroll por capa</b><span>Un hijo de flex con <code>overflow:auto</code> necesita <code>min-height:0</code>, o crece hasta su contenido y aparece una segunda barra encima. Y con un panel abierto, la página de atrás se bloquea con <code>html:has(dialog[open])</code>.</span></div>
         <div class="regla"><b>Campos por exclusión</b><span>Los controles se seleccionan con <code>input:not([type=checkbox], …)</code>, nunca enumerando <code>input[type=text]</code>. Un <code>&lt;input&gt;</code> sin atributo <code>type</code> se comporta como texto pero NO lo empareja ese selector, y sale con el gris del navegador.</span></div>
         <div class="regla"><b>Filas de campos</b><span>Van en <code>.campos</code>, no en un <code>style</code> de la pantalla. Y con <code>align-items:start</code>: si un campo lleva ayuda debajo, su celda crece y el de al lado queda centrado en vez de alineado con él.</span></div>
+        <div class="regla"><b>Un campo con ayuda no comparte renglón</b><span>La ayuda hereda el ancho del campo, y una frase de más de cuatro o cinco palabras en una columna de 148px no se lee: se descifra, en cuatro renglones y con el resto del ancho vacío al lado. Lo que comparte renglón son campos cortos sin ayuda; una salida que se usa pocas veces baja debajo del control principal.</span></div>
         <div class="regla"><b>Lo opcional, en la etiqueta</b><span>"Compañía (opcional)", no un marcador de posición que dice "Opcional" y desaparece en cuanto alguien escribe.</span></div>
         <div class="regla"><b>Etiquetas sin modismos</b><span>Un botón es verbo y objeto: "Editar dirección", no "Editar a mano". "Ver dirección original", no "ver la dirección tal como llegó". El modismo envejece mal y no se traduce.</span></div>
+        <div class="regla"><b>La interfaz nombra hechos, no conversa</b><span>Es la frase de la que salen las otras tres de este grupo, y la primera que se rompe. El posesivo se usa donde marca propiedad de un registro —“tus cuentas”, “tu plan”, “tu orden de preferencia”— y no para narrar lo que le ocurre a alguien: “te cobran”, “te repone”, “se te cobra” describen una conversación, no un dato. Se nombra a quien hace la acción: <b>“DHL cobra 6 kg”</b>, no “te cobran 6 kg”. Y lo coloquial envejece mal y no se traduce: “no abulta más que eso”, “nada las va a cruzar”, “sin pedido detrás” se entienden hoy y no sobreviven a un cliente nuevo ni a un segundo idioma.</span></div>
+        <div class="regla"><b>Preciso no es escueto</b><span>Un texto que deja de decir lo que decía cambia un defecto por otro peor. Entre una frase corta y una que explica la consecuencia —por qué la referencia importa al conciliar, que la dirección se comprueba de verdad al comprar la guía—, gana la que explica.</span></div>
         <div class="regla"><b>Nunca en primera persona</b><span>La interfaz no dice "corregimos" ni "te avisamos". Dice qué pasó: "Se ajustaron calle, colonia e interior". El sistema no es un interlocutor.</span></div>
         <div class="regla"><b>Nombrar, no contar</b><span>"5 datos" no dice nada y suena a base de datos. Se enumeran los campos, con la <code>e</code> que sustituye a la <code>y</code> antes de i-: "colonia e interior".</span></div>
         <div class="regla"><b>Un botón no es una decisión</b><span>Si hay algo que elegir, se muestra para comparar. "Generar guía" escondía la pregunta real —con qué paquetería y a qué precio—, y la respuesta es el valor del producto.</span></div>
@@ -951,6 +961,7 @@
         <div class="regla"><b>Dos hechos ciertos no dicen su conclusión</b><span>“Hay 4 guías” y “4 son de otra plataforma” son verdad por separado y juntas significan que la regla no recoge nada. Eso se dice; deducirlo es trabajo que la pantalla puede ahorrar.</span></div>
         <div class="regla"><b>Donde no aplica, el botón no se dibuja</b><span>Un botón en gris invita a averiguar por qué; deshabilitado y sin motivo, es un callejón. Se quita, y en su lugar va una línea que explica la ausencia: un silencio donde alguien busca una acción cuesta más que las dos cosas. Deshabilitado solo cuando el paso existe y depende de un hecho que todavía no pasó, y entonces el <code>title</code> dice de cuál.</span></div>
         <div class="regla"><b>Un botón que no hace nada no es un botón</b><span>Si la acción necesita un dato que no existe —la dirección del pedido dentro del canal—, o se construye el dato o el botón no se dibuja. Y la ayuda que solo vive en un <code>title</code> no existe para quien navega con el teclado: o se ve, o no está. Esto no se vigila a ojo: <code>node herramientas/botones.mjs</code> barre todos los <code>&lt;button&gt;</code> y falla con los que nadie escucha.</span></div>
+        <div class="regla"><b>Una caja agrupa varias cosas, o no es una caja</b><span>Una <code>.bloque__caja</code> alrededor de un solo campo no agrupa nada: añade un borde, dos bordes de aire y un rótulo. Los subgrupos se separan con <code>.campos__titulo</code>, que es una etiqueta y no un marco. Y el rótulo pertenece a la caja de abajo, así que va más cerca de ella —11px— que de la de arriba —22px—, o se lee como el pie de la sección anterior.</span></div>
         <div class="regla"><b>Ninguna comilla invertida dentro de una plantilla</b><span>En un comentario de HTML escrito dentro de una plantilla de JavaScript, una comilla invertida la cierra: lo que venía después deja de ser marcado y pasa a ser código, y el navegador dice que algo “no es una función”. <code>node --check</code> lo da por bueno, así que lo caza <code>sintaxis.mjs</code>. Dentro de un comentario, el nombre de una clase se escribe sin adorno.</span></div>
         <div class="regla"><b>Una columna que no aplica lleva guion, no pastilla</b><span>Una pastilla en la columna de pago se compara con los “Pagado” de las filas de al lado y se lee como un tercer estado. El guion dice que la columna no aplica a esa fila, que es lo cierto cuando no hay canal que reporte nada.</span></div>
         <div class="regla"><b>Se nombra el disparador, no el plazo</b><span>“En cuanto el rastreo diga Entregado”, nunca “en tres días”: el plazo lo sabe la paquetería y el disparador es nuestro y es comprobable. Y el reloj de una cola no corre contra quien todavía no puede hacer su parte.</span></div>
@@ -989,7 +1000,7 @@
         <div class="regla"><b>Nombres que no se repiten</b><span>Dos plantillas con el mismo nombre no se distinguen en el desplegable donde se van a usar. Se comparan sin acentos ni mayúsculas.</span></div>
         <div class="regla"><b>Lo que se guarda solo, se dice</b><span>Elegir el predeterminado se aplica al pulsarlo, sin botón de guardar. Pero una marca que se mueve de tarjeta no confirma nada: hace falta decir "Guardado", con el nombre y con lo que va a cambiar a partir de ahora.</span></div>
         <div class="regla"><b>Una marca explica qué hace</b><span>"Predeterminada" no dice para qué. Al lado va la consecuencia: "Es la que aparece ya elegida al generar una guía", "Es el remitente que se imprime en cada etiqueta".</span></div>
-        <div class="regla"><b>La consecuencia antes que el dato</b><span>Primero "Te cobran 6 kg", después por qué. Tres cifras con rótulo —real, volumétrico, cobrado— obligan a compararlas para deducir la única que importaba.</span></div>
+        <div class="regla"><b>La consecuencia antes que el dato</b><span>Primero “DHL cobra 6 kg”, después por qué. Tres cifras con rótulo —real, volumétrico, cobrado— obligan a compararlas para deducir la única que importaba.</span></div>
         <div class="regla"><b>Sin palabras de transportista</b><span>"Sobrecosto por espacio" y "peso volumétrico" son jerga. Quien lo lee quiere saber por qué la factura no coincide con la báscula: "Pesa 4 kg, pero una caja de 40 × 30 × 25 cm se cobra como si pesara 6".</span></div>
         <div class="regla"><b>Una sugerencia vale lo que ahorra</b><span>"Baja el alto a 16 cm" no mueve a nadie. "Con 16 cm en vez de 25 pagarías $170 en vez de $232, $62 menos por envío" sí.</span></div>
         <div class="regla"><b>Somos la capa intermedia</b><span>No se ofrece lo que necesita una integración que no existe. "Corregir dirección" o "Enviar documento" sobre un envío ya despachado exigen la API de la paquetería; sin ella, el botón promete algo que no va a pasar.</span></div>

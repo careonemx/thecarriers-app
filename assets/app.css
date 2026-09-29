@@ -1593,6 +1593,14 @@ dialog.panel[open] { display: flex; flex-direction: column; }
   padding: 22px; display: grid; gap: 22px; align-content: start;
   grid-template-columns: minmax(0, 1fr);
 }
+/* Un formulario que solo envuelve bloques no puede romper el ritmo del panel:
+   sin esto, los bloques de dentro se quedan sin la separación que el cuerpo da
+   a sus hijos y se leen encimados. */
+.panel__cuerpo > form {
+  display: grid; gap: 22px; align-content: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .panel__pie {
   flex: none; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap;
   padding: 14px 22px; border-top: 1px solid var(--hairline); background: var(--tarjeta);
