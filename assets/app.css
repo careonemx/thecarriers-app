@@ -858,6 +858,20 @@ td .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; fon
 .interruptor input:checked { background: var(--accent); border-color: var(--accent); }
 .interruptor input:checked::after { transform: translateX(16px); background: var(--sobre-accent); }
 
+/* ---------- Paqueterías activas ----------
+   Con mejor costo no hay orden que mostrar: cada paquetería es un nombre y
+   un interruptor. El interruptor va a la derecha, donde se busca. */
+.activa {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 18px;
+}
+.activa + .activa { border-top: 1px solid var(--hairline); }
+.activa__quien { min-width: 0; }
+.activa__quien b { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; }
+.activa__quien .apagado { display: block; margin-top: 2px; font-size: 11px; }
+.activa__conectar { margin-top: 6px; }
+.activa--apagada .activa__quien b { color: var(--muted); }
+
 /* ---------- Campo con error ---------- */
 /* Un campo que solo recibe una cifra no gana nada con ocupar toda la fila:
    el ancho de una caja es una pista de cuánto se espera que se escriba. */
@@ -1263,8 +1277,13 @@ a.tarjeta-cifra--alerta:hover { border-color: var(--mal-borde); }
 
 @media (max-width: 767px) {
   /* Las flechas viajan con el nombre que mueven, no al final de la fila. */
-  .orden, .orden__cabecera { --orden-cols: 30px 1fr auto; }
+  /* minmax(0, …): con 1fr a secas, un botón largo como "Conectar
+     Paquetexpress" fijaba el mínimo de la columna y a 360px la fila sacaba
+     Papel y Motivo fuera de la tarjeta. */
+  .orden, .orden__cabecera { --orden-cols: 30px minmax(0, 1fr) auto; }
   .orden__fila { row-gap: 10px; align-items: start; }
+  .orden__quien .boton { max-width: 100%; white-space: normal; text-align: left; }
+  .orden__quien b { flex-wrap: wrap; row-gap: 4px; }
   .orden__puesto, .orden__quien, .orden__mover { grid-row: 1; }
   .orden__mover { grid-column: 3; }
   .orden__papel, .orden__porque { grid-column: 2 / -1; }
@@ -2019,8 +2038,12 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
   }
 }
 @media (max-width: 767px) {
-  .orden--reglas, .orden__cabecera--reglas { --orden-cols: 30px 1fr auto; }
+  .orden--reglas, .orden__cabecera--reglas { --orden-cols: 30px minmax(0, 1fr) auto; }
   .orden--reglas .orden__caja, .orden--reglas .orden__porque { grid-column: 2 / -1; }
+  /* Texto y botón en un renglón dejaban el texto en una tira de una palabra
+     por línea y el botón fuera de la tarjeta. En móvil se apilan. */
+  .orden__fila .aviso { flex-direction: column; align-items: flex-start; }
+  .orden__fila .aviso .boton { max-width: 100%; white-space: normal; text-align: left; }
 }
 
 /* =================================================================
@@ -2202,6 +2225,12 @@ tbody tr[data-fallido="true"] { background: var(--mal-fondo); }
   .solo-ancho { display: none; }
   .solo-angosto { display: inline; }
   .superior .buscador { flex: 1 1 auto; min-width: 120px; }
+  /* A 360px el mínimo de 120px sacaba el avatar de la pantalla: el buscador
+     cede lo que falta antes que cortar la cuenta. */
+  @media (max-width: 400px) {
+    .superior { gap: 8px; }
+    .superior .buscador { min-width: 0; }
+  }
 
   /* El panel de hallazgos no se ancla al buscador: anclado, hereda su ancho
      —116px medidos— y no cabe ni un folio. Se sale a la pantalla completa,

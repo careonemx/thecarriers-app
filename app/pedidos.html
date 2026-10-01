@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Pedidos · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=18af4232">
-<script src="../assets/vigia.js?v=18af4232" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7a1f386a">
+<script src="../assets/vigia.js?v=7a1f386a" defer></script>
 </head>
 <body data-seccion="pedidos">
 <main class="contenido contenido--ancho">
@@ -225,14 +225,14 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
+import { montar, exigirSesion } from "../assets/app.js?v=7a1f386a";
 import { pedidos, sinGuia, conGuia, conError,
          dinero, dineroMXN, fechaCorta, fechaLarga, diasDesde, menosDias, HOY,
          PENDIENTES, origen, origenes, origenPredeterminado, plantillas,
          detalleDe, coloniasPorCP, telefonoMX, ladas, cotizar, tarifaDe,
          motivoOmision, simularGeneracion, guardarGuia, olvidarGuia, enumerarEs,
          embalajeDe, pesoCobrado, divisorDe, capacidadDe,
-         reglasPaqueteria, decidirPaqueteria, motivosCambioPaqueteria,
+         reglasPaqueteria, decidirPaqueteria, activaEnCosto, motivosCambioPaqueteria,
          PAQUETERIAS, PLATAFORMAS,
          telefonoDe, nombrarAusencia, ofrece, costoSeguroDe,
          CAMBIOS_EN_CANAL, GENERADA_MIENTRAS_TANTO, foliosQueCumplen,
@@ -248,7 +248,7 @@ import { pedidos, sinGuia, conGuia, conError,
          retornoDeLaIda, registrarDevolucionDeIda, esperaEntregaIda,
          QUIEN_REGISTRO, ESPERA_ENTREGA, seGuarda,
          buscarProductos, fechaEnTexto,
-         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=18af4232";
+         plantillaPredeterminada, agregarOrigen } from "../assets/datos.js?v=7a1f386a";
 if (exigirSesion()) {
   montar();
 
@@ -1023,14 +1023,19 @@ if (exigirSesion()) {
      lado de DHL. Las de "no usar" no se ofrecen nunca, aunque sean las más
      baratas: es lo que dice Configuración, y una lista que la contradiga
      convierte ese ajuste en decorado. */
+  /* Con mejor costo no hay papeles: se ofrecen las que están activas y se
+     ordenan por precio, que es lo que ese criterio dice. */
+  const porCosto = () => reglasPaqueteria.criterio === "costo";
   const cuentasTarifa = () =>
-    PAQUETERIAS.filter((n) => !PLATAFORMAS.includes(n) && papelDe(n) !== "no-usar");
+    PAQUETERIAS.filter((n) => !PLATAFORMAS.includes(n)
+      && (porCosto() ? activaEnCosto(n) : papelDe(n) !== "no-usar"));
 
   function opcionesDe(peso, todas = false) {
     const lista = cuentasTarifa()
-      .map((n) => ({ ...tarifaDe(n, peso), papel: papelDe(n), puesto: puestoDe(n) }))
-      .sort((a, b) =>
-        (a.papel === "evitar") - (b.papel === "evitar") || a.puesto - b.puesto || a.precio - b.precio);
+      .map((n) => ({ ...tarifaDe(n, peso), papel: porCosto() ? "normal" : papelDe(n), puesto: puestoDe(n) }))
+      .sort((a, b) => porCosto()
+        ? a.precio - b.precio
+        : (a.papel === "evitar") - (b.papel === "evitar") || a.puesto - b.puesto || a.precio - b.precio);
     return todas ? lista : lista.slice(0, 4);
   }
 

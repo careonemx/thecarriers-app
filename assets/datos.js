@@ -334,22 +334,41 @@ export const PAPELES = {
   "no-usar": { etiqueta: "No usar",       ayuda: "Nunca, aunque sea la más barata." },
 };
 
+/**
+ * Cómo se elige. Cada criterio guarda su propia configuración y no toca la
+ * del otro: "preferencia" usa el orden, los papeles y las excepciones;
+ * "costo" solo mira qué paqueterías están activas (`enCosto`) y toma la más
+ * barata. Volver a "preferencia" encuentra el orden tal como se dejó.
+ */
+export const CRITERIOS_PAQUETERIA = {
+  preferencia: { etiqueta: "Orden de preferencia",
+                 ayuda: "Ordenas las paqueterías y sale la primera, salvo que se cumpla una excepción." },
+  costo:       { etiqueta: "Mejor costo",
+                 ayuda: "Activas las paqueterías que pueden competir y sale la más barata." },
+};
+
+/** Si una paquetería compite por precio con el criterio de mejor costo. */
+export const activaEnCosto = (paqueteria) =>
+  reglasPaqueteria.orden.some((o) => o.paqueteria === paqueteria && o.enCosto);
+
 export const reglasPaqueteria = {
+  criterio: "preferencia",
+
   /* `porque` es la nota que sostiene cada puesto. No es un comentario suelto:
      es lo que lee quien más adelante quiera reordenar la lista. Sin ella,
      "UPS es alternativa" no impide que alguien la suba al primer puesto. */
   orden: [
-    { paqueteria: "DHL", papel: "normal",
+    { paqueteria: "DHL", enCosto: true, papel: "normal",
       porque: "Plazo aceptable: si la guía sale jueves o viernes, entrega la semana siguiente." },
-    { paqueteria: "Paquetexpress", papel: "normal",
+    { paqueteria: "Paquetexpress", enCosto: true, papel: "normal",
       porque: "" },
-    { paqueteria: "UPS", papel: "normal",
+    { paqueteria: "UPS", enCosto: true, papel: "normal",
       porque: "Suele ser más barata, pero ha tenido incidencias. Se revisa antes de usarla." },
-    { paqueteria: "99minutos", papel: "evitar",
+    { paqueteria: "99minutos", enCosto: true, papel: "evitar",
       porque: "Problemas de recolección en el almacén y guías que hubo que cancelar." },
-    { paqueteria: "FedEx", papel: "evitar",
+    { paqueteria: "FedEx", enCosto: true, papel: "evitar",
       porque: "Solo si el cliente la pide. Además acepta direcciones incompletas." },
-    { paqueteria: "AMPM", papel: "no-usar",
+    { paqueteria: "AMPM", enCosto: false, papel: "no-usar",
       porque: "Incidencias difíciles de resolver." },
   ],
 
@@ -380,6 +399,27 @@ export function decidirPaqueteria({ peso = 1, costoPreferida = null, zonaExtendi
   const preferida = r.orden.find((o) => o.papel === "normal");
 
   const precio = (nombre) => precioDe(nombre, peso);
+
+  /* Mejor costo: no hay preferida, papeles ni excepciones; solo compiten
+     las activas. Y de ellas, las que tienen cuenta conectada, porque una sin
+     cuenta saldría elegida sin con qué comprar la guía. */
+  if (r.criterio === "costo") {
+    const candidatas = r.orden
+      .filter((o) => o.enCosto && tieneCuenta(o.paqueteria))
+      .map((o) => ({ ...o, costo: precio(o.paqueteria) }))
+      .filter((o) => o.costo !== null)
+      .sort((a, b) => a.costo - b.costo);
+    const elegida = candidatas[0];
+    return {
+      elegida: elegida?.paqueteria ?? null,
+      costo: elegida?.costo ?? null,
+      porque: elegida
+        ? `Se elige por mejor costo: ${elegida.paqueteria} es la más barata de las paqueterías activas.`
+        : "Ninguna paquetería activa tiene cuenta conectada.",
+      alternativas: candidatas.slice(1, 4),
+    };
+  }
+
   const costoPref = costoPreferida ?? (preferida ? precio(preferida.paqueteria) : null);
 
   const caro = costoPref !== null && costoPref > r.cambiarSi.costoMayorA;

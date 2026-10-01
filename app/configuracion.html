@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Configuración · The Carriers</title>
 <link rel="icon" href="../assets/brand/mark-white.svg">
-<link rel="stylesheet" href="../assets/app.css?v=18af4232">
-<script src="../assets/vigia.js?v=18af4232" defer></script>
+<link rel="stylesheet" href="../assets/app.css?v=7a1f386a">
+<script src="../assets/vigia.js?v=7a1f386a" defer></script>
 </head>
 <body data-seccion="ajustes">
 <main class="contenido contenido--ancho">
@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <div class="tarjeta" style="margin-top:14px;max-width:560px">
+    <div class="tarjeta" style="margin-top:14px">
       <div class="tarjeta__cabeza"><h2>Cuándo pasa a revisión manual</h2></div>
       <div class="tarjeta__cuerpo campos" id="tope"></div>
     </div>
@@ -85,7 +85,23 @@
 
   <section class="zona">
     <h2 class="zona__titulo">Paquetería</h2>
-    <div class="tarjeta">
+    <div class="tarjeta" style="margin-bottom:14px">
+      <div class="tarjeta__cabeza"><h2>Cómo se elige la paquetería</h2></div>
+      <div class="tarjeta__cuerpo campos" id="criterio"></div>
+    </div>
+
+    <div class="tarjeta" id="tarjeta-costo">
+      <div class="tarjeta__cabeza">
+        <div>
+          <h2>Qué paqueterías compiten por precio</h2>
+          <p class="apagado" style="font-size:12px;margin-top:3px">
+            Cada pedido sale con la más barata de las activas.</p>
+        </div>
+      </div>
+      <div id="activas"></div>
+    </div>
+
+    <div class="tarjeta" id="tarjeta-orden">
       <div class="tarjeta__cabeza">
         <div>
           <h2>Con qué paquetería sale cada pedido</h2>
@@ -108,9 +124,7 @@
     </div>
   </section>
 
-  <!-- Tres controles sueltos a lo ancho de la pantalla se pierden. La tarjeta
-       se acota a la anchura en la que se leen. -->
-  <section class="zona" style="max-width:560px">
+  <section class="zona" id="zona-excepciones">
     <div class="tarjeta">
       <div class="tarjeta__cabeza"><h2>Cuándo se sustituye la paquetería preferida</h2></div>
       <div class="tarjeta__cuerpo campos" id="excepciones"></div>
@@ -160,7 +174,7 @@
 </main>
 
 <script type="module">
-import { montar, exigirSesion } from "../assets/app.js?v=18af4232";
+import { montar, exigirSesion } from "../assets/app.js?v=7a1f386a";
 import { origenes, plantillas, reglasPaqueteria, PAPELES,
          reglasEmbalaje, vetosEmbalaje, efectoEmbalaje, embalaje, CONDICIONES_EMBALAJE,
          DESTINOS, cobroDefecto, guiasConReglas, hechosDeRegla,
@@ -172,7 +186,7 @@ import { origenes, plantillas, reglasPaqueteria, PAPELES,
          guiasSinRecoleccion, sinRegistro, enumerarEs,
          productosVistos, buscarProductos, pareceSKU, fechaEnTexto,
          FACTOR_VOLUMETRICO, capacidadDe, guardarEmbalaje,
-         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO } from "../assets/datos.js?v=18af4232";
+         tieneCuenta, PAQUETERIAS_DEL_PRODUCTO, CRITERIOS_PAQUETERIA } from "../assets/datos.js?v=7a1f386a";
 if (exigirSesion()) {
   montar();
 
@@ -219,7 +233,7 @@ if (exigirSesion()) {
       <span>Generar la guía automáticamente
         <span class="apagado" style="display:block;font-size:12px">
           En cuanto el pedido se marque como pagado, sin que nadie entre a Pedidos.
-          La paquetería sale de tu orden de preferencia.</span></span>
+          La paquetería sale del criterio elegido en Paquetería, más abajo.</span></span>
     </label>
 
     <label class="campo"><span>Sale de</span>
@@ -259,14 +273,83 @@ if (exigirSesion()) {
      elegir como etiqueta, subir una paquetería al primer lugar no cambiaría
      nada y el arrastre sería decorativo. */
   const preferidaAhora = () => reglasPaqueteria.orden.find((o) => o.papel === "normal");
+  const porCosto = () => reglasPaqueteria.criterio === "costo";
 
   /* Mover una fila puede cambiar quién es la preferida, y la regla de
      seguridad la nombra por su nombre. Las dos se repintan juntas para que
      una no se quede hablando de la anterior. */
   function repintarReglas() {
+    pintarCriterio();
     pintarOrden();
     pintarExcepciones();
+    pintarActivas();
   }
+
+  /* ---------- El criterio ----------
+     Cada criterio enseña solo lo que lo controla. Con mejor costo no hay
+     puestos, papeles ni preferida, así que el orden y las excepciones se
+     ocultan en lugar de quedarse como ajustes que parecen activos y no
+     deciden nada; en su lugar aparece qué paqueterías compiten. */
+  const criterio = document.getElementById("criterio");
+  function pintarCriterio() {
+    const r = reglasPaqueteria;
+    criterio.innerHTML = Object.entries(CRITERIOS_PAQUETERIA).map(([k, c]) => `
+      <label class="marca-campo">
+        <input type="radio" name="criterio" value="${k}"${k === r.criterio ? " checked" : ""}>
+        <span>${esc(c.etiqueta)}
+          <span class="apagado" style="display:block;font-size:12px">${esc(c.ayuda)}</span></span>
+      </label>`).join("");
+    document.getElementById("tarjeta-orden").hidden = porCosto();
+    document.getElementById("zona-excepciones").hidden = porCosto();
+    document.getElementById("tarjeta-costo").hidden = !porCosto();
+  }
+
+  criterio.addEventListener("change", (e) => {
+    if (!e.target.matches('[name="criterio"]')) return;
+    reglasPaqueteria.criterio = e.target.value;
+    repintarReglas();
+    avisar(porCosto()
+      ? "Guardado. Cada pedido sale con la paquetería más barata de las activas."
+      : "Guardado. Cada pedido sale según tu orden de preferencia.");
+  });
+
+  /* ---------- Qué paqueterías compiten por precio ----------
+     Una activa sin cuenta se puede dejar encendida, pero no compite hasta que
+     se conecte: decirlo en la fila evita buscar por qué nunca sale. */
+  const activas = document.getElementById("activas");
+  function pintarActivas() {
+    const lista = reglasPaqueteria.orden;
+    const compiten = lista.filter((o) => o.enCosto && tieneCuenta(o.paqueteria));
+    activas.innerHTML = `
+      ${compiten.length ? "" : `<p class="aviso aviso--alerta" style="margin:14px 18px 0">
+        Ninguna paquetería activa tiene cuenta conectada: el sistema no puede elegir
+        ninguna.</p>`}
+      ${lista.map((o, i) => `
+        <div class="activa${o.enCosto ? "" : " activa--apagada"}" data-i="${i}">
+          <div class="activa__quien">
+            <b>${esc(o.paqueteria)}${tieneCuenta(o.paqueteria)
+              ? "" : ' <span class="pastilla pastilla--aviso">Sin cuenta</span>'}</b>
+            <span class="apagado">${!tieneCuenta(o.paqueteria)
+              ? `No compite mientras no haya cuenta conectada de ${esc(o.paqueteria)}.`
+              : o.enCosto ? "Compite por precio." : "No compite."}</span>
+            ${tieneCuenta(o.paqueteria) ? "" : `<a class="boton boton--sutil boton--chico activa__conectar"
+               href="paqueterias.html?paqueteria=${encodeURIComponent(o.paqueteria)}">Conectar ${esc(o.paqueteria)}</a>`}
+          </div>
+          <label class="interruptor">
+            <input type="checkbox" data-activa${o.enCosto ? " checked" : ""}>
+            <span class="sr-only">${esc(o.paqueteria)} compite por precio</span>
+          </label>
+        </div>`).join("")}`;
+  }
+
+  activas.addEventListener("change", (e) => {
+    const fila = e.target.closest("[data-i]");
+    if (!fila || !e.target.matches("[data-activa]")) return;
+    const o = reglasPaqueteria.orden[+fila.dataset.i];
+    o.enCosto = e.target.checked;
+    pintarActivas();
+    avisar(`Guardado. ${o.paqueteria} ${o.enCosto ? "compite" : "ya no compite"} por precio.`);
+  });
 
   function pintarOrden() {
     const manda = preferidaAhora();
